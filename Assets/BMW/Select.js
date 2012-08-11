@@ -1,4 +1,4 @@
-var cam:Camera;
+private var cam:Camera;
 
 function Awake () {
 	cam = Camera.main;
@@ -25,39 +25,19 @@ function Select(col:Collider) {
 }
 
 function UnSelect() {
+	if (isDragging) StopDragging();  // before we unselect.
 	if (selected) {
 		UnHighlight(selected.gameObject);
 		selected = null;
 	}
 }
 
-public var isDragging:boolean = false;
-public var lastDragPosition:Vector3;
-public var offset:Vector3 = Vector3.zero;
-public var savedLayer:int;
-public var laserPrefab:Transform;
-public var laser:GameObject;
-public var shoulder:Transform;
-
+// Utility functions
 function between(verticalObject, p1, p2, width) {
-	var offset:Vector3 = (p1 - p2) / 2.0;
-	verticalObject.transform.position = p1 - offset;
+	var offsetToCenter:Vector3 = (p1 - p2) / 2.0;
+	verticalObject.transform.position = p1 - offsetToCenter;
 	verticalObject.transform.up = p2 - p1;
-	verticalObject.transform.localScale = Vector3(width, offset.magnitude, width);
-}
-
-function StopDragging() {
-	isDragging = false;
-	if (selected) {
-		selected.gameObject.layer = savedLayer;
-		var pivot = selected.gameObject.transform.parent;
-		Debug.Log("go=" + selected.gameObject + " pivot=" + pivot + " parent=" + (pivot ? pivot.parent : null));
-		selected.gameObject.transform.parent = pivot.parent;
-		Destroy(pivot.gameObject);
-	}
-	Screen.showCursor = true;
-	offset = Vector3.zero;
-	Destroy(laser);
+	verticalObject.transform.localScale = Vector3(width, offsetToCenter.magnitude, width);
 }
 
 function hitNormal(hit:RaycastHit) {
@@ -90,22 +70,44 @@ function hitNormal(hit:RaycastHit) {
    	return interpolatedNormal;
 }
 
+// Dragging state
+private var isDragging:boolean = false;
+private var savedLayer:int;
+private var offset:Vector3 = Vector3.zero;
+private var laser:GameObject;
+
+function StopDragging() {
+	if (!isDragging) return;
+	isDragging = false;
+		selected.gameObject.layer = savedLayer;
+		var pivot = selected.gameObject.transform.parent;
+		Debug.Log("StopDragging: go=" + selected.gameObject + " pivot=" + pivot + " parent=" + (pivot ? pivot.parent : null));
+		selected.gameObject.transform.parent = pivot.parent;
+		Destroy(pivot.gameObject);
+	Screen.showCursor = true;
+	offset = Vector3.zero;
+	Destroy(laser);
+}
+
+public var laserPrefab:Transform;
+public var shoulder:Transform;
 public var pivotPrefab:Transform;
-public var rt:Vector3;
+
+private var lastDragPosition:Vector3;
+private var rt:Vector3;
+
 function Update () {
     var hit:RaycastHit;
-    var pointerRay:Ray;
+    var pointerRay:Ray = cam.ScreenPointToRay(Input.mousePosition + offset);
     var laserStart:Vector3 = shoulder.position;
-    pointerRay = cam.ScreenPointToRay (Input.mousePosition + offset);
 	if (Physics.Raycast(pointerRay, hit)) {
 		if (Input.GetMouseButtonDown(0)) {
-			Debug.Log("down");
-			isDragging = true;
 			var obj:GameObject = hit.collider.gameObject;
+			if (!Physics.Raycast(hit.point, Vector3.down, hit)) { return; }// Nothing under us to drag along
+			isDragging = true;
 			savedLayer = obj.layer;
 			obj.layer = 2; //Ignore Raycast layer.
 			Screen.showCursor = false;
-			if (!Physics.Raycast(hit.point, Vector3.down, hit)) Debug.Log("WTF?");
 			laser = Instantiate(laserPrefab.gameObject);
 			between(laser, laserStart, hit.point, 0.05);
 			laser.transform.parent = gameObject.parent;
@@ -115,13 +117,11 @@ function Update () {
 			lastDragPosition = hit.point;
 			rt = selected.transform.TransformDirection(Vector3.right);
 			var pivot = Instantiate(pivotPrefab, hit.point, selected.transform.rotation);
-			Debug.Log("selected=" + selected + " parent=" + selected.transform.parent + " pivot=" + pivot);
+			Debug.Log("down: selected=" + selected + " parent=" + selected.transform.parent + " pivot=" + pivot);
 			pivot.parent = selected.transform.parent;
 			selected.transform.parent = pivot;
-			Debug.Log("now selected=" + selected + " parent=" + selected.transform.parent);
 			Debug.Log("mouse=" + Input.mousePosition + " contact=" + contact + " offset=" + offset);
 		} else if (Input.GetMouseButtonUp(0)) {
-			Debug.Log("up");
 			StopDragging();
 		} else if (isDragging) {
 			var delta = hit.point - lastDragPosition;
@@ -169,11 +169,10 @@ function Update () {
 			//	selected.transform.parent.right = Vector3.right;
 			//}
 		} else if (hit.collider != selected) {
-			Debug.Log("new");
 			Select(hit.collider);
 		}
 	} else {
-		if (selected) UnSelect();
+		UnSelect();
 	}
 	
 }

@@ -73,19 +73,21 @@ function hitNormal(hit:RaycastHit) {
 // Dragging state
 private var isDragging:boolean = false;
 private var savedLayer:int;
-private var offset:Vector3 = Vector3.zero;
+private var cursorOffsetToSurface:Vector3 = Vector3.zero;
 private var laser:GameObject;
 
 function StopDragging() {
 	if (!isDragging) return;
+	// Reset drag state.
 	isDragging = false;
-		selected.gameObject.layer = savedLayer;
-		var pivot = selected.gameObject.transform.parent;
-		Debug.Log("StopDragging: go=" + selected.gameObject + " pivot=" + pivot + " parent=" + (pivot ? pivot.parent : null));
-		selected.gameObject.transform.parent = pivot.parent;
-		Destroy(pivot.gameObject);
+	cursorOffsetToSurface = Vector3.zero;
+	// Restore dragged object
+	selected.gameObject.layer = savedLayer;
+	var pivot = selected.gameObject.transform.parent;
+	selected.gameObject.transform.parent = pivot.parent;
+	Destroy(pivot.gameObject);
+	// Restore cursor
 	Screen.showCursor = true;
-	offset = Vector3.zero;
 	Destroy(laser);
 }
 
@@ -96,31 +98,36 @@ public var pivotPrefab:Transform;
 private var lastDragPosition:Vector3;
 private var rt:Vector3;
 
+function StartDragging(hit:RaycastHit) {
+	var obj:GameObject = hit.collider.gameObject;
+	if (!Physics.Raycast(hit.point, Vector3.down, hit)) { return; }// Nothing under us to drag along
+	// Set drag state
+	isDragging = true;
+	var contact:Vector3 = cam.WorldToScreenPoint(hit.point);
+	contact.z = 0;
+	cursorOffsetToSurface = contact - Input.mousePosition;
+	lastDragPosition = hit.point;
+	rt = selected.transform.TransformDirection(Vector3.right);
+	// Replace cursor with laser.
+	Screen.showCursor = false;
+	laser = Instantiate(laserPrefab.gameObject);
+	between(laser, shoulder.position, hit.point, 0.05);
+	laser.transform.parent = gameObject.parent; // before we set the gameObject to be under a pivot.
+	// Setup up dragged obj layer and pivot
+	savedLayer = obj.layer;
+	obj.layer = 2; //Ignore Raycast layer.	
+	var pivot = Instantiate(pivotPrefab, hit.point, selected.transform.rotation);
+	pivot.parent = selected.transform.parent;
+	selected.transform.parent = pivot;
+}
+
+
 function Update () {
     var hit:RaycastHit;
-    var pointerRay:Ray = cam.ScreenPointToRay(Input.mousePosition + offset);
-    var laserStart:Vector3 = shoulder.position;
+    var pointerRay:Ray = cam.ScreenPointToRay(Input.mousePosition + cursorOffsetToSurface);
 	if (Physics.Raycast(pointerRay, hit)) {
 		if (Input.GetMouseButtonDown(0)) {
-			var obj:GameObject = hit.collider.gameObject;
-			if (!Physics.Raycast(hit.point, Vector3.down, hit)) { return; }// Nothing under us to drag along
-			isDragging = true;
-			savedLayer = obj.layer;
-			obj.layer = 2; //Ignore Raycast layer.
-			Screen.showCursor = false;
-			laser = Instantiate(laserPrefab.gameObject);
-			between(laser, laserStart, hit.point, 0.05);
-			laser.transform.parent = gameObject.parent;
-			var contact:Vector3 = cam.WorldToScreenPoint(hit.point);
-			contact.z = 0;
-			offset = contact - Input.mousePosition;
-			lastDragPosition = hit.point;
-			rt = selected.transform.TransformDirection(Vector3.right);
-			var pivot = Instantiate(pivotPrefab, hit.point, selected.transform.rotation);
-			Debug.Log("down: selected=" + selected + " parent=" + selected.transform.parent + " pivot=" + pivot);
-			pivot.parent = selected.transform.parent;
-			selected.transform.parent = pivot;
-			Debug.Log("mouse=" + Input.mousePosition + " contact=" + contact + " offset=" + offset);
+			StartDragging(hit);
 		} else if (Input.GetMouseButtonUp(0)) {
 			StopDragging();
 		} else if (isDragging) {
@@ -130,7 +137,7 @@ function Update () {
 				return;
 			}		
 			lastDragPosition = hit.point;
-			between(laser, laserStart, hit.point, 0.1);
+			between(laser, shoulder.position, hit.point, 0.1);
 			var trans:Transform = selected.transform.parent;
 			trans.Translate(delta, Space.World);
 			var norm:Vector3 = hitNormal(hit);

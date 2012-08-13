@@ -125,15 +125,22 @@ function StartDragging(hit:RaycastHit) {
 	// Test the reverse: the surface hit point back to the object.
 	// If it's too far away from the object, then we're not really touching the surface here.                                                                                         
     // First get point 1/100th of the way back towards the center. This is inside the obj bounding box. 
-    var vectorTowardsCenter:Vector3 = (hit.point - obj.transform.position) / 100.0;
-    var offsetSurfacePoint:Vector3 = hit.point + vectorTowardsCenter;              
+    var vectorTowardsCenter:Vector3 = (obj.transform.position - hit.point) / 100.0;
+    var offsetSurfacePoint:Vector3 = hit.point + vectorTowardsCenter;
+    Debug.DrawRay(hit.point, -mountingDirection, Color.red, 10);   // hit normal 
+    Debug.DrawLine(hit.point, obj.transform.position, Color.green, 10); // hit-to-center
     var reverseHit:RaycastHit;                                                                                   
-    if (Physics.Raycast(offsetSurfacePoint, -mountingDirection, reverseHit)
-    	&& (Vector3.Distance(offsetSurfacePoint, reverseHit.point)
-    		> vectorTowardsCenter.magnitude * 2)) {
-    	NotifyUser("This part of the object is not touching a surface.");
-        return;                                                             
-    }
+    if (Physics.Raycast(offsetSurfacePoint, -mountingDirection, reverseHit)) {
+     	Debug.DrawLine(offsetSurfacePoint, reverseHit.point, Color.blue, 10); // reverse strike
+    	if (reverseHit.collider.gameObject === obj) {
+   		  	var dist = Vector3.Distance(offsetSurfacePoint, reverseHit.point);
+    		//Debug.Log('dist:'+ dist + ' toCenter:' + vectorTowardsCenter.magnitude);
+    		if (dist > vectorTowardsCenter.magnitude * 2) {
+    			NotifyUser("This part of the object is not touching a surface. (distance " + dist + ").");
+        		return;
+        	} 
+        }                                                     
+    } 
 
 	// Set drag state
 	isDragging = true;

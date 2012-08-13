@@ -175,45 +175,9 @@ function Update () {
 			var trans:Transform = selected.transform.parent;
 			trans.Translate(delta, Space.World);
 			var norm:Vector3 = hitNormal(hit);
-			//var fwdx:Vector3 = trans.forward;
-			//var upx:Vector3 = trans.up;
-			//var proj:Vector3 = fwdx - (Vector3.Dot(fwdx, hit.normal)) * hit.normal;
-			//var angle = 0.0; var axis = Vector3.zero; transform.rotation.ToAngleAxis(angle, axis); 
-			
-			var up:Vector3 = norm; //trans.TransformDirection(Vector3.up);
-			var proj:float = Vector3.Dot(rt1, up);
-			var aligned:boolean = Mathf.Abs(proj) > 0.9;
-			var fwd:Vector3;
-			if (aligned)
-				//fwd = Vector3.Cross(trans.forward, up);
-				fwd = fwd1;
-			else 
-				fwd = Vector3.Cross(rt1, up);
-			Debug.DrawRay(hit.point, fwd, Color.blue);
-			Debug.DrawRay(hit.point, up, Color.green);
-
-			/*if (Mathf.Abs(Vector3.Dot(fwd2, norm)) > 0.5) {
-				var tmp:Vector3 = fwd2;
-				fwd2 = up2;
-				up2 = tmp;
-			}*/
-			var rot:Quaternion = 
-				//Quaternion.AngleAxis(angle, norm);  // Bad.
-				//Quaternion.LookRotation(fwdx, norm);  // Too stable. Preserves forward forward and up second.
-				//Quaternion.LookRotation(Vector3.forward, norm); // Too stable.
-				//Quaternion.LookRotation(proj, norm); // Mostly like trans.up = norm, below, but not not really.
-				//Quaternion.FromToRotation(upx, norm);  // Very jittery
-				//Quaternion.FromToRotation(Vector3.up, norm); // Works, but sometimes has rotation around local z.
-				Quaternion.LookRotation(fwd, up);
-			trans.rotation = rot;
-			//trans.up = norm;  // same as using FromToRotation(Vector3.up, norm), above.
-			
-			//selected.transform.parent.rotation = Quaternion.FromToRotation(selected.transform.parent.up, norm);
-			//if (Mathf.abs(norm.dot(Vector3.right)) > 0.99) {
-			//	selected.transform.forward = Vector3.forward;
-			//} else {
-			//	selected.transform.parent.right = Vector3.right;
-			//}
+			var aligned:boolean = Mathf.Abs(Vector3.Dot(rt1, norm)) > 0.9;
+			var fwd:Vector3 = aligned ? fwd1 : Vector3.Cross(rt1, norm);
+			trans.rotation = Quaternion.LookRotation(fwd, norm);
 		} else if (hit.collider != selected) {
 			Select(hit.collider);
 		}

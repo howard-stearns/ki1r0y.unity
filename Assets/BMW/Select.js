@@ -25,11 +25,13 @@ function Select(col:Collider) {
 }
 
 function UnSelect() {
+	var didSomething:boolean = isDragging && !!selected;
 	if (isDragging) StopDragging();  // before we unselect.
 	if (selected) {
 		UnHighlight(selected.gameObject);
 		selected = null;
 	}
+	return didSomething;
 }
 
 // Utility functions
@@ -96,26 +98,58 @@ public var shoulder:Transform;
 public var pivotPrefab:Transform;
 
 private var lastDragPosition:Vector3;
-private var rt:Vector3;
+private var rt1:Vector3;
+private var fwd1:Vector3;
+
+function NotifyUser(msg) {
+	// FIXME. Should really be some cool animation showing the problem, rather than text.
+	Debug.LogWarning(msg);
+}
 
 function StartDragging(hit:RaycastHit) {
 	var obj:GameObject = hit.collider.gameObject;
-	if (!Physics.Raycast(hit.point, Vector3.down, hit)) { return; }// Nothing under us to drag along
+	savedLayer = obj.layer;
+	var mountingDirection:Vector3 = -obj.transform.up;
+	
+	// Two Tests:
+		
+	// We will project the hit.point along the mountingDirection until we hit
+	// a surface to slide along. No surface means we give up.
+	obj.layer = 2; // Don't intersect with the object itself.
+	var hasSurface:boolean = Physics.Raycast(hit.point, mountingDirection, hit);
+	obj.layer = savedLayer;
+	if (!hasSurface) { 
+		NotifyUser("Nothing under object to slide along.");
+		return; 
+	}
+	// Test the reverse: the surface hit point back to the object.
+	// If it's too far away from the object, then we're not really touching the surface here.                                                                                         
+    // First get point 1/100th of the way back towards the center. This is inside the obj bounding box. 
+    var vectorTowardsCenter:Vector3 = (hit.point - obj.transform.position) / 100.0;
+    var offsetSurfacePoint:Vector3 = hit.point + vectorTowardsCenter;              
+    var reverseHit:RaycastHit;                                                                                   
+    if (Physics.Raycast(offsetSurfacePoint, -mountingDirection, reverseHit)
+    	&& (Vector3.Distance(offsetSurfacePoint, reverseHit.point)
+    		> vectorTowardsCenter.magnitude * 2)) {
+    	NotifyUser("This part of the object is not touching a surface.");
+        return;                                                             
+    }
+
 	// Set drag state
 	isDragging = true;
 	var contact:Vector3 = cam.WorldToScreenPoint(hit.point);
 	contact.z = 0;
 	cursorOffsetToSurface = contact - Input.mousePosition;
 	lastDragPosition = hit.point;
-	rt = selected.transform.TransformDirection(Vector3.right);
+	rt1 = selected.transform.right; //selected.transform.TransformDirection(Vector3.right);
+	fwd1 = selected.transform.forward;
 	// Replace cursor with laser.
 	Screen.showCursor = false;
 	laser = Instantiate(laserPrefab.gameObject);
 	between(laser, shoulder.position, hit.point, 0.05);
 	laser.transform.parent = gameObject.parent; // before we set the gameObject to be under a pivot.
-	// Setup up dragged obj layer and pivot
-	savedLayer = obj.layer;
-	obj.layer = 2; //Ignore Raycast layer.	
+	// Setup up dragged obj and pivot
+	obj.layer = 2;
 	var pivot = Instantiate(pivotPrefab, hit.point, selected.transform.rotation);
 	pivot.parent = selected.transform.parent;
 	selected.transform.parent = pivot;
@@ -147,9 +181,14 @@ function Update () {
 			//var angle = 0.0; var axis = Vector3.zero; transform.rotation.ToAngleAxis(angle, axis); 
 			
 			var up:Vector3 = norm; //trans.TransformDirection(Vector3.up);
-			var fwd:Vector3 = Mathf.Abs(Vector3.Dot(rt, up)) > 0.9 
-				? trans.TransformDirection(Vector3.forward)
-				: Vector3.Cross(rt, up);
+			var proj:float = Vector3.Dot(rt1, up);
+			var aligned:boolean = Mathf.Abs(proj) > 0.9;
+			var fwd:Vector3;
+			if (aligned)
+				//fwd = Vector3.Cross(trans.forward, up);
+				fwd = fwd1;
+			else 
+				fwd = Vector3.Cross(rt1, up);
 			Debug.DrawRay(hit.point, fwd, Color.blue);
 			Debug.DrawRay(hit.point, up, Color.green);
 
@@ -179,7 +218,7 @@ function Update () {
 			Select(hit.collider);
 		}
 	} else {
-		UnSelect();
+		if (UnSelect()) NotifyUser("You have reached the edge of all surfaces.");
 	}
 	
 }

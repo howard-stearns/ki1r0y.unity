@@ -92,6 +92,14 @@ function StopDragging() {
 	Screen.showCursor = true;
 	Destroy(laser);
 }
+	
+function StopDragging(hit:RaycastHit) {
+	StopDragging();
+	// Make selected a child of the hit.
+	// After things stabilize, this could be combined with the reparenting above.
+	var obj:GameObject = hit.collider.gameObject;
+	selected.gameObject.transform.parent = obj.transform;
+}
 
 public var laserPrefab:Transform;
 public var shoulder:Transform;
@@ -127,11 +135,8 @@ function StartDragging(hit:RaycastHit) {
     // First get point 1/100th of the way back towards the center. This is inside the obj bounding box. 
     var vectorTowardsCenter:Vector3 = (obj.transform.position - hit.point) / 100.0;
     var offsetSurfacePoint:Vector3 = hit.point + vectorTowardsCenter;
-    Debug.DrawRay(hit.point, -mountingDirection, Color.red, 10);   // hit normal 
-    Debug.DrawLine(hit.point, obj.transform.position, Color.green, 10); // hit-to-center
     var reverseHit:RaycastHit;                                                                                   
     if (Physics.Raycast(offsetSurfacePoint, -mountingDirection, reverseHit)) {
-     	Debug.DrawLine(offsetSurfacePoint, reverseHit.point, Color.blue, 10); // reverse strike
     	if (reverseHit.collider.gameObject === obj) {
    		  	var dist = Vector3.Distance(offsetSurfacePoint, reverseHit.point);
     		//Debug.Log('dist:'+ dist + ' toCenter:' + vectorTowardsCenter.magnitude);
@@ -170,7 +175,7 @@ function Update () {
 		if (Input.GetMouseButtonDown(0)) {
 			StartDragging(hit);
 		} else if (Input.GetMouseButtonUp(0)) {
-			StopDragging();
+			StopDragging(hit);
 		} else if (isDragging) {
 			var delta = hit.point - lastDragPosition;
 			if (!selected) {
@@ -182,8 +187,19 @@ function Update () {
 			var trans:Transform = selected.transform.parent;
 			trans.Translate(delta, Space.World);
 			var norm:Vector3 = hitNormal(hit);
-			var aligned:boolean = Mathf.Abs(Vector3.Dot(rt1, norm)) > 0.9;
-			var fwd:Vector3 = aligned ? fwd1 : Vector3.Cross(rt1, norm);
+			var alignedX:boolean = Mathf.Abs(Vector3.Dot(rt1, norm)) > 0.9;
+			var alignedZ:boolean = !alignedX && Mathf.Abs(Vector3.Dot(fwd1, norm)) > 0.9;
+			var fwd:Vector3 = alignedX ? fwd1 : 
+				Vector3.Cross(rt1, norm);
+				/*(alignedZ ? Vector3.Cross(fwd1, rt1) : fwd1); 
+			var hit2:RaycastHit;
+			if (!Physics.Raycast(pointerRay.origin + (fwd*0.1), pointerRay.direction, hit2)) {Debug.Log("second hit failed"); return;}
+			fwd = hit2.point - hit.point;*/
+			if (alignedX) Debug.Log('aligned X');
+			if (alignedZ) Debug.Log('aligned Z');
+			Debug.DrawRay(hit.point, rt1, Color.red);
+			Debug.DrawRay(hit.point, norm, Color.green);
+			Debug.DrawRay(hit.point, fwd.normalized, Color.blue);
 			trans.rotation = Quaternion.LookRotation(fwd, norm);
 		} else if (hit.collider != selected) {
 			Select(hit.collider);

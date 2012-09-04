@@ -1,6 +1,41 @@
+function NotifyUser(msg) {
+	if (Application.isWebPlayer) {
+		//Application.ExternalEval("console.log('" + msg + "');");
+		Application.ExternalCall('notifyUser', msg);
+	} else {	// FIXME. Should really be some cool animation showing the problem, rather than text.
+		print(msg);
+	}
+}
+
+public var testObj:Transform;
+function setImportTarget(coordinates:String) {
+	var stupidNETcharArray:char[] = ['x'[0]];
+	var pair = coordinates.Split(stupidNETcharArray);
+	var x:int = int.Parse(pair[0]);
+	var y:int = int.Parse(pair[1]);
+	var hit:RaycastHit;
+    var pointerRay:Ray = cam.ScreenPointToRay(Vector3(x, y, 0));
+	if (Physics.Raycast(pointerRay, hit)) {
+		NotifyUser('got object ' + hit.transform.gameObject + ' at ' + x + 'x' + y);
+		testObj = hit.transform;
+	}
+}
+
+function importImage(url:String) {
+	var max = url.Length;
+	if (max > 256) max = 128;
+	//NotifyUser('importing: ' + url.Substring(0, max) + ' to ' + testObj.gameObject); //because .NET has to be different. No slice.
+	var www:WWW = new WWW(url);
+    yield www;
+    testObj.renderer.material.mainTexture = www.texture; 
+}
+
+function Start() { importImage('file:///Users/howardstearns/Pictures/avatar.jpg'); }
+
+
 private var cam:Camera;
 
-function Awake () {
+function Awake() {
 	cam = Camera.main;
 }
 
@@ -19,6 +54,7 @@ function UnHighlight(obj:GameObject) {
 public var selected:Collider;
 
 function Select(col:Collider) {
+	NotifyUser('New selection at ' + Input.mousePosition);
 	UnSelect();
 	selected = col;
 	Highlight(selected.gameObject);
@@ -108,11 +144,6 @@ public var pivotPrefab:Transform;
 private var lastDragPosition:Vector3;
 private var rt1:Vector3;
 private var fwd1:Vector3;
-
-function NotifyUser(msg) {
-	// FIXME. Should really be some cool animation showing the problem, rather than text.
-	Debug.LogWarning(msg);
-}
 
 function StartDragging(hit:RaycastHit) {
 	var obj:GameObject = hit.collider.gameObject;

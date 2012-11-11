@@ -1,3 +1,9 @@
+//TODO: Avoid flicker in compound objects. Maybe caused children of moving object being on selectable layer.
+
+function Log(s:String) {
+	//Debug.Log('Select: ' + s);
+}
+
 function NotifyUser(msg) {
 	if (Application.isWebPlayer) {
 		//Application.ExternalEval("console.log('" + msg + "');");
@@ -52,19 +58,27 @@ function UnHighlight(obj:GameObject) {
 
 
 public var selected:Collider;
+function BrowserSelect(obj:Obj) {
+	var id = (obj == null) ? '' : obj.id;
+	if (Application.isWebPlayer) 
+		Application.ExternalCall('select', id);
+	NotifyUser('New selection ' + id + ' @ ' + Input.mousePosition);
+}
+	
 
 function Select(col:Collider) {
-	NotifyUser('New selection at ' + Input.mousePosition);
-	UnSelect();
+	UnSelect(false);
 	selected = col;
 	Highlight(selected.gameObject);
+	BrowserSelect(selected.gameObject.GetComponent(Obj));	
 }
 
-function UnSelect() {
+function UnSelect(force:boolean) {
 	var didSomething:boolean = isDragging && !!selected;
 	if (isDragging) StopDragging();  // before we unselect.
 	if (selected) {
 		UnHighlight(selected.gameObject);
+		if (force) BrowserSelect(null);
 		selected = null;
 	}
 	return didSomething;
@@ -226,8 +240,8 @@ function Update () {
 			var hit2:RaycastHit;
 			if (!Physics.Raycast(pointerRay.origin + (fwd*0.1), pointerRay.direction, hit2)) {Debug.Log("second hit failed"); return;}
 			fwd = hit2.point - hit.point;*/
-			if (alignedX) Debug.Log('aligned X');
-			if (alignedZ) Debug.Log('aligned Z');
+			if (alignedX) Log('aligned X');
+			if (alignedZ) Log('aligned Z');
 			Debug.DrawRay(hit.point, rt1, Color.red);
 			Debug.DrawRay(hit.point, norm, Color.green);
 			Debug.DrawRay(hit.point, fwd.normalized, Color.blue);
@@ -236,7 +250,7 @@ function Update () {
 			Select(hit.collider);
 		}
 	} else {
-		if (UnSelect()) NotifyUser("You have reached the edge of all surfaces.");
+		if (UnSelect(true)) NotifyUser("You have reached the edge of all surfaces.");
 	}
 	
 }

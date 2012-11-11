@@ -1,0 +1,1 @@
+public var id:String; // The BMW persistence id.

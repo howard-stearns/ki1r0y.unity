@@ -1,3 +1,6 @@
+function Log(s:String) {
+	//Debug.Log('Save: ' + s); 
+}
 function sha1(serialized:String) {
 	var sb = new System.Text.StringBuilder();
 	var bytes = System.Text.Encoding.ASCII.GetBytes(serialized);
@@ -7,19 +10,22 @@ function sha1(serialized:String) {
 }
 function uploadData(hash:String, serialized:String) {
 	// Must be separate void function to be yieldable.
- 	Debug.Log(hash + ': ' + serialized); // simulated upload
+ 	Log(hash + ': ' + serialized); // simulated upload
  	var form = new WWWForm();
 	form.AddField('data', serialized);
 	var www = WWW('http://beyondmywall.fe100.net/db/' + hash, form);
 	yield www;
 	if (www.error) print('upload ' + hash + ' failed ' + www.error);
-	else Debug.Log(www.text);
+	else Log(hash + ' uploaded as ' + www.text);
+}
+function store(key:String, data:Hashtable):String {
+	var serialized = JSON.Stringify(data);
+	if (key == '') key = sha1(serialized);
+	uploadData(key, serialized);
+  	return key;
 }
 function store(data:Hashtable):String { // answer hash
-	var serialized = JSON.Stringify(data);
-	var hash = sha1(serialized);
-	uploadData(hash, serialized);
-  	return hash;
+	return store('', data);
 }
 
 function Persist(x:GameObject):Hashtable {
@@ -70,14 +76,14 @@ function AddComponent(p:Hashtable, component:MeshFilter) {
 }
 // Todo: Renderer: list materials[n].mainTexture
 function AddComponent(p:Hashtable, component:Light) {
-	AddProperty(p, 'type', component.type);
-	AddProperty(p, 'instensity', component.intensity.ToString());
+	AddProperty(p, 'type', component.type.ToString());
+	AddProperty(p, 'intensity', component.intensity);
 }
 function AddComponent(p:Hashtable, component:Component) {
 }
 
 function Start () {
-	yield WaitForSeconds(4);
+	yield WaitForSeconds(6);
 	var p = Persist(gameObject);
-	store(p);
+	Debug.Log('top level save ' + JSON.Stringify(p));
 }

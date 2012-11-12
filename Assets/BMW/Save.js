@@ -27,8 +27,7 @@ function store(key:String, data:Hashtable):String {
 function store(data:Hashtable):String { // answer hash
 	return store('', data);
 }
-
-function Persist(x:GameObject):Hashtable {
+function asData(x:GameObject):Hashtable {
 	var shared = new Hashtable(); // Common data for all instances of this object.
 	AddProperty(shared, 'name', x.name);
 	// The component var is deliberately untyped, else the compiler will
@@ -36,7 +35,36 @@ function Persist(x:GameObject):Hashtable {
 	for (var component:Object in x.GetComponents(typeof Component)) {
 		AddComponent(shared, component);
 	}
-	var hash = store(shared);
+	return shared;
+}
+function asString(x:GameObject):String {
+	return JSON.Stringify(asData(x));
+}
+
+// Answers the id of this group. Side effects include:
+//   Uploads data to id IFF needed.
+//   Updates Obj.hash (so we can tell later if a new upload is needed).
+//   Updates Obj.id (to the new hash) IFF it was empty.
+// FIXME: (In Restore.js) Scenes always need upload after change, so there's no point
+// in initializing their Obj.hash when restoring. However, that's not true for other groups.
+function PersistGroup(x:GameObject):String {
+	var obj:Obj = x.GetComponent(Obj);
+	var serialized = asString(x);
+	var hash = sha1(serialized);
+	if (hash == obj.hash) return obj.id; // No need to upload.
+	if (obj.id == '') obj.id = hash; // New object => new id.
+	uploadData(obj.id, serialized);
+	obj.hash = hash;
+	return obj.id;
+}
+function Persist(x:GameObject):Hashtable {
+	var obj:Obj = x.GetComponent(Obj);
+	var serialized = asString(x);
+	var hash = sha1(serialized);
+	if (hash != obj.id) {
+		uploadData(hash, serialized);
+		obj.id = hash;
+	}
 	// Report only this particular instance data to caller.
 	var instance = new Hashtable(); 
 	AddProperty(instance, 'id', hash);
@@ -82,8 +110,8 @@ function AddComponent(p:Hashtable, component:Light) {
 function AddComponent(p:Hashtable, component:Component) {
 }
 
-function Start () {
+/*function Start () {
 	yield WaitForSeconds(6);
-	var p = Persist(gameObject);
-	Debug.Log('top level save ' + JSON.Stringify(p));
-}
+	var p = PersistGroup(gameObject);
+	Debug.Log('top level save ' + p);
+}*/

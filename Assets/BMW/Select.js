@@ -36,7 +36,7 @@ function importImage(url:String) {
     testObj.renderer.material.mainTexture = www.texture; 
 }
 
-function Start() { importImage('file:///Users/howardstearns/Pictures/avatar.jpg'); }
+//function Start() { importImage('file:///Users/howardstearns/Pictures/avatar.jpg'); }
 
 
 private var cam:Camera;
@@ -151,7 +151,7 @@ function StopDragging(hit:RaycastHit) {
 			var root = GameObject.FindWithTag('SceneRoot');
 			saver = root.GetComponent(Save);
 		}
-		saver.PersistGroup(saver.gameObject);
+		saver.Persist(saver.gameObject);
 	}
 }
 

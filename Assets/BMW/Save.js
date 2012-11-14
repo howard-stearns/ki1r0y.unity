@@ -1,32 +1,18 @@
 function Log(s:String) {
-	//Debug.Log('Save: ' + s); 
+	Debug.Log('Save: ' + s); 
 }
-function sha1(serialized:String) {
-	var sb = new System.Text.StringBuilder();
-	var bytes = System.Text.Encoding.ASCII.GetBytes(serialized);
-  	for (var byteChunk in System.Security.Cryptography.SHA1.Create().ComputeHash(bytes)) 
-    	sb.Append(byteChunk.ToString("x2"));
-  	return sb.ToString();
-}
-function uploadData(hash:String, serialized:String) {
+
+function uploadData(id:String, serialized:String) {
 	// Must be separate void function to be yieldable.
- 	Log(hash + ': ' + serialized); // simulated upload
+ 	Log(id + ': ' + serialized); // simulated upload
  	var form = new WWWForm();
 	form.AddField('data', serialized);
-	var www = WWW('http://beyondmywall.fe100.net/db/' + hash, form);
+	var www = WWW('http://beyondmywall.fe100.net/db/' + id, form);
 	yield www;
-	if (www.error) print('upload ' + hash + ' failed ' + www.error);
-	else Log(hash + ' uploaded as ' + www.text);
+	if (www.error) print('upload ' + id + ' failed ' + www.error);
+	else Log(id + ' uploaded as ' + www.text);
 }
-function store(key:String, data:Hashtable):String {
-	var serialized = JSON.Stringify(data);
-	if (key == '') key = sha1(serialized);
-	uploadData(key, serialized);
-  	return key;
-}
-function store(data:Hashtable):String { // answer hash
-	return store('', data);
-}
+
 function asData(x:GameObject):Hashtable {
 	var shared = new Hashtable(); // Common data for all instances of this object.
 	AddProperty(shared, 'name', x.name);
@@ -50,24 +36,29 @@ function asString(x:GameObject):String {
 function PersistGroup(x:GameObject):String {
 	var obj:Obj = x.GetComponent(Obj);
 	var serialized = asString(x);
-	var hash = sha1(serialized);
+	var hash = Utils.sha1(serialized);
+	if ((obj.id == '') || (obj.id == 'G')) obj.id = 'G' + System.Guid.NewGuid().ToString(); // New object => new id. 
 	if (hash == obj.hash) return obj.id; // No need to upload.
-	if (obj.id == '') obj.id = hash; // New object => new id.
 	uploadData(obj.id, serialized);
 	obj.hash = hash;
 	return obj.id;
 }
 function Persist(x:GameObject):Hashtable {
 	var obj:Obj = x.GetComponent(Obj);
-	var serialized = asString(x);
-	var hash = sha1(serialized);
-	if (hash != obj.id) {
-		uploadData(hash, serialized);
-		obj.id = hash;
+	var id:String;
+	if (obj.id[0] == 'G'[0]) { // FIXME: there's some duplication between these branches.
+		id = PersistGroup(x);
+	} else {
+		var serialized = asString(x);
+		id = Utils.sha1(serialized);
+		if (id != obj.id) {
+			uploadData(id, serialized);
+			obj.id = id;
+		}
 	}
 	// Report only this particular instance data to caller.
 	var instance = new Hashtable(); 
-	AddProperty(instance, 'id', hash);
+	AddProperty(instance, 'id', id);
 	if (x.transform.localPosition != Vector3.zero) 
 		AddProperty(instance, 'position', x.transform.localPosition);
 	if (x.transform.localRotation != Quaternion.identity)
@@ -109,9 +100,3 @@ function AddComponent(p:Hashtable, component:Light) {
 }
 function AddComponent(p:Hashtable, component:Component) {
 }
-
-/*function Start () {
-	yield WaitForSeconds(6);
-	var p = PersistGroup(gameObject);
-	Debug.Log('top level save ' + p);
-}*/

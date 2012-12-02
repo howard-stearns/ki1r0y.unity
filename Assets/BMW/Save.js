@@ -1,12 +1,17 @@
 function Log(s:String) {
-	Debug.Log('Save: ' + s); 
+	//Debug.Log('Save: ' + s); 
 }
 
-function uploadData(id:String, serialized:String) {
+function uploadData(id:String, hash:String, serialized:String) {
 	// Must be separate void function to be yieldable.
  	Log(id + ': ' + serialized); // simulated upload
  	var form = new WWWForm();
 	form.AddField('data', serialized);
+	// For groups, the hash is not the same as id, and saves on uploads later if we do persist the hash.
+	// That's just an optimization, and the server is not required to actually save the hash.
+	// Note that the hash cannot be part of the serialized data, as then the hash would be 
+	// circularly dependendant on its own value.
+	if (hash != id) form.AddField('hash', hash);
 	var www = WWW('http://beyondmywall.fe100.net/db/' + id, form);
 	yield www;
 	if (www.error) print('upload ' + id + ' failed ' + www.error);
@@ -37,9 +42,9 @@ function PersistGroup(x:GameObject):String {
 	var obj:Obj = x.GetComponent(Obj);
 	var serialized = asString(x);
 	var hash = Utils.sha1(serialized);
-	if ((obj.id == '') || (obj.id == 'G')) obj.id = 'G' + System.Guid.NewGuid().ToString(); // New object => new id. 
+	if (obj.id == 'G') obj.id = 'G' + System.Guid.NewGuid().ToString(); // New object => new id. 
 	if (hash == obj.hash) return obj.id; // No need to upload.
-	uploadData(obj.id, serialized);
+	uploadData(obj.id, hash, serialized);
 	obj.hash = hash;
 	return obj.id;
 }
@@ -52,7 +57,7 @@ function Persist(x:GameObject):Hashtable {
 		var serialized = asString(x);
 		id = Utils.sha1(serialized);
 		if (id != obj.id) {
-			uploadData(id, serialized);
+			uploadData(id, id, serialized);
 			obj.id = id;
 		}
 	}

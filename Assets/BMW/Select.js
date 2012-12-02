@@ -140,19 +140,20 @@ function StopDragging() {
 }
 	
 private var saver:Save;
+function saveScene() {
+	if (saver == null) {
+		var root = GameObject.FindWithTag('SceneRoot');
+		saver = root.GetComponent(Save);
+	}
+	saver.Persist(saver.gameObject);
+}
 function StopDragging(hit:RaycastHit) {
 	StopDragging();
 	// Make selected a child of the hit.
 	// After things stabilize, this could be combined with the reparenting above.
 	var obj:GameObject = hit.collider.gameObject;
 	selected.gameObject.transform.parent = obj.transform;
-	if (Vector3.Distance(firstDragPosition, lastDragPosition) > 0.2) {
-		if (saver == null) {
-			var root = GameObject.FindWithTag('SceneRoot');
-			saver = root.GetComponent(Save);
-		}
-		saver.Persist(saver.gameObject);
-	}
+	if (Vector3.Distance(firstDragPosition, lastDragPosition) > 0.2)  saveScene();
 }
 
 public var laserPrefab:Transform;
@@ -163,6 +164,25 @@ private var lastDragPosition:Vector3;
 private var firstDragPosition:Vector3; // For debouncing click vs drag;
 private var rt1:Vector3;
 private var fwd1:Vector3;
+
+// FIXME: Move this to update so as to be independent of load.
+// FIXME: Set the distance to travel in StartDragging, but don't actually
+// start moving until we're actually dragging, and cancel if no drag.
+/*function animateSelectionToSurface(displacement:Vector3) {
+	var span = 0.500;   
+	var interval = 0.025;
+	var trans = selected.transform;
+	if (displacement.sqrMagnitude < 0.02) {
+		trans.localPosition += displacement;
+		return;
+	}
+	var steps = span/interval;
+	var increment = displacement / steps;
+	while (steps-- > 0) {
+		trans.localPosition += increment;
+		yield WaitForSeconds(interval);
+	}
+}*/
 
 function StartDragging(hit:RaycastHit) {
 	var obj:GameObject = hit.collider.gameObject;
@@ -180,22 +200,15 @@ function StartDragging(hit:RaycastHit) {
 		NotifyUser("Nothing under object to slide along.");
 		return; 
 	}
-	// Test the reverse: the surface hit point back to the object.
-	// If it's too far away from the object, then we're not really touching the surface here.                                                                                         
-    // First get point 1/100th of the way back towards the center. This is inside the obj bounding box. 
-    var vectorTowardsCenter:Vector3 = (obj.transform.position - hit.point) / 100.0;
-    var offsetSurfacePoint:Vector3 = hit.point + vectorTowardsCenter;
-    var reverseHit:RaycastHit;                                                                                   
-    if (Physics.Raycast(offsetSurfacePoint, -mountingDirection, reverseHit)) {
-    	if (reverseHit.collider.gameObject === obj) {
-   		  	var dist = Vector3.Distance(offsetSurfacePoint, reverseHit.point);
-    		//Log('dist:'+ dist + ' toCenter:' + vectorTowardsCenter.magnitude);
-    		if (dist > vectorTowardsCenter.magnitude * 2) {
-    			NotifyUser("This part of the object is not touching a surface. (distance " + dist + ").");
-        		return;
-        	} 
-        }                                                     
-    } 
+	
+    // Now the reverse: the surface hit point back to the object.
+	// Move that point down to the hit.point.
+    var reverseHit:RaycastHit;  
+    // but use a point "below" the hit.point (into surface, by depth of object) so we can catch embedded objects.
+    var embeddedPoint = hit.point + (mountingDirection * obj.transform.localScale.magnitude);                                                                             
+    if (Physics.Raycast(embeddedPoint, -mountingDirection, reverseHit))  // else no need to adjust (e.g., same point)
+		//selected.transform.localPosition += (hit.point - reverseHit.point);
+		selected.transform.localPosition += (hit.point - reverseHit.point);
 
 	// Set drag state
 	isDragging = true;
@@ -240,8 +253,7 @@ function Update () {
 			var norm:Vector3 = hitNormal(hit);
 			var alignedX:boolean = Mathf.Abs(Vector3.Dot(rt1, norm)) > 0.9;
 			var alignedZ:boolean = !alignedX && Mathf.Abs(Vector3.Dot(fwd1, norm)) > 0.9;
-			var fwd:Vector3 = alignedX ? fwd1 : 
-				Vector3.Cross(rt1, norm);
+			var fwd:Vector3 = alignedX ? fwd1 : Vector3.Cross(rt1, norm);
 				/*(alignedZ ? Vector3.Cross(fwd1, rt1) : fwd1); 
 			var hit2:RaycastHit;
 			if (!Physics.Raycast(pointerRay.origin + (fwd*0.1), pointerRay.direction, hit2)) {Log("second hit failed"); return;}
@@ -252,11 +264,18 @@ function Update () {
 			Debug.DrawRay(hit.point, norm, Color.green);
 			Debug.DrawRay(hit.point, fwd.normalized, Color.blue);
 			trans.rotation = Quaternion.LookRotation(fwd, norm);
+			if (Application.isWebPlayer) {
+				// While local values (relative to parent) might make more sense to 
+				// experts, they will just be confusing to most users, so just use global.
+				var pos = trans.position;
+				var rot = trans.eulerAngles;
+				Application.ExternalCall('updatePosition', pos.x, pos.y, pos.z);
+				Application.ExternalCall('updateRotation', rot.x, rot.y, rot.z);
+			}
 		} else if (hit.collider != selected) {
 			Select(hit.collider);
 		}
 	} else {
 		if (UnSelect(true)) NotifyUser("You have reached the edge of all surfaces.");
-	}
-	
+	}	
 }

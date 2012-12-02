@@ -20,7 +20,7 @@ public var db =
  '{"children" : [{"id" : "24faf820e829988a6b831d15ec4c25220bc7971e","position" : {"x" : 8.450162,"y" : -0.0377996,"z" : 4.243648},"rotation" : {"w" : 0.7071067,"x" : 0,"y" : 0,"z" : 0.7071068}},{"id" : "d307898c060a157923211768ee1c09da6b07b00c","position" : {"x" : 2.200287,"y" : 0.6813452,"z" : 2.953255},"rotation" : {"w" : 0.9116248,"x" : 0.08803673,"y" : 0.2966023,"z" : -0.2705861}},{"id" : "441c5fb6468a649eaa83db1dc3d09d8b67077b0e","position" : {"x" : 3.470267,"y" : -2.294606,"z" : 4.272788}},{"id" : "e85b09aa48f25c0e0436729f3334a29dcf343cd8","position" : {"x" : 3.488311,"y" : -0.9996749,"z" : 9.101078},"rotation" : {"w" : 0.7071067,"x" : -0.7071068,"y" : 0,"z" : 0}},{"id" : "d5c9358048b484a083423e09d5bc3f32ada45622","position" : {"x" : 5.909942,"y" : -1.832091,"z" : 3.089984},"rotation" : {"w" : 0.9008605,"x" : 0,"y" : -0.4341087,"z" : 0}},{"id" : "665c7030bab074f9f6a455003eda1f40b4b72009","position" : {"x" : 0.9262815,"y" : -1.153377,"z" : 5.923676},"scale" : {"x" : 2,"y" : 2,"z" : 2}},{"id" : "da25a18cd08161823d3bcb1e295bf8ae843db65f","position" : {"x" : 3.50061,"y" : -1.294861,"z" : 4.245239},"scale" : {"x" : 1,"y" : 2,"z" : 1}}],"name" : "TestStage"}'
 };
 function Log(s:String) {
-	Debug.Log('Restore: ' + s);
+//	Debug.Log('Restore: ' + s);
 }
 
 function makeVector3(data:Hashtable):Vector3 {
@@ -40,6 +40,8 @@ function Restore(id:String):GameObject {
 function Fill(go:GameObject, id:String, data:Hashtable) {
 	var obj:Obj = go.AddComponent(Obj);
 	obj.id = id;
+	if (id[0] != 'G'[0]) obj.hash = id;
+	else obj.hash = data.hash;
 	go.name = data['name'];
 	for (var childData:Hashtable in data['children']) {
 		var child = Restore(childData['id']);  
@@ -59,7 +61,14 @@ function Fetch(id):WWW {
 }
 function Parsed(www:WWW):Hashtable {
 	var serialization = www.text;
-	return JSON.Parse(serialization);
+	var data = JSON.Parse(serialization);
+	// Handle the case of groups, in which data can be {data: dataWithoutHash, hash: hash}
+	if (data['hash']) {
+		var realData = data['data'];
+		realData['hash'] = data['hash'];
+		data = realData;
+	}
+	return data;
 	// return db[id]; // simulation of server fetch
 }
 

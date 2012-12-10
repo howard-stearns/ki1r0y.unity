@@ -1,14 +1,14 @@
 class Spin extends Directional {
 
-var centerPoint:Vector3;
-var firstPoint:Vector3; // Let's change this name to clickPoint.
-var startV:Vector3;
+private var centerPoint:Vector3;
+private var firstPoint:Vector3; // Let's change this name to clickPoint.
+private var startV:Vector3;
 public var outsideAngle:float = 90;
 public var insideAngle:float = -90;
-var initAngle:float;
-var isOutside:boolean;
-var norm:Vector3;
-var onEdge:boolean;
+private var initAngle:float;
+private var isOutside:boolean;
+private var norm:Vector3;
+private var onEdge:boolean;
 function startDragging(assembly:Transform, axis:Transform, plane:Transform, cameraRay:Ray, hit:RaycastHit) {
 	norm = axis.right; 
 	// There are two distinct modes: we can click on the outside-or-inside face of the disk, 

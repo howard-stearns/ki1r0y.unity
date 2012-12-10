@@ -1,5 +1,5 @@
 class Slide extends Directional {
-var firstPoint:Vector3;
+private var firstPoint:Vector3;
 // Project p onto axis. i.e., we don't care about being to the side of the axis.
 function constrain(axis:Transform, p:Vector3):Vector3 {
 	var vNormalized = axis.right;

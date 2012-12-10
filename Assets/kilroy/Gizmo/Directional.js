@@ -1,13 +1,13 @@
 class Directional extends MonoBehaviour {
 public var highlightColor:Color;		// defaults to red/green/blue for x/y/z
 public var normalColor:Color;  	// defaults to a muted version of highlighColor
-var assembly:Transform;  // The object to be transformed.
+public var assembly:Transform;  // The object to be transformed.
 public var planeName = 'GridTarget';
 // Update() checks on mouse down for ANY intersection with our collider.
 // There are multiple affordances, but OnMouseEnter will only fire for one
 // at a time, so isActive guards against multiple scripts firing.
-var isActive = false; // Hot, highlighted.
-var isMoving = false; // In the processing of being dragged around.
+private var isActive = false; // Hot, highlighted.
+private var isMoving = false; // In the processing of being dragged around.
 function OnMouseEnter () {
 	Debug.Log('enter');
 	if (assembly.parent && (assembly.parent.name == planeName)) return; // Already dragging by someone (not necessarilly this axis).
@@ -24,7 +24,7 @@ function OnMouseExit () {
 // (that have a subclass of this script attached), which are all arranged into a composite
 // gameObject associated with either the local x, y, or z axis of an object. That composite
 // is the 'axis'.
-var axis:Transform; 
+private var axis:Transform; 
 public var targetAlpha:float = 0.99;
 function Awake() {
 	axis = transform.parent;
@@ -37,14 +37,14 @@ function Awake() {
 	if (normalColor == Color.clear) normalColor = highlightColor / 1.33;
 	renderer.material.color = normalColor;
 	//renderer.material.SetColor("_Emission", normalColor); // In case the scene is dark.
-	assembly = axis.parent.parent;
+	if (assembly == null) assembly = axis.parent.parent;
 }
 // While moving, we insert a plane into the scene graph, just above the assembly.
 public var showPlane = false;
-var plane:GameObject;
+private var plane:GameObject;
 // Returned by startDragging. 
 // Usually the plane.collider, but OnEdge Spinners answer the collider we're attached to.
-var dragCollider:Collider; 
+private var dragCollider:Collider; 
 function startDragging1(cameraRay:Ray, hit:RaycastHit) {
 	isMoving = true;
 	plane = GameObject.CreatePrimitive(PrimitiveType.Plane);

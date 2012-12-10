@@ -1,13 +1,13 @@
 class Stretch extends Directional {
-var firstPoint:Vector3;
-var firstScale:float;
+private var firstPoint:Vector3;
+private var firstScale:float;
 function constrain(axis:Transform, p:Vector3):Vector3 {
 	var vNormalized = axis.right;
 	var dot = Vector3.Dot(vNormalized, p - firstPoint);
 	var proj = dot * vNormalized;
 	return firstPoint + proj;
 }
-var assemblyIndex:int;
+private var assemblyIndex:int;
 function setAssemblyIndex(assembly:Transform, axis:Transform) { // Assumes we're in some orthogonal orientation!
 	var xInAssembly = assembly.InverseTransformDirection(axis.right);
 	var i; var biggest = 0;

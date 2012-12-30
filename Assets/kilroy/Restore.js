@@ -131,6 +131,7 @@ function RestoreScene(id:String) {
 
 public var sceneId:String = '21697b1b5dea23c59dcf00e3e7e65b572bed68e5';
 function Awake () {
+	if (!enabled) { return; }
 	//if (Application.isEditor) 
 		RestoreScene(sceneId);
 }

@@ -49,6 +49,7 @@ function PersistGroup(x:GameObject):String {
 	return obj.id;
 }
 function Persist(x:GameObject):Hashtable {
+	if (!enabled) return new Hashtable();  // for debugging/experiments
 	var obj:Obj = x.GetComponent(Obj);
 	var id:String;
 	if (obj.id[0] == 'G'[0]) { // FIXME: there's some duplication between these branches.

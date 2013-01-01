@@ -24,13 +24,13 @@ function OnMouseExit () {
 // (that have a subclass of this script attached), which are all arranged into a composite
 // gameObject associated with either the local x, y, or z axis of an object. That composite
 // is the 'axis'.
-private var axis:Transform; 
-public var targetAlpha:float = 0.99;
-function Awake() {
+public var axis:Transform; 
+public var targetAlpha:float = 0.9;
+function Start() {
 	axis = transform.parent;
 	if (highlightColor == Color.clear) {
 		// A pun: axis.right is 1,0,0 for x axis, and so is red. Similarly for y/green and z/blue.
-		var colorVector:Vector4 = axis.right;
+		var colorVector:Vector4 = axis.parent.InverseTransformDirection(axis.right);
 		colorVector.w = targetAlpha;
 		highlightColor = colorVector;
 	}

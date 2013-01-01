@@ -1,5 +1,11 @@
 public var id = ''; // The BMW persistence id.
 
+function isGroup() {
+	if (id == '') return false;
+	return id[0] == 'G'[0];
+}
+
+
 // Usually empty or same as id, but cand be different for groups (such as scenes).
 // Used to determine if there's been a change.
 public var hash = ''; 
@@ -14,10 +20,8 @@ function GameObjectPath(obj:GameObject):String {
 }
 
 // The Select script defines a selected var, which includes hover-selection.
-// FIXME: adjust the terminology.
 
-// NB: Doc says this doesn't work on iPhone. What does?
-function OnMouseDown() {
+function ExternalPropertyEdit() {
 	var path = GameObjectPath(gameObject);
 	Debug.Log('click ' + id + ' ' + path);
 	Debug.Log('localScale ' + gameObject.transform.localScale.ToString() + ' globalScale: ' + gameObject.transform.lossyScale.ToString());
@@ -32,6 +36,11 @@ function OnMouseDown() {
 		Application.ExternalCall('props', path, gameObject.name, scale.x, scale.y, scale.z);
 	}
 }
+
+//function OnMouseDown() { ExternalPropertyEdit(); }
+
+// Now incorporated into Select.StopDragging().
+//function OnMouseUpAsButton () { Debug.Log('upAsButton'); Camera.main.transform.parent.GetComponent(Goto).Goto(transform); }
 
 private var saver:Save;
 function saveScene() {

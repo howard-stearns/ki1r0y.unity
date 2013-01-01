@@ -5,9 +5,15 @@ function trackMouseMotion(enabled:boolean) {
 	for (var script:MouseLook in looks) script.enabled = enabled;
 }
 
+public var lock = false;
+function trackMouseMotion(enabled:boolean, doLock:boolean) {
+	trackMouseMotion(enabled);
+	lock = doLock;
+}
+
 // Note that iPhone doesn't have OnMouse<mumble>.
-function OnMouseEnter() { trackMouseMotion(true); }
-function OnMouseDown() { trackMouseMotion(true); }
+function OnMouseEnter() { if (lock) return; trackMouseMotion(true); }
+function OnMouseDown() { if (lock) return; trackMouseMotion(true); }
 
 function OnMouseExit() { trackMouseMotion(false); }
 function Update() {

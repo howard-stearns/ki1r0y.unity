@@ -9,6 +9,17 @@ private var initAngle:float;
 private var isOutside:boolean;
 private var norm:Vector3;
 private var onEdge:boolean;
+
+function Start() {
+	super.Start();
+	var zDot = Vector3.Dot(Vector3(0, 0, 1), axis.parent.InverseTransformDirection(axis.right));
+	if (zDot > 0.9) {
+		outsideAngle = 180;
+		insideAngle = 0;
+		Debug.Log('We are Z: ' + axis + ' ' + zDot);
+	}
+}
+
 function startDragging(assembly:Transform, axis:Transform, plane:Transform, cameraRay:Ray, hit:RaycastHit) {
 	norm = axis.right; 
 	// There are two distinct modes: we can click on the outside-or-inside face of the disk, 

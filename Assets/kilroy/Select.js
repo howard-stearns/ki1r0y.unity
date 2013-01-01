@@ -40,36 +40,80 @@ function importImage(url:String) {
 
 
 private var cam:Camera;
+public var selectMaterial:Material;
+private var oscillateStartColor:Color;
 function Awake() {
 	cam = Camera.main;
+	oscillateStartColor = selectMaterial.color;
+	if (overlayControls == null) overlayControls = GameObject.Find('PlayerOverlay').GetComponent(OverlayControls);
 }
 
+private var oldMaterial:Material;
 private var oldColor:Color;
+private var oscillateStart = 0.0;
+public var period = (2 * 0.8)/(2 * Mathf.PI); 
 function Highlight(obj:GameObject) {
-	oldColor = obj.renderer.material.color;
-	obj.renderer.material.color = Color.green;
+	if (!obj.renderer) return;  // Attempt to highlight the avatar or some such
+	oldMaterial = obj.renderer.material;
+	var mat = Material(selectMaterial);
+	obj.renderer.material = mat;
+	oscillateStart = Time.time;
+	mat.SetColor('_Emission', Color.black);
+	mat.color = Color.black;
+	while (oscillateStart != 0.0) {
+		var fraction = (1 + Mathf.Sin((Time.time - oscillateStart)/period)) /2.0;
+		//var fraction = Mathf.PingPong(Time.time - oscillateStart, 1.0);
+		mat.color = fraction * oscillateStartColor;
+		mat.SetColor('_Emission', (1 - fraction) * oscillateStartColor);
+		yield;
+	}
+	/*oldColor = obj.renderer.material.color;
+	obj.renderer.material.color = Color.green;*/
 }
 function UnHighlight(obj:GameObject) {
-	obj.renderer.material.color = oldColor;
+	if (oldMaterial == null) return;
+	if (obj.renderer == null) return;
+	var mat = obj.renderer.material;
+	obj.renderer.material = oldMaterial;
+	Destroy(mat);
+	oscillateStart = 0;
+	//obj.renderer.material.color = oldColor;
 }
 
+
+public var gizmoPrefab:Transform;
+public var gizmo:Transform;
+public var overlayControls:OverlayControls;
+function StopGizmo() {
+	if (!gizmo) return;
+	gizmo.parent = null;
+	Destroy(gizmo.gameObject);
+	gizmo = null;
+}
+function StartGizmo(trans:Transform) {
+	StopGizmo();
+	gizmo = Instantiate(gizmoPrefab, trans.position, trans.rotation).transform;
+	gizmo.parent = trans;
+	overlayControls.trackMouseMotion(false, true);
+}
 
 public var selected:Collider;
 function BrowserSelect(obj:Obj) {
 	var id = (obj == null) ? '' : obj.id;
 	// Now handled by Obj.OnMouseDown
 	//if (Application.isWebPlayer) Application.ExternalCall('select', id);
-	NotifyUser('New selection ' + id + ' @ ' + Input.mousePosition);
+	// FIXME restore: NotifyUser('New selection ' + id + ' @ ' + Input.mousePosition);
 }
+
 function Select(col:Collider) {
 	UnSelect(false);
 	selected = col;
 	Highlight(selected.gameObject);
-	BrowserSelect(selected.gameObject.GetComponent(Obj));	
+	BrowserSelect(selected.gameObject.GetComponent(Obj));
 }
-function UnSelect(force:boolean) {
+function UnSelect(force:boolean) { // May or may not have been dragging. Answer true if we were.
 	var didSomething:boolean = isDragging && !!selected;
-	if (isDragging) StopDragging();  // before we unselect.
+	StopDragging();  // before we unselect.
 	if (selected) {
 		UnHighlight(selected.gameObject);
 		if (force) BrowserSelect(null);
@@ -122,15 +166,27 @@ private var savedLayer:int;
 private var cursorOffsetToSurface:Vector3 = Vector3.zero;
 private var laser:GameObject;
 
+function SetAssemblyLayer(obj:GameObject, layer:int) {
+	obj.layer = layer;
+	for (var child:Transform in obj.transform) {
+		SetAssemblyLayer(child.gameObject, layer);
+	}
+}
+
 function StopDragging() {
 	if (!isDragging) return;
 	// Reset drag state.
 	isDragging = false;
 	cursorOffsetToSurface = Vector3.zero;
 	// Restore dragged object
-	selected.gameObject.layer = savedLayer;
+	SetAssemblyLayer(selected.gameObject, savedLayer);
+	// FIXME remove selected.gameObject.layer = savedLayer;
 	var pivot = selected.gameObject.transform.parent;
 	selected.gameObject.transform.parent = pivot.parent;
+	if (pivot.parent) Debug.LogError('*** onStop Non-null pivot parent ' + pivot.parent);
+	if (pivot.localScale != Vector3(1, 1, 1)) Debug.LogError('*** onstop Non-unity pivot scale ' + pivot.localScale);
+	
+	//Debug.Log('removal: pivot parent:' + pivot.parent + ' selected scale:' + selected.transform.localScale + ' was:' + FIXMEoldScale);
 	// Destroy merely schedules destruction. We don't want pivot in the hierarchy (e.g., during saving).
 	pivot.parent = null; 
 	Destroy(pivot.gameObject);
@@ -143,9 +199,9 @@ private var saver:Save;
 function saveScene() {
 	if (saver == null) {
 		var root = GameObject.FindWithTag('SceneRoot');
-		saver = root.GetComponent(Save);
+		if (root != null) saver = root.GetComponent(Save);
 	}
-	saver.Persist(saver.gameObject);
+	if (saver != null) saver.Persist(saver.gameObject);
 }
 function StopDragging(hit:RaycastHit) {
 	StopDragging();
@@ -153,7 +209,9 @@ function StopDragging(hit:RaycastHit) {
 	// After things stabilize, this could be combined with the reparenting above.
 	var obj:GameObject = hit.collider.gameObject;
 	selected.gameObject.transform.parent = obj.transform;
+	Debug.Log('reparenting:' + obj + ' selected scale:' + selected.transform.localScale);
 	if (Vector3.Distance(firstDragPosition, lastDragPosition) > 0.2)  saveScene();
+	else Camera.main.transform.parent.GetComponent(Goto).Goto(selected.transform);
 }
 
 public var laserPrefab:Transform;
@@ -164,6 +222,119 @@ private var lastDragPosition:Vector3;
 private var firstDragPosition:Vector3; // For debouncing click vs drag;
 private var rt1:Vector3;
 private var fwd1:Vector3;
+
+function StartDragging(hit:RaycastHit) {
+	var obj:GameObject = hit.collider.gameObject;
+	savedLayer = obj.layer;
+	var mountingDirection:Vector3 = -obj.transform.up;
+	
+	// Two Tests:
+		
+	// We will project the hit.point along the mountingDirection until we hit
+	// a surface to slide along. No surface means we give up.
+	
+	//obj.layer = 2; // Don't intersect with the object itself.
+	SetAssemblyLayer(obj, 2); //Don't intersect with the object itself.
+	var selectedHit = hit.point;
+	// Push the selectedHit a bit towards the obj center, so that we don't miss the edge on reversal.
+	selectedHit += (obj.renderer.bounds.center - selectedHit).normalized * 0.1;
+	var hasSurface:boolean = Physics.Raycast(selectedHit, mountingDirection, hit);
+	//obj.layer = savedLayer;
+	if (!hasSurface) { 
+		NotifyUser("Nothing under object to slide along.");
+		SetAssemblyLayer(obj, savedLayer);
+		return; 
+	}
+
+    // Now the reverse: the surface hit point back to the object.
+	// Move that point down to the hit.point.
+    var reverseHit:RaycastHit; 
+    // But use a point "below" the hit.point (into surface, by depth of object) so we can catch embedded objects.
+    var embeddedPoint = hit.point + (mountingDirection * obj.transform.localScale.magnitude);   
+ 	if (obj.collider.Raycast(Ray(embeddedPoint, -mountingDirection), reverseHit, Mathf.Infinity)) {
+    	Debug.Log('hit:' + hit.point + ' reverse:' + reverseHit.point);
+		selected.transform.position += (hit.point - reverseHit.point);
+	} else { 
+		Debug.LogError('** No reverse hit! **');
+	}
+	// Set drag state
+	isDragging = true;
+	var contact:Vector3 = cam.WorldToScreenPoint(hit.point);
+	contact.z = 0;
+	cursorOffsetToSurface = contact - Input.mousePosition;
+	lastDragPosition = hit.point;
+	firstDragPosition = hit.point;
+	rt1 = selected.transform.right; //selected.transform.TransformDirection(Vector3.right);
+	fwd1 = selected.transform.forward;
+	// Replace cursor with laser.
+	Screen.showCursor = false;
+	laser = Instantiate(laserPrefab.gameObject);
+	between(laser, shoulder.position, hit.point, 0.05);
+	laser.transform.parent = transform; // avatar (or whatever script is attached to)
+	// Setup up dragged obj and pivot
+	//obj.layer = 2;
+	var pivot = Instantiate(pivotPrefab, hit.point, selected.transform.rotation);
+	if (pivot.parent) Debug.LogError('*** onstart Non-null pivot parent ' + pivot.parent);
+	if (pivot.localScale != Vector3(1, 1, 1)) Debug.LogError('*** onstart Non-unity pivot scale ' + pivot.localScale);
+	pivot.parent = transform.parent;   // Not the selected parent (as that plays havoc with scale).
+	selected.transform.parent = pivot;
+}
+
+function DoDragging(hit:RaycastHit) {
+	var delta = hit.point - lastDragPosition;
+	lastDragPosition = hit.point;
+	between(laser, shoulder.position, hit.point, 0.1);
+	var trans:Transform = selected.transform.parent;
+	trans.Translate(delta, Space.World);
+	var norm:Vector3 = hitNormal(hit);
+	var alignedX:boolean = Mathf.Abs(Vector3.Dot(rt1, norm)) > 0.9;
+	var alignedZ:boolean = !alignedX && Mathf.Abs(Vector3.Dot(fwd1, norm)) > 0.9;
+	var fwd:Vector3 = alignedX ? fwd1 : Vector3.Cross(rt1, norm);
+			/*(alignedZ ? Vector3.Cross(fwd1, rt1) : fwd1); 
+			var hit2:RaycastHit;
+			if (!Physics.Raycast(pointerRay.origin + (fwd*0.1), pointerRay.direction, hit2)) {Log("second hit failed"); return;}
+			fwd = hit2.point - hit.point;*/
+		if (alignedX) Log('aligned X');
+		if (alignedZ) Log('aligned Z');
+		Debug.DrawRay(hit.point, rt1, Color.red);
+		Debug.DrawRay(hit.point, norm, Color.green);
+		Debug.DrawRay(hit.point, fwd.normalized, Color.blue);
+	trans.rotation = Quaternion.LookRotation(fwd, norm);
+	if (Application.isWebPlayer) {
+		// While local values (relative to parent) might make more sense to 
+		// experts, they will just be confusing to most users, so just use global.
+		var pos = trans.position;
+		var rot = trans.eulerAngles;
+		Application.ExternalCall('updatePosition', pos.x, pos.y, pos.z);
+		Application.ExternalCall('updateRotation', rot.x, rot.y, rot.z);
+	}
+}
+
+function Update () {
+	if (gizmo) {
+		if (Input.GetAxis("Horizontal") || Input.GetAxis("Vertical")) StopGizmo();
+		return;
+	}
+    var hit:RaycastHit;
+    var pointerRay:Ray = cam.ScreenPointToRay(Input.mousePosition + cursorOffsetToSurface);
+	if (Physics.Raycast(pointerRay, hit, Mathf.Infinity, (1<<0))) {
+		if (Input.GetMouseButtonDown(1) || Input.GetMouseButtonDown(2)) {
+			Debug.Log('Meta button');
+			StartGizmo(hit.transform);
+		} else if (Input.GetMouseButtonDown(0)) { 
+			StartDragging(hit);
+		} else if (Input.GetMouseButtonUp(0)) {
+			StopDragging(hit);
+		} else if (isDragging) {
+			if (!selected) { StopDragging(); return; }
+			DoDragging(hit);		
+		} else if (hit.collider != selected) {
+			Select(hit.collider);
+		}
+	} else {
+		if (UnSelect(true)) NotifyUser("You have reached the edge of all surfaces.");
+	}	
+}
 
 // FIXME: Move this to update so as to be independent of load.
 // FIXME: Set the distance to travel in StartDragging, but don't actually
@@ -183,99 +354,3 @@ private var fwd1:Vector3;
 		yield WaitForSeconds(interval);
 	}
 }*/
-
-function StartDragging(hit:RaycastHit) {
-	var obj:GameObject = hit.collider.gameObject;
-	savedLayer = obj.layer;
-	var mountingDirection:Vector3 = -obj.transform.up;
-	
-	// Two Tests:
-		
-	// We will project the hit.point along the mountingDirection until we hit
-	// a surface to slide along. No surface means we give up.
-	obj.layer = 2; // Don't intersect with the object itself.
-	var hasSurface:boolean = Physics.Raycast(hit.point, mountingDirection, hit);
-	obj.layer = savedLayer;
-	if (!hasSurface) { 
-		NotifyUser("Nothing under object to slide along.");
-		return; 
-	}
-	
-    // Now the reverse: the surface hit point back to the object.
-	// Move that point down to the hit.point.
-    var reverseHit:RaycastHit;  
-    // but use a point "below" the hit.point (into surface, by depth of object) so we can catch embedded objects.
-    var embeddedPoint = hit.point + (mountingDirection * obj.transform.localScale.magnitude);                                                                             
-    if (Physics.Raycast(embeddedPoint, -mountingDirection, reverseHit))  // else no need to adjust (e.g., same point)
-		//selected.transform.localPosition += (hit.point - reverseHit.point);
-		selected.transform.localPosition += (hit.point - reverseHit.point);
-
-	// Set drag state
-	isDragging = true;
-	var contact:Vector3 = cam.WorldToScreenPoint(hit.point);
-	contact.z = 0;
-	cursorOffsetToSurface = contact - Input.mousePosition;
-	lastDragPosition = hit.point;
-	firstDragPosition = hit.point;
-	rt1 = selected.transform.right; //selected.transform.TransformDirection(Vector3.right);
-	fwd1 = selected.transform.forward;
-	// Replace cursor with laser.
-	Screen.showCursor = false;
-	laser = Instantiate(laserPrefab.gameObject);
-	between(laser, shoulder.position, hit.point, 0.05);
-	laser.transform.parent = gameObject.parent; // before we set the gameObject to be under a pivot.
-	// Setup up dragged obj and pivot
-	obj.layer = 2;
-	var pivot = Instantiate(pivotPrefab, hit.point, selected.transform.rotation);
-	pivot.parent = selected.transform.parent;
-	selected.transform.parent = pivot;
-}
-
-
-function Update () {
-    var hit:RaycastHit;
-    var pointerRay:Ray = cam.ScreenPointToRay(Input.mousePosition + cursorOffsetToSurface);
-	if (Physics.Raycast(pointerRay, hit)) {
-		if (Input.GetMouseButtonDown(0)) {
-			StartDragging(hit);
-		} else if (Input.GetMouseButtonUp(0)) {
-			StopDragging(hit);
-		} else if (isDragging) {
-			var delta = hit.point - lastDragPosition;
-			if (!selected) {
-				StopDragging();
-				return;
-			}		
-			lastDragPosition = hit.point;
-			between(laser, shoulder.position, hit.point, 0.1);
-			var trans:Transform = selected.transform.parent;
-			trans.Translate(delta, Space.World);
-			var norm:Vector3 = hitNormal(hit);
-			var alignedX:boolean = Mathf.Abs(Vector3.Dot(rt1, norm)) > 0.9;
-			var alignedZ:boolean = !alignedX && Mathf.Abs(Vector3.Dot(fwd1, norm)) > 0.9;
-			var fwd:Vector3 = alignedX ? fwd1 : Vector3.Cross(rt1, norm);
-				/*(alignedZ ? Vector3.Cross(fwd1, rt1) : fwd1); 
-			var hit2:RaycastHit;
-			if (!Physics.Raycast(pointerRay.origin + (fwd*0.1), pointerRay.direction, hit2)) {Log("second hit failed"); return;}
-			fwd = hit2.point - hit.point;*/
-			if (alignedX) Log('aligned X');
-			if (alignedZ) Log('aligned Z');
-			Debug.DrawRay(hit.point, rt1, Color.red);
-			Debug.DrawRay(hit.point, norm, Color.green);
-			Debug.DrawRay(hit.point, fwd.normalized, Color.blue);
-			trans.rotation = Quaternion.LookRotation(fwd, norm);
-			if (Application.isWebPlayer) {
-				// While local values (relative to parent) might make more sense to 
-				// experts, they will just be confusing to most users, so just use global.
-				var pos = trans.position;
-				var rot = trans.eulerAngles;
-				Application.ExternalCall('updatePosition', pos.x, pos.y, pos.z);
-				Application.ExternalCall('updateRotation', rot.x, rot.y, rot.z);
-			}
-		} else if (hit.collider != selected) {
-			Select(hit.collider);
-		}
-	} else {
-		if (UnSelect(true)) NotifyUser("You have reached the edge of all surfaces.");
-	}	
-}

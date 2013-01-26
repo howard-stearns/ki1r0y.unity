@@ -84,8 +84,10 @@ function setupCameraAnimation(trans:Transform) {
 		(2 * Mathf.Tan(Mathf.Deg2Rad * Camera.main.fieldOfView/2));
 	var distByWidth = horizontalMax /
 		(2 * Mathf.Tan(Mathf.Deg2Rad * Camera.main.fieldOfView*Camera.main.aspect/2));
+	var obj = trans.GetComponent(Obj);
+	var facing = obj ? trans.TransformDirection(obj.localFacing) : -trans.forward;
 	cameraEndPos = trans.position 
-				- (trans.forward * (horizontalMax/2 + Mathf.Max(distByHeight, distByWidth)));
+				+ (facing * (horizontalMax/2 + Mathf.Max(distByHeight, distByWidth)));
 	cameraEndRot = Quaternion.LookRotation(trans.position - cameraEndPos);
 }
 
@@ -122,7 +124,62 @@ enum GotoState {
 }
 var state = GotoState.None;
 
+function DescribeMesh(o:GameObject) {
+	var m = o.GetComponent(MeshFilter).mesh;
+	var min = m.bounds.center - m.bounds.extents;
+	var max = m.bounds.center + m.bounds.extents;
+	//Debug.Log('bounds: ' + m.bounds.size + ' @' + m.bounds.center);
+	//Debug.Log('min:' + min + ' max:' + max);
+	/*for (var i = 0; i < m.vertexCount; i++) {
+		var uv = m.uv[i];
+		if ((uv == Vector2(0, 0)) || (uv == Vector2(1, 1))) {
+			Debug.Log('' + i + ': ' + m.vertices[i] + ' => ' + m.uv[i]);
+		}
+	}*/	
+	Debug.Log('world min:' + o.transform.TransformPoint(min) + ' max:' + o.transform.TransformPoint(max));
+}
+
+/*function Wrap(picture:GameObject, obj:GameObject) {
+	
+	var pm = picture.GetComponent(MeshFilter).mesh;
+	var p1 = picture.transform.TransformPoint(pm.bounds.center - pm.bounds.extents);
+	var p2 = picture.transform.TransformPoint(pm.bounds.center + pm.bounds.extents);
+	var pNNormal =  -picture.transform.up;
+	Debug.Log('p1:' + p1 + ' p2:' + p2);
+	var hit1:RaycastHit; var hit2:RaycastHit;
+	if (obj.collider.Raycast(Ray(p1 - pNNormal, pNNormal), hit1, Mathf.Infinity)) {
+		Debug.Log('p1 hit:' + hit1.point + ' normal:' + hit1.normal + ' uv:' + hit1.textureCoord);
+	} else Debug.LogError('No p1 hit');
+	if (obj.collider.Raycast(Ray(p2 - pNNormal, pNNormal), hit2, Mathf.Infinity)) {
+		Debug.Log('p2 hit:' + hit2.point + ' normal:' + hit2.normal + ' uv:' + hit2.textureCoord);
+	} else Debug.LogError('No p1 hit');
+
+	var minU = Mathf.Min(hit1.textureCoord.x, hit2.textureCoord.x);
+	var minV = Mathf.Min(hit1.textureCoord.y, hit2.textureCoord.y);
+	var maxU = Mathf.Max(hit1.textureCoord.x, hit2.textureCoord.x);
+	var maxV = Mathf.Max(hit1.textureCoord.y, hit2.textureCoord.y);
+	var scale = Vector2(1/(maxU - minU), 1/(maxV - minV));
+	var offset = Vector2(minU, minV);
+	// I'm not sure why the -1 is necessary: maybe because planes are left handed, but uv space is not.
+	var offsetScaled = Vector2(scale.x * offset.x * -1, scale.y * offset.y * -1);
+	Debug.Log('scale: ' + scale + ' offset:' + offset 
+			+ ' scale.x:' + scale.x + ' scale.y:' + scale.y 
+			+ ' offset.x:' + offset.x + ' offset.y' + offset.y
+			+ ' offsetScaled:' + offsetScaled);
+	obj.renderer.material.mainTexture = picture.renderer.material.mainTexture;
+	obj.renderer.material.mainTextureScale = scale;
+	obj.renderer.material.mainTextureOffset = offsetScaled;
+	Debug.Log('after scale: ' + scale + ' offset:' + offset + ' offsetScaled:' + offsetScaled); 
+	Debug.Log('textur scale: ' + obj.renderer.material.mainTextureScale + ' offset:' + obj.renderer.material.mainTextureOffset); 
+}*/
+
 function Goto(trans:Transform) {
+	if (trans == currentSite) {
+		trans.parent.gameObject.SendMessage("Wrap", trans.gameObject, SendMessageOptions.DontRequireReceiver);
+		//trans.gameObject.GetComponent(PictureDrawing).Wrap(trans.parent.gameObject);
+		//Wrap(trans.gameObject, trans.parent.gameObject);
+		return;
+	}
 	currentSite = trans;
 	setupCameraAnimation(trans);
 	setupAvatarAnimation(trans);

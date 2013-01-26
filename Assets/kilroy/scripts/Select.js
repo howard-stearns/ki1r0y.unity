@@ -41,51 +41,54 @@ function importImage(url:String) {
 
 private var cam:Camera;
 public var selectMaterial:Material;
-private var oscillateStartColor:Color;
 function Awake() {
 	cam = Camera.main;
-	oscillateStartColor = selectMaterial.color;
 	if (overlayControls == null) overlayControls = GameObject.Find('PlayerOverlay').GetComponent(OverlayControls);
+	//importImage('file:///Users/howardstearns/Beyond-My-Wall/server/kilroy/public/images/logo.jpg');
 }
 
-private var oldMaterial:Material;
-private var oldColor:Color;
+private var oldMaterials:Material[];
 private var oscillateStart = 0.0;
 public var period = (2 * 0.8)/(2 * Mathf.PI); 
 function Highlight(obj:GameObject) {
 	if (!obj.renderer) return;  // Attempt to highlight the avatar or some such
-	oldMaterial = obj.renderer.material;
-	var mat = Material(selectMaterial);
-	obj.renderer.material = mat;
+	oldMaterials = obj.renderer.sharedMaterials;
+	var mats = obj.renderer.materials;
+	obj.renderer.materials = mats;
+	obj.SendMessage("NewMaterials", null, SendMessageOptions.DontRequireReceiver);
 	oscillateStart = Time.time;
-	mat.SetColor('_Emission', Color.black);
-	mat.color = Color.black;
+	//mat.SetColor('_Emission', Color.white);
 	while (oscillateStart != 0.0) {
-		var fraction = (1 + Mathf.Sin((Time.time - oscillateStart)/period)) /2.0;
+		var fraction = (1 + Mathf.Sin((Time.time - oscillateStart)/period + Mathf.PI/2.0)) /2.0;
 		//var fraction = Mathf.PingPong(Time.time - oscillateStart, 1.0);
-		mat.color = fraction * oscillateStartColor;
-		mat.SetColor('_Emission', (1 - fraction) * oscillateStartColor);
+		fraction = fraction / 3.0 + 0.666667;
+		for (var i = 0; i < mats.Length && i < oldMaterials.Length; i++) {
+			mats[i].color = fraction * oldMaterials[i].color;
+			//mat.SetColor('_Emission', (1 - fraction) * oscillateStartColor);
+		}
 		yield;
 	}
-	/*oldColor = obj.renderer.material.color;
-	obj.renderer.material.color = Color.green;*/
 }
 function UnHighlight(obj:GameObject) {
-	if (oldMaterial == null) return;
+	if (!oldMaterials || !oldMaterials.length) return;
 	if (obj.renderer == null) return;
-	var mat = obj.renderer.material;
-	obj.renderer.material = oldMaterial;
-	Destroy(mat);
+	obj.renderer.sharedMaterials = oldMaterials;
 	oscillateStart = 0;
-	//obj.renderer.material.color = oldColor;
+	obj.SendMessage("NewMaterials", null, SendMessageOptions.DontRequireReceiver);
+	oldMaterials = null;
+	//mat.color = oscillateStartColor;
+	//Destroy(mat);
 }
 
 
 public var gizmoPrefab:Transform;
 public var gizmo:Transform;
+public var gizmodParent:Transform;
 public var overlayControls:OverlayControls;
 function StopGizmo() {
 	if (!gizmo) return;
+	gizmo.parent.parent = gizmodParent;
+	gizmodParent = null;
 	gizmo.parent = null;
 	Destroy(gizmo.gameObject);
 	gizmo = null;
@@ -94,6 +97,9 @@ function StartGizmo(trans:Transform) {
 	StopGizmo();
 	gizmo = Instantiate(gizmoPrefab, trans.position, trans.rotation).transform;
 	gizmo.parent = trans;
+	// trans.parent.localScale will mess us up:
+	gizmodParent = trans.parent;
+	trans.parent = transform; // e.g. avatar
 	overlayControls.trackMouseMotion(false, true);
 }
 
@@ -108,6 +114,7 @@ function BrowserSelect(obj:Obj) {
 function Select(col:Collider) {
 	UnSelect(false);
 	selected = col;
+	Debug.Log("highlighting " + selected);
 	Highlight(selected.gameObject);
 	BrowserSelect(selected.gameObject.GetComponent(Obj));
 }
@@ -226,7 +233,9 @@ private var fwd1:Vector3;
 function StartDragging(hit:RaycastHit) {
 	var obj:GameObject = hit.collider.gameObject;
 	savedLayer = obj.layer;
-	var mountingDirection:Vector3 = -obj.transform.up;
+	var trans = obj.transform;
+	var comp = obj.GetComponent(Obj);
+	var mountingDirection = comp ? trans.TransformDirection(comp.localMounting) : -trans.up;
 	
 	// Two Tests:
 		
@@ -250,12 +259,13 @@ function StartDragging(hit:RaycastHit) {
 	// Move that point down to the hit.point.
     var reverseHit:RaycastHit; 
     // But use a point "below" the hit.point (into surface, by depth of object) so we can catch embedded objects.
-    var embeddedPoint = hit.point + (mountingDirection * obj.transform.localScale.magnitude);   
- 	if (obj.collider.Raycast(Ray(embeddedPoint, -mountingDirection), reverseHit, Mathf.Infinity)) {
+    var embeddedPoint = hit.point + (mountingDirection * obj.renderer.bounds.size.magnitude); //obj.transform.localScale.magnitude);  
+    var reverseRay = Ray(embeddedPoint, -mountingDirection);
+ 	if (obj.collider.Raycast(reverseRay, reverseHit, Mathf.Infinity)) {  // Requires that plane colliders are convex=true!
     	Debug.Log('hit:' + hit.point + ' reverse:' + reverseHit.point);
 		selected.transform.position += (hit.point - reverseHit.point);
 	} else { 
-		Debug.LogError('** No reverse hit! **');
+		Debug.LogError('** No reverse hit! ** hit:' + hit.point + ' mounting:' + mountingDirection + ' embedded:' + embeddedPoint);
 	}
 	// Set drag state
 	isDragging = true;

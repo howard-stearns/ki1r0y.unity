@@ -40,8 +40,8 @@ function Restore(id:String):GameObject {
 function Fill(go:GameObject, id:String, data:Hashtable) {
 	var obj:Obj = go.AddComponent(Obj);
 	obj.id = id;
-	if (id[0] != 'G'[0]) obj.hash = id;
-	else obj.hash = data.hash;
+	if (obj.isGroup()) obj.hash = data.hash;
+	else obj.hash = id;
 	go.name = data['name'];
 	for (var childData:Hashtable in data['children']) {
 		var child = Restore(childData['id']);  

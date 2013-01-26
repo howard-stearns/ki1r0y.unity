@@ -1,10 +1,12 @@
 public var id = ''; // The BMW persistence id.
+public var localMounting = Vector3(0, -1, 0);
+public var localFacing = Vector3(0, 0, -1);
+public var isPlane = false;
 
 function isGroup() {
 	if (id == '') return false;
 	return id[0] == 'G'[0];
 }
-
 
 // Usually empty or same as id, but cand be different for groups (such as scenes).
 // Used to determine if there's been a change.

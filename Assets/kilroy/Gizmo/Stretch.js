@@ -43,6 +43,6 @@ function doDragging(assembly:Transform, axis:Transform, plane:Transform, hit:Ray
 	case 2: assembly.localScale.z = s; break;
 	}
 	//assembly.localScale[0] = s; //adjust for our orientation
-	Debug.Log('d:' + d.ToString() + ' d0:' + d0.ToString() + ' s:' + s.ToString() + assembly.localScale.ToString());
+	//Debug.Log('d:' + d.ToString() + ' d0:' + d0.ToString() + ' s:' + s.ToString() + assembly.localScale.ToString());
 }
 }

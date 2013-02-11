@@ -9,13 +9,13 @@ public var planeName = 'GridTarget';
 private var isActive = false; // Hot, highlighted.
 private var isMoving = false; // In the processing of being dragged around.
 function OnMouseEnter () {
-	Debug.Log('enter');
+	//Debug.Log('enter');
 	if (assembly.parent && (assembly.parent.name == planeName)) return; // Already dragging by someone (not necessarilly this axis).
 	isActive = true;
 	if (!isMoving) renderer.material.color = highlightColor;
 }
 function OnMouseExit () {
-	Debug.Log('leave');  
+	//Debug.Log('leave');  
 	isActive = false;
 	if (isMoving) return;
     renderer.material.color = normalColor;

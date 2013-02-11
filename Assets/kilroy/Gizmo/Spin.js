@@ -16,7 +16,7 @@ function Start() {
 	if (zDot > 0.9) {
 		outsideAngle = 180;
 		insideAngle = 0;
-		Debug.Log('We are Z: ' + axis + ' ' + zDot);
+		//Debug.Log('We are Z: ' + axis + ' ' + zDot);
 	}
 }
 

@@ -1,7 +1,8 @@
-public var id = ''; // The BMW persistence id.
+// Standard behavior for each kilroy object in the scene graph. 
+// (Attach to each such object. id and hash are set by Save/Restore scripts.)
+public var id = ''; // The Kilroy persistence id.
 public var localMounting = Vector3(0, -1, 0);
 public var localFacing = Vector3(0, 0, -1);
-public var isPlane = false;
 
 function isGroup() {
 	if (id == '') return false;
@@ -12,6 +13,16 @@ function isGroup() {
 // Used to determine if there's been a change.
 public var hash = ''; 
 
+public var kind = '';
+function Start() {
+	if (kind == '') {
+		var m = gameObject.GetComponent(MeshFilter);
+		if (m != null)  kind = m.sharedMesh.name;
+	}
+	if (kind == 'Plane') localFacing = Vector3(0, 1, 0);
+}
+
+// Answers the scene graph path to obj, suitable for use in Find().
 function GameObjectPath(obj:GameObject):String {
     var path = "/" + obj.name;
     while (obj.transform.parent != null) {
@@ -20,15 +31,28 @@ function GameObjectPath(obj:GameObject):String {
     }
     return path;
 }
+public static var selectedId = null;
+public static function SceneSelect() {
+	if (selectedId != null) {
+		selectedId = null;
+		Debug.Log('browser select scene');
+		if (Application.isWebPlayer) {
+			Application.ExternalCall('notifyUser', 'scene');
+			Application.ExternalCall('select', null);
+		}
+	}
+}
 
-// The Select script defines a selected var, which includes hover-selection.
-
-function ExternalPropertyEdit() {
+// Tell external property editor about this object's editable properties.
+function ExternalPropertyEdit(tabName:String) {
 	var path = GameObjectPath(gameObject);
-	Debug.Log('click ' + id + ' ' + path);
-	Debug.Log('localScale ' + gameObject.transform.localScale.ToString() + ' globalScale: ' + gameObject.transform.lossyScale.ToString());
+	selectedId = id;
+	Debug.Log('browser select ' + id + ' ' + path + ' ' + tabName);
+	//Debug.Log('localScale ' + gameObject.transform.localScale.ToString() + ' globalScale: ' + gameObject.transform.lossyScale.ToString());
 	if (Application.isWebPlayer) {
+		Application.ExternalCall('notifyUser', id + ' ' + tabName + ' ' + path);
 		Application.ExternalCall('select', id);
+		Application.ExternalCall('tabSelect', tabName);
 		var pos = gameObject.transform.localPosition;
 		var rot = gameObject.transform.localEulerAngles; //Not what we persist, but easier for users.
 		var scale = gameObject.transform.lossyScale;
@@ -39,21 +63,23 @@ function ExternalPropertyEdit() {
 	}
 }
 
-//function OnMouseDown() { ExternalPropertyEdit(); }
-
-// Now incorporated into Select.StopDragging().
-//function OnMouseUpAsButton () { Debug.Log('upAsButton'); Camera.main.transform.parent.GetComponent(Goto).Goto(transform); }
-
-private var saver:Save;
-function saveScene() {
+public var saver:Save; // Save script, if available.
+function Awake() { // Initialize saver, if available.
 	if (saver == null) {
-		var root = GameObject.FindWithTag('SceneRoot');
-		saver = root.GetComponent(Save);
+		var root = GameObject.FindWithTag('SceneRoot'); // Tag, because it could be named anything.
+		if (root != null) saver = root.GetComponent(Save);
 	}
+}
+function saveScene() { // Save whatever needs to be saved from the whole scene (or silently skip if not set up to save).
+	if (saver == null || !saver.enabled) return;
 	Application.ExternalCall('notifyUser', 'now '+ transform.position.ToString() + ' ' + transform.eulerAngles.ToString() + ' ' + transform.lossyScale.ToString());
 	saver.Persist(saver.gameObject);
 }
-// SendMessage in the browser can only send one (String) argument (other than the path), so we nee separate functions 
+
+/*****************************************************************************************/
+// The following are all messages sent from outside, to change a property of this object.
+// e.g., from browser-based property editors using GetUnity().SentMessage(path, functionName, singleArgument).
+// SendMessage in the browser can only send one (String) argument (other than the path), so we need separate functions 
 // for each of these.
 function setPositionX(v:String) {var vec = transform.position; transform.position = Vector3(parseFloat(v), vec.y, vec.z); saveScene();}
 function setPositionY(v:String) {var vec = transform.position; transform.position = Vector3(vec.x, parseFloat(v), vec.z); saveScene();}
@@ -74,7 +100,7 @@ function setScale(v:String, index:int) {
 	transform.localScale = reorientedGlobal;
 	dbg += ' new:' + transform.lossyScale.ToString();
 	Application.ExternalCall('notifyUser', dbg);
-//	saveScene();
+	saveScene();
 }
 function setScaleX(v:String) {setScale(v, 0);}
 function setScaleY(v:String) {setScale(v, 1);}

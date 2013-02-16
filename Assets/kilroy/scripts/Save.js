@@ -2,6 +2,7 @@ function Log(s:String) {
 	//Debug.Log('Save: ' + s); 
 }
 
+
 function uploadData(id:String, hash:String, serialized:String) {
 	// Must be separate void function to be yieldable.
  	Log(id + ': ' + serialized); // simulated upload
@@ -12,7 +13,8 @@ function uploadData(id:String, hash:String, serialized:String) {
 	// Note that the hash cannot be part of the serialized data, as then the hash would be 
 	// circularly dependendant on its own value.
 	if (hash != id) form.AddField('hash', hash);
-	var www = WWW('http://beyondmywall.fe100.net/db/' + id, form);
+	var host = (Application.isEditor) ? 'localhost:3000':'beyondmywall.fe100.net';
+	var www = WWW('http://' + host + '/db/' + id, form);
 	yield www;
 	if (www.error) print('upload ' + id + ' failed ' + www.error);
 	else Log(id + ' uploaded as ' + www.text);

@@ -1,5 +1,5 @@
 // BUGS:
-// Drag orientation not stable.
+// Drag orientation not s table.
 // Overlapping picture won't wrap. (Bug in PictureDrawing.)
 
 function Log(s:String) {
@@ -13,30 +13,97 @@ function NotifyUser(msg) {
 		print(msg);
 	}
 }
+function StatusMessageStart(msg) {
+	if (Application.isWebPlayer) {
+		Application.ExternalCall('statusMessageStart', msg);
+	} else {
+		Debug.LogWarning(msg);
+	}
+}
+function StatusMessageUpdate(msg, update, progress) {
+	if (Application.isWebPlayer) {
+		Application.ExternalCall('statusMessageUpdate', msg, update, progress);
+	} else {
+		Debug.LogWarning(msg + ': ' + (update || 'completed') + ' ' + progress);
+	}
+}
+
 private var cam:Camera;  // The camera in which screen coordinates are defined.
 
-public var testObj:Transform;
+///////////////////////////////////////////////////////////////////
+// File drag and drop.
+// Message from the browser to here can only take one argument.
+// We break file drop into two messages:
+//    setImportTarget('ddxdd')   - once per drop
+//    setImportFilename('name') - once per file
+//    importImage('URL') - once per file in the drop (file URL in editor, data url in browser)
+public var dropTarget:RaycastHit;
+public var picturePrefab:Transform;
 function setImportTarget(coordinates:String) {
 	var stupidNETcharArray:char[] = ['x'[0]];
 	var pair = coordinates.Split(stupidNETcharArray);
 	var x:int = int.Parse(pair[0]);
 	var y:int = int.Parse(pair[1]);
-	var hit:RaycastHit;
     var pointerRay:Ray = cam.ScreenPointToRay(Vector3(x, y, 0));
-	if (Physics.Raycast(pointerRay, hit)) {
-		NotifyUser('got object ' + hit.transform.gameObject + ' at ' + x + 'x' + y);
-		testObj = hit.transform;
-	}
+	if (Physics.Raycast(pointerRay, dropTarget)) {
+		NotifyUser('got object ' + dropTarget.transform.gameObject + ' at ' + x + 'x' + y);
+	} else Debug.LogError('no drop target found at ' + x + 'x' + y);
+}
+public var currentDropFilename:String;
+function setImportFilename(name:String) {
+	// In the browser, the importImage url will be a data url, which does not have a filename.
+	// But we need a filename in order to be able to give the user meaningful
+	// error/progress messages.
+	currentDropFilename = name;
 }
 function importImage(url:String) {
 	var max = url.Length;
 	if (max > 256) max = 128;
-	//NotifyUser('importing: ' + url.Substring(0, max) + ' to ' + testObj.gameObject); //because .NET has to be different. No slice.
+	NotifyUser('importing: ' + url.Substring(0, max) + ' to ' + dropTarget.point); //because .NET has to be different. No slice.
+
 	var www:WWW = new WWW(url);
     yield www;
-    testObj.renderer.material.mainTexture = www.texture; 
+    NotifyUser('received import data');
+    var v = dropTarget.point - cam.transform.position;
+    var pos = cam.transform.position + (v / 2);
+    var rot = Quaternion.LookRotation(-v);
+    var pict = Instantiate(picturePrefab, pos, rot);
+    pict.transform.Rotate(90, 0, 0);
+    pict.transform.parent = GameObject.FindWithTag('SceneRoot').transform;
+    var mat = Material(pict.renderer.sharedMaterial);
+    mat.mainTexture = www.texture;
+    pict.renderer.material = mat;
+    
+    var form = new WWWForm();
+   	var bytes = www.texture.EncodeToPNG(); // Our upload is always image/png, regardless of drop.
+   	var id = Utils.sha1(bytes);
+    form.AddBinaryData('fileUpload', bytes, currentDropFilename, 'image/png');
+    var host = (Application.isEditor) ? 'localhost:3000':'beyondmywall.fe100.net';
+    // Media upload is generally pretty slow, and we don't want the user
+    // to exit the browser or close their laptop during that time, so we
+    // we let the user know what's happening.
+    // IWBNI we showed upload progress, but WWW.uploadProgress is broken in the Web player.
+    var msg = 'saving ' + currentDropFilename;
+    StatusMessageStart(msg);
+	www = WWW('http://' + host + '/resources/' + id, form);
+	yield www;
+	var result = www.error ? 'failed upload of ' : 'saved ';
+	result += currentDropFilename + ': ' + (www.error || www.text);
+	StatusMessageUpdate(msg, result, 1.0);
 }
 
+function Start() {
+	if (Application.isWebPlayer) return;
+	var basename = 'avatar.jpg';
+	var furl = 'file:///Users/howardstearns/Pictures/' + basename;
+	yield WaitForSeconds(4);
+	Debug.Log('import ' + basename);
+	setImportTarget('374x300');
+	setImportFilename(basename);
+	importImage(furl); 
+}
+
+///////////////////////////////////////////////////////////////////
 // Utility functions
 function between(verticalObject, p1, p2, width) {
 	var offsetToCenter:Vector3 = (p1 - p2) / 2.0;
@@ -235,13 +302,17 @@ function StartDragging(hit:RaycastHit) {
     var embeddedPoint = surfaceHit.point + (mountingDirection * obj.renderer.bounds.size.magnitude); //obj.transform.localScale.magnitude);  
     var reverseRay = Ray(embeddedPoint, -mountingDirection);
     var offset = Vector3.zero;
- 	if (obj.collider.Raycast(reverseRay, reverseHit, Mathf.Infinity)) {  // Requires that plane colliders are convex=true!
+    var isMeshCollider = obj.GetComponent(MeshCollider) != null;
+    var oldConvex = isMeshCollider && obj.collider.convex;
+    if (isMeshCollider) obj.collider.convex = true;  // so raycast can hit back of plane
+ 	if (obj.collider.Raycast(reverseRay, reverseHit, Mathf.Infinity)) { 
  		offset = surfaceHit.point - reverseHit.point;
        	Debug.Log('hit:' + surfaceHit.point + ' reverse:' + reverseHit.point + ' offset:' + offset);
 		dragged.position += offset;
 	} else { 
 		Debug.LogError('** No reverse hit! ** hit:' + surfaceHit.point + ' mounting:' + mountingDirection + ' embedded:' + embeddedPoint);
 	}
+	if (isMeshCollider) obj.collider.convex = oldConvex;
 	// Set drag state
 	firstDragPosition = surfaceHit.point;
 	lastDragPosition = firstDragPosition;
@@ -345,12 +416,9 @@ function Update () {
 }
 
 /************************************************************************************/
-//function Start() { importImage('file:///Users/howardstearns/Pictures/avatar.jpg'); }
-
 function Awake() {
 	cam = Camera.main;
 	if (overlayControls == null) overlayControls = GameObject.Find('PlayerOverlay').GetComponent(OverlayControls);
-	//importImage('file:///Users/howardstearns/Beyond-My-Wall/server/kilroy/public/images/logo.jpg');
 }
 
 

@@ -21,7 +21,24 @@ function OnMouseEnter() { if (lock) return; trackMouseMotion(true); }
 // Enable mouse look when we click anywhere in the player, unless locked.
 function OnMouseDown() { if (lock) return; trackMouseMotion(true); }
 
+// Keep track of each mouse motion start position, so we can spring back to it when exiting.
+//var firstMouse = Vector3(-1, -1, 0);
 // Disable mouse look when the mouse leaves the player.
-function OnMouseExit() { trackMouseMotion(false); }
+function OnMouseExit() { 
+	trackMouseMotion(false);
+//	if (firstMouse.x >= 0) Debug.Log('pretending to spring back to ' + firstMouse);
+}
 // Disable mouse look when we press 'escape'.
-function Update() { if (Input.GetKeyUp(KeyCode.Escape)) trackMouseMotion(false); }
+// Commented out: Record firstMouse for use by onMouseExit;
+//var lastMouse = firstMouse;
+function Update() {
+	if (Input.GetKeyUp(KeyCode.Escape)) {
+		//firstMouse.x = -1;  // Turn off springback.
+		trackMouseMotion(false);
+	} /*else if (Input.mousePosition == lastMouse) {
+		firstMouse.x = -1;
+		lastMouse = Input.mousePosition;
+	} else if (firstMouse.x < 0) {
+		firstMouse = Input.mousePosition;
+	}*/
+}

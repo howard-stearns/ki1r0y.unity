@@ -418,7 +418,7 @@ function Update () {
 /************************************************************************************/
 function Awake() {
 	cam = Camera.main;
-	if (overlayControls == null) overlayControls = GameObject.Find('PlayerOverlay').GetComponent(OverlayControls);
+	if (overlayControls == null) overlayControls = GameObject.Find('/PlayerOverlay').GetComponent(OverlayControls);
 }
 
 

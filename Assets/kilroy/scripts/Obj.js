@@ -35,12 +35,19 @@ public static var selectedId = null;
 public static function SceneSelect() {
 	if (selectedId != null) {
 		selectedId = null;
-		Debug.Log('browser select scene');
+		var sname = GameObject.FindWithTag('SceneRoot').name;
+		Debug.Log('browser select scene ' + sname);
 		if (Application.isWebPlayer) {
-			Application.ExternalCall('notifyUser', 'scene');
 			Application.ExternalCall('select', null);
+			Application.ExternalCall('props', '/', sname);
 		}
 	}
+}
+function deleteObject() {
+	var path = GameObjectPath(gameObject);
+	transform.parent = null;
+	Destroy(gameObject);
+	Application.ExternalCall('notifyUser', 'deleted:' + path);
 }
 
 // Tell external property editor about this object's editable properties.

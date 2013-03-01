@@ -92,7 +92,7 @@ function importImage(url:String) {
 	StatusMessageUpdate(msg, result, 1.0);
 }
 
-function Start() {
+/* FIXME function Start() {
 	if (Application.isWebPlayer) return;
 	var basename = 'avatar.jpg';
 	var furl = 'file:///Users/howardstearns/Pictures/' + basename;
@@ -101,7 +101,7 @@ function Start() {
 	setImportTarget('374x300');
 	setImportFilename(basename);
 	importImage(furl); 
-}
+}*/
 
 ///////////////////////////////////////////////////////////////////
 // Utility functions
@@ -171,7 +171,7 @@ function Highlight(obj:GameObject) {
 	}
 }
 // Remove highlighting from obj. Behavior is undefined if obj was not the most recently highlighted.
-function UnHighlight() { UnHighlight(selection.gameObject); }
+function UnHighlight() { if (selection != null) UnHighlight(selection.gameObject); }
 function UnHighlight(obj:GameObject) {
 	if (obj.renderer == null) return;
 	if (!oldMaterials || !oldMaterials.length) return;

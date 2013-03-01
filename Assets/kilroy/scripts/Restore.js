@@ -118,7 +118,7 @@ function Parsed(www:WWW):Hashtable {
 public var blockPrototype:Transform;
 function Inflate(temp:GameObject, id:String) {
 	var www = Fetch(id);
-	Debug.Log('fetching ' + www.url);
+	Log('fetching ' + www.url);
    	yield www;
 	var data:Hashtable = Parsed(www);
 	//Log('Inflating ' + data['name'] + ' into ' + id);
@@ -165,14 +165,35 @@ function KillFloor():IEnumerator {
 		KillFloor();
 	}
 }
+function FindObj(obj:Transform, id:String):boolean {
+	var comp = obj.GetComponent(Obj);
+	if ((comp != null) && (comp.id == id)) {
+		Camera.main.transform.parent.GetComponent(Goto).Goto(obj);
+		return true;
+	}
+	for (var child in obj) {
+		if (FindObj(child, id)) return true;
+	}
+	return false;
+}
+function GotoObj(objId:String):IEnumerator {
+	if (FindObj(transform, objId)) return;
+	yield WaitForSeconds(0.5);
+	GotoObj(objId);
+}
 
-function RestoreScene(id:String) {
+function RestoreScene(combo:String) {
+	var stupidNETcharArray:char[] = [':'[0]];
+	var pair = combo.Split(stupidNETcharArray);
+	var id = pair[0]; var objId = pair[1];
 	Application.ExternalCall('notifyUser', 'restoring ' + id);
 	var www = Fetch(id);
    	yield www;
 	var data:Hashtable = Parsed(www);
 	Fill(gameObject, id, data);
 	KillFloor();
+	if (objId && (objId != id)) GotoObj(objId);
+	else Obj.SceneSelect(true);
 }
 
 public var sceneId:String = '21697b1b5dea23c59dcf00e3e7e65b572bed68e5';
@@ -180,7 +201,7 @@ function Awake () {
 	if (!enabled) { return; }
 	if (Application.isEditor) {
 		host = 'http://localhost:3000'; // Doesn't depend on external DNS
-		RestoreScene(sceneId);
+		RestoreScene(sceneId + ':' + sceneId);
 	} else {
 		host = 'http://beyondmywall.fe100.net';
 	}

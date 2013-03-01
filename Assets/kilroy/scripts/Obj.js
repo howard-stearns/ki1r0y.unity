@@ -32,14 +32,15 @@ function GameObjectPath(obj:GameObject):String {
     return path;
 }
 public static var selectedId = null;
-public static function SceneSelect() {
-	if (selectedId != null) {
+public static function SceneSelect() { SceneSelect(false); }
+public static function SceneSelect(force:boolean) {
+	if (force || (selectedId != null)) {
 		selectedId = null;
 		var sname = GameObject.FindWithTag('SceneRoot').name;
 		Debug.Log('browser select scene ' + sname);
 		if (Application.isWebPlayer) {
-			Application.ExternalCall('select', null);
-			Application.ExternalCall('props', '/', sname);
+			Application.ExternalCall('select', null, sname);
+			Application.ExternalCall('props', '/');
 		}
 	}
 }
@@ -58,7 +59,7 @@ function ExternalPropertyEdit(tabName:String) {
 	//Debug.Log('localScale ' + gameObject.transform.localScale.ToString() + ' globalScale: ' + gameObject.transform.lossyScale.ToString());
 	if (Application.isWebPlayer) {
 		Application.ExternalCall('notifyUser', id + ' ' + tabName + ' ' + path);
-		Application.ExternalCall('select', id);
+		Application.ExternalCall('select', id, gameObject.name);
 		Application.ExternalCall('tabSelect', tabName);
 		var pos = gameObject.transform.localPosition;
 		var rot = gameObject.transform.localEulerAngles; //Not what we persist, but easier for users.
@@ -66,7 +67,7 @@ function ExternalPropertyEdit(tabName:String) {
 		Application.ExternalCall('updatePosition', pos.x, pos.y, pos.z);
 		Application.ExternalCall('updateRotation', rot.x, rot.y, rot.z);
 		// FIXME: we must use id as name, because tags/name are not guaranteed to be unique!!
-		Application.ExternalCall('props', path, gameObject.name, scale.x, scale.y, scale.z);
+		Application.ExternalCall('props', path, scale.x, scale.y, scale.z);
 	}
 }
 

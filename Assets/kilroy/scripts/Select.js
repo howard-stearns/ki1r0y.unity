@@ -37,8 +37,15 @@ private var cam:Camera;  // The camera in which screen coordinates are defined.
 //    setImportTarget('ddxdd')   - once per drop
 //    setImportFilename('name') - once per file
 //    importImage('URL') - once per file in the drop (file URL in editor, data url in browser)
-public var dropTarget:RaycastHit;
 public var picturePrefab:Transform;
+public var dropTarget:RaycastHit;
+public var dropObject:Transform;
+// Browser input button file input sets an object, not a coordinate.
+function setImportObject(path:String) { 
+	if (path == '/') dropObject = GameObject.FindWithTag('SceneRoot').transform;
+	else dropObject = GameObject.Find(path).transform;
+	NotifyUser('drop to ' + dropObject + ' @' + dropObject.position);
+}
 function setImportTarget(coordinates:String) {
 	var stupidNETcharArray:char[] = ['x'[0]];
 	var pair = coordinates.Split(stupidNETcharArray);
@@ -48,6 +55,7 @@ function setImportTarget(coordinates:String) {
 	if (Physics.Raycast(pointerRay, dropTarget)) {
 		NotifyUser('got object ' + dropTarget.transform.gameObject + ' at ' + x + 'x' + y);
 	} else Debug.LogError('no drop target found at ' + x + 'x' + y);
+	dropObject = null;
 }
 public var currentDropFilename:String;
 function setImportFilename(name:String) {
@@ -57,16 +65,20 @@ function setImportFilename(name:String) {
 	currentDropFilename = name;
 }
 function importImage(url:String) {
+	var pt = (dropObject == null) ? dropTarget.point : dropObject.position;
 	var max = url.Length;
 	if (max > 256) max = 128;
-	NotifyUser('importing: ' + url.Substring(0, max) + ' to ' + dropTarget.point); //because .NET has to be different. No slice.
+	NotifyUser('importing: ' + url.Substring(0, max) + ' to ' + pt); //because .NET has to be different. No slice.
 
 	var www:WWW = new WWW(url);
     yield www;
     NotifyUser('received import data');
-    var v = dropTarget.point - cam.transform.position;
+    // FIXME: if dropObject, replace the image?
+    var v = pt - cam.transform.position;
+    if (v.magnitude < 1) v = v.normalized;
     var pos = cam.transform.position + (v / 2);
     var rot = Quaternion.LookRotation(-v);
+    Debug.Log('camera:' + cam.transform.position + ' v:' + v + ' pos:' + pos);
     var pict = Instantiate(picturePrefab, pos, rot);
     pict.transform.Rotate(90, 0, 0);
     pict.transform.parent = GameObject.FindWithTag('SceneRoot').transform;
@@ -92,16 +104,17 @@ function importImage(url:String) {
 	StatusMessageUpdate(msg, result, 1.0);
 }
 
-/* FIXME function Start() {
+function Start() {
 	if (Application.isWebPlayer) return;
 	var basename = 'avatar.jpg';
 	var furl = 'file:///Users/howardstearns/Pictures/' + basename;
 	yield WaitForSeconds(4);
 	Debug.Log('import ' + basename);
-	setImportTarget('374x300');
+	//setImportTarget('374x300');
+	setImportObject('/');
 	setImportFilename(basename);
 	importImage(furl); 
-}*/
+}
 
 ///////////////////////////////////////////////////////////////////
 // Utility functions

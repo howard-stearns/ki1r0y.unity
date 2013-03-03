@@ -67,7 +67,10 @@ function Fill(go:GameObject, id:String, data:Hashtable) {
 	obj.id = id;
 	if (obj.isGroup()) obj.hash = data.hash; // Which might not be in the data. 
 	else obj.hash = id;
-	go.name = data['name'];
+	// FIXME remove go.name = data['name'];
+	obj.nametag = data['name'];
+	go.name = id;
+	
 	var matData:Array = data['materials'];
 	if (matData != null) {
 		var nMats = matData.length;
@@ -156,7 +159,7 @@ public var safetyNet:Transform;
 function KillFloor():IEnumerator {
 	// How do we know when it's time to kill the temporaryFloor?
 	// For now, it is when we have an object named 'floor';
-	if (GameObject.Find('floor')) {
+	if (GameObject.FindWithTag('SceneRoot').GetComponent(Obj).FindNametag('floor') != null) { // FIXME remove GameObject.Find('floor')) {
 		Log('removing temporary floor');
 		Destroy(safetyNet.gameObject);
 	} else {
@@ -194,6 +197,7 @@ function RestoreScene(combo:String) {
 	KillFloor();
 	if (objId && (objId != id)) GotoObj(objId);
 	else Obj.SceneSelect(true);
+	Application.ExternalCall('sceneReady', GetComponent(Obj).nametag);
 }
 
 public var sceneId:String = '21697b1b5dea23c59dcf00e3e7e65b572bed68e5';
@@ -207,7 +211,6 @@ function Awake () {
 	}
 }
 function Start () {
-	if (Application.isWebPlayer)
-		Application.ExternalCall('pluginReady', '');
+	Application.ExternalCall('pluginReady', '');
 }
 

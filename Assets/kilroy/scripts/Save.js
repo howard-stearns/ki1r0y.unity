@@ -22,7 +22,6 @@ function uploadData(id:String, hash:String, serialized:String) {
 
 function asData(x:GameObject):Hashtable {
 	var shared = new Hashtable(); // Common data for all instances of this object.
-	AddProperty(shared, 'name', x.name);
 	// The component var is deliberately untyped, else the compiler will
 	// be too clever by half and ALWAYS pick the Component overload!
 	for (var component:Object in x.GetComponents(typeof Component)) {
@@ -44,6 +43,10 @@ function AddProperty (p:Hashtable, key:String, q:Quaternion) {
 	AddProperty(p, key, {'x':q.x, 'y':q.y, 'z':q.z, 'w':q.w});
 }
 
+function AddComponent(p:Hashtable, component:Obj) {
+	if (component.nametag == '') component.nametag = component.name; // Just for bootstrapping. FIXME remove.
+	AddProperty(p, 'name', component.nametag);
+}
 function AddComponent(p:Hashtable, component:Transform) {
 	// The only shared data for all instances is the child data.
 	// The instance-specific transform data (position/rotation/scale) is above.

@@ -104,7 +104,7 @@ function importImage(url:String) {
 	StatusMessageUpdate(msg, result, 1.0);
 }
 
-function Start() {
+/*function Start() {  // For debugging
 	if (Application.isWebPlayer) return;
 	var basename = 'avatar.jpg';
 	var furl = 'file:///Users/howardstearns/Pictures/' + basename;
@@ -114,7 +114,7 @@ function Start() {
 	setImportObject('/');
 	setImportFilename(basename);
 	importImage(furl); 
-}
+}*/
 
 ///////////////////////////////////////////////////////////////////
 // Utility functions

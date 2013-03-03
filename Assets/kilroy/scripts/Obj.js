@@ -3,6 +3,7 @@
 public var id = ''; // The Kilroy persistence id.
 public var localMounting = Vector3(0, -1, 0);
 public var localFacing = Vector3(0, 0, -1);
+public var nametag = '';
 
 function isGroup() {
 	if (id == '') return false;
@@ -23,20 +24,32 @@ function Start() {
 }
 
 // Answers the scene graph path to obj, suitable for use in Find().
-function GameObjectPath(obj:GameObject):String {
-    var path = "/" + obj.name;
-    while (obj.transform.parent != null) {
-        obj = obj.transform.parent.gameObject;
+// The browser will receive this and use it as the first arg to SendMessage.
+function GameObjectPath():String {
+	var path = id;
+    /*var path = "/" + name;
+    var obj = transform;
+    while (obj.parent != null) {
+        obj = obj.parent;
         path = "/" + obj.name + path;
-    }
+    }*/
     return path;
+}
+function FindNametag(t:String):Transform {
+	if (nametag == t) return transform;
+	for (var child:Transform in transform) {
+		var childObj = child.GetComponent(Obj);
+		var got = childObj ? childObj.FindNametag(t) : null;
+		if (got != null) return got;
+	}
+	return null;
 }
 public static var selectedId = null;
 public static function SceneSelect() { SceneSelect(false); }
 public static function SceneSelect(force:boolean) {
 	if (force || (selectedId != null)) {
 		selectedId = null;
-		var sname = GameObject.FindWithTag('SceneRoot').name;
+		var sname = GameObject.FindWithTag('SceneRoot').GetComponent(Obj).nametag;
 		Debug.Log('browser select scene ' + sname);
 		if (Application.isWebPlayer) {
 			Application.ExternalCall('select', null, sname);
@@ -45,21 +58,20 @@ public static function SceneSelect(force:boolean) {
 	}
 }
 function deleteObject() {
-	var path = GameObjectPath(gameObject);
 	transform.parent = null;
 	Destroy(gameObject);
-	Application.ExternalCall('notifyUser', 'deleted:' + path);
+	Application.ExternalCall('notifyUser', 'deleted:' + nametag);
 }
 
 // Tell external property editor about this object's editable properties.
 function ExternalPropertyEdit(tabName:String) {
-	var path = GameObjectPath(gameObject);
+	var path = GameObjectPath();
 	selectedId = id;
 	Debug.Log('browser select ' + id + ' ' + path + ' ' + tabName);
 	//Debug.Log('localScale ' + gameObject.transform.localScale.ToString() + ' globalScale: ' + gameObject.transform.lossyScale.ToString());
 	if (Application.isWebPlayer) {
 		Application.ExternalCall('notifyUser', id + ' ' + tabName + ' ' + path);
-		Application.ExternalCall('select', id, gameObject.name);
+		Application.ExternalCall('select', id, nametag);
 		Application.ExternalCall('tabSelect', tabName);
 		var pos = gameObject.transform.localPosition;
 		var rot = gameObject.transform.localEulerAngles; //Not what we persist, but easier for users.

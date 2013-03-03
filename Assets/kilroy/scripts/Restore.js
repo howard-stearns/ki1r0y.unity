@@ -168,10 +168,10 @@ function KillFloor():IEnumerator {
 		KillFloor();
 	}
 }
-function FindObj(obj:Transform, id:String):boolean {
+function FindObj(obj:Transform, id:String):boolean { // Could be simplified now that id=name.
 	var comp = obj.GetComponent(Obj);
 	if ((comp != null) && (comp.id == id)) {
-		Camera.main.transform.parent.GetComponent(Goto).Goto(obj);
+		Camera.main.transform.parent.GetComponent(Goto).Goto(obj, false);
 		return true;
 	}
 	for (var child in obj) {

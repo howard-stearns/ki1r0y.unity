@@ -64,14 +64,15 @@ function deleteObject() {
 }
 
 // Tell external property editor about this object's editable properties.
-function ExternalPropertyEdit(tabName:String) {
+function ExternalPropertyEdit(tabName:String, addToHistory:boolean) {
 	var path = GameObjectPath();
 	selectedId = id;
-	Debug.Log('browser select ' + id + ' ' + path + ' ' + tabName);
+	Application.ExternalCall('notifyUser', 
+		'browser select ' + id + ' ' + path + ' ' + tabName 
+		+ (addToHistory ? " addToHistory" : " suppressHistory"));
 	//Debug.Log('localScale ' + gameObject.transform.localScale.ToString() + ' globalScale: ' + gameObject.transform.lossyScale.ToString());
 	if (Application.isWebPlayer) {
-		Application.ExternalCall('notifyUser', id + ' ' + tabName + ' ' + path);
-		Application.ExternalCall('select', id, nametag);
+		Application.ExternalCall('select', id, nametag, !addToHistory);
 		Application.ExternalCall('tabSelect', tabName);
 		var pos = gameObject.transform.localPosition;
 		var rot = gameObject.transform.localEulerAngles; //Not what we persist, but easier for users.

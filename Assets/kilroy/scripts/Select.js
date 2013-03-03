@@ -271,7 +271,7 @@ function StopDragging(hit:RaycastHit) {
 	//Debug.Log('reparenting:' + obj + ' dragged scale:' + trans.localScale);
 	if (Vector3.Distance(firstDragPosition, lastDragPosition) > 0.2) 
 		obj.SendMessage("saveScene", null, SendMessageOptions.DontRequireReceiver);
-	else if (!!trans) Camera.main.transform.parent.GetComponent(Goto).Goto(trans);
+	else if (!!trans) Camera.main.transform.parent.GetComponent(Goto).Goto(trans, true);
 }
 
 public var laserPrefab:Transform;
@@ -410,7 +410,7 @@ function Update () {
 	if (Physics.Raycast(pointerRay, hit, Mathf.Infinity, (1<<0))) {
 		if (Input.GetMouseButtonDown(1) || 
 			(Input.GetMouseButtonDown(0) && (Input.GetAxis('Fire2') || Input.GetAxis('Fire3')))) {
-			hit.collider.gameObject.GetComponent(Obj).ExternalPropertyEdit('properties');
+			hit.collider.gameObject.GetComponent(Obj).ExternalPropertyEdit('properties', true);
 			if (!Application.isWebPlayer) StartGizmo(hit.transform);
 			// else changing tab will call back to us to StartGizmo.
 		} else if (Input.GetMouseButtonDown(0)) { 

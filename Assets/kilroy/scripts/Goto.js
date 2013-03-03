@@ -66,7 +66,7 @@ public function Next(isForward:boolean) {
 	} else {
 		if (--closest < 0) closest = objs.length-1;
 	}
-	Goto(objs[closest]);
+	Goto(objs[closest], true);
 }
 
 public var pulseDuration = 0.8;  // The scene's natural period. Animate to next pulse.
@@ -157,9 +157,12 @@ function DescribeMesh(o:GameObject) {  // For debugging.
 // Goto the specified object, automating and animating the avatar/camera that we are attached to.
 // The current implementation goes to a fixed position/orientation based on where the assembly is
 // now, but in principle it could track moving assemblies.
-function Goto(trans:Transform) {
-	Debug.Log('Goto ' + trans + ' current=' + currentSite);
-	trans.gameObject.GetComponent(Obj).ExternalPropertyEdit('metadata');
+function Goto(trans:Transform, addToHistory:boolean) {
+	Application.ExternalCall('notifyUser', 
+		'Goto ' + trans + ' current=' + (currentSite || 'none')
+		+ (addToHistory ? " addToHistory" : " suppressHistory"));
+	trans.gameObject.GetComponent(Obj).ExternalPropertyEdit('metadata', 
+		addToHistory && (trans != currentSite));
 	if (trans == currentSite) {
 		trans.parent.gameObject.SendMessage("Wrap", trans.gameObject, SendMessageOptions.DontRequireReceiver);
 		//trans.gameObject.GetComponent(PictureDrawing).Wrap(trans.parent.gameObject);
@@ -173,6 +176,12 @@ function Goto(trans:Transform) {
 	state = GotoState.Transporting;	
 	overlayControls.lockMouseMotionOff();
 	head.parent = avatar; // So that it doesn't move up or down with camera until AtObject.
+}
+function GoBackTo(id:String) { // From browser back button.
+	Application.ExternalCall('notifyUser', 'GoBackTo ' + id);
+	var go = GameObject.Find(id);
+	Application.ExternalCall('notifyUser', 'GoBackTo ' + id + ' ' + go);
+	Goto(go.transform, false);
 }
 
 

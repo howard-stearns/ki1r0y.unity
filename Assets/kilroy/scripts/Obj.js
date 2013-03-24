@@ -4,6 +4,9 @@ public var id = ''; // The Kilroy persistence id.
 public var localMounting = Vector3(0, -1, 0);
 public var localFacing = Vector3(0, 0, -1);
 public var nametag = '';
+public var author = '';
+public var created = 0.0d; // .net time uses double
+public var modified = 0.0d; // hack. Not used except in PersistGroup
 
 function isGroup() {
 	if (id == '') return false;
@@ -60,16 +63,16 @@ public static function SceneSelect(force:boolean) {
 function deleteObject() {
 	transform.parent = null;
 	Destroy(gameObject);
-	Application.ExternalCall('notifyUser', 'deleted:' + nametag);
+//	Application.ExternalCall('notifyUser', 'deleted:' + nametag);
 }
 
 // Tell external property editor about this object's editable properties.
 function ExternalPropertyEdit(tabName:String, addToHistory:boolean) {
 	var path = GameObjectPath();
 	selectedId = id;
-	Application.ExternalCall('notifyUser', 
+	/*Application.ExternalCall('notifyUser', 
 		'browser select ' + id + ' ' + path + ' ' + tabName 
-		+ (addToHistory ? " addToHistory" : " suppressHistory"));
+		+ (addToHistory ? " addToHistory" : " suppressHistory"));*/
 	//Debug.Log('localScale ' + gameObject.transform.localScale.ToString() + ' globalScale: ' + gameObject.transform.lossyScale.ToString());
 	if (Application.isWebPlayer) {
 		Application.ExternalCall('select', id, nametag, !addToHistory);
@@ -94,7 +97,11 @@ function Awake() { // Initialize saver, if available.
 function saveScene() { // Save whatever needs to be saved from the whole scene (or silently skip if not set up to save).
 	if (saver == null || !saver.enabled) return;
 	Application.ExternalCall('notifyUser', 'now '+ transform.position.ToString() + ' ' + transform.eulerAngles.ToString() + ' ' + transform.lossyScale.ToString());
+	
+	// Experiment to support undo.
+	var old = saver.GetComponent(Obj).hash;
 	saver.Persist(saver.gameObject);
+	if (old) Application.ExternalCall('addHistory', old);
 }
 
 /*****************************************************************************************/

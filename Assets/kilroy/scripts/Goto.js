@@ -158,9 +158,9 @@ function DescribeMesh(o:GameObject) {  // For debugging.
 // The current implementation goes to a fixed position/orientation based on where the assembly is
 // now, but in principle it could track moving assemblies.
 function Goto(trans:Transform, addToHistory:boolean) {
-	Application.ExternalCall('notifyUser', 
+	/*Application.ExternalCall('notifyUser', 
 		'Goto ' + trans + ' current=' + (currentSite || 'none')
-		+ (addToHistory ? " addToHistory" : " suppressHistory"));
+		+ (addToHistory ? " addToHistory" : " suppressHistory"));*/
 	trans.gameObject.GetComponent(Obj).ExternalPropertyEdit('metadata', 
 		addToHistory && (trans != currentSite));
 	if (trans == currentSite) {
@@ -178,9 +178,8 @@ function Goto(trans:Transform, addToHistory:boolean) {
 	head.parent = avatar; // So that it doesn't move up or down with camera until AtObject.
 }
 function GoBackTo(id:String) { // From browser back button.
-	Application.ExternalCall('notifyUser', 'GoBackTo ' + id);
 	var go = GameObject.Find(id);
-	Application.ExternalCall('notifyUser', 'GoBackTo ' + id + ' ' + go);
+	//Application.ExternalCall('notifyUser', 'GoBackTo ' + id + ' ' + go);
 	Goto(go.transform, false);
 }
 

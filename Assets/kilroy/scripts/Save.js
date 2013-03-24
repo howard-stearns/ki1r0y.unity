@@ -2,7 +2,10 @@ function Log(s:String) {
 	//Debug.Log('Save: ' + s); 
 }
 
-
+public var userId = '100004567501627';
+function UserId(id:String) {
+	userId = id;
+}
 function uploadData(id:String, hash:String, serialized:String) {
 	// Must be separate void function to be yieldable.
  	Log(id + ': ' + serialized); // simulated upload
@@ -44,8 +47,15 @@ function AddProperty (p:Hashtable, key:String, q:Quaternion) {
 }
 
 function AddComponent(p:Hashtable, component:Obj) {
+	// FIXME: if obj.author doesn't match our userId, then create a new object.
+	
 	if (component.nametag == '') component.nametag = component.name; // Just for bootstrapping. FIXME remove.
+	if (component.author == '') component.author = userId;
+	
 	AddProperty(p, 'name', component.nametag);
+	AddProperty(p, 'author', component.author);
+	AddProperty(p, 'created', component.created);
+	if (component.modified != 0.0d) AddProperty(p, 'modified', component.modified);
 }
 function AddComponent(p:Hashtable, component:Transform) {
 	// The only shared data for all instances is the child data.
@@ -94,6 +104,9 @@ function AddComponent(p:Hashtable, component:Light) {
 function AddComponent(p:Hashtable, component:Component) {
 }
 
+static function JSTime() {
+	return (System.DateTime.UtcNow - new System.DateTime(1970,1,1)).TotalMilliseconds;
+}
 
 // Answers the id of this group. Side effects include:
 //   Uploads data to id IFF needed.
@@ -101,6 +114,7 @@ function AddComponent(p:Hashtable, component:Component) {
 //   Updates Obj.id (to the new hash) IFF it was empty.
 function PersistGroup(x:GameObject):String {
 	var obj:Obj = x.GetComponent(Obj);
+	obj.modified = JSTime();
 	var serialized = asString(x);
 	var hash = Utils.sha1(serialized);
 	if (obj.id == 'G') obj.id = 'G' + System.Guid.NewGuid().ToString(); // New object => new id. 

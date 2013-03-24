@@ -10,6 +10,7 @@ Based on JSONParse.js by Philip Peterson (which is based on json_parse by Dougla
 Modified by Indiana MAGNIEZ
 
 Trivially changed by Howard Stearns to pretend to be standard (using standard Javascript names).
+
  
 */
  
@@ -412,7 +413,7 @@ class JSON
 		var zParse:float = float.Parse(hashtable["z"].ToString());
 		return Vector3(xParse,yParse,zParse);
 	}
- 
+	
 	/**
 	 * Nom : HashtableToJSON
 	 * Description :
@@ -546,7 +547,7 @@ class JSON
 	public static function Stringify(x:Object):String { return ObjectToJSON(x); }
  	public static function Stringify(x:Array):String { return ArrayToJSON(x); }
  	public static function Stringify(x:Hashtable):String { return HashtableToJSON(x); }
- 
+
 	public static function IsNumeric( tempValue )
 	{
 		return typeof(tempValue) == typeof(int) || typeof(tempValue) == typeof(float) || typeof(tempValue) == typeof(double);

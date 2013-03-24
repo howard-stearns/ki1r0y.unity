@@ -20,14 +20,14 @@ public var db =
  '{"children" : [{"id" : "24faf820e829988a6b831d15ec4c25220bc7971e","position" : {"x" : 8.450162,"y" : -0.0377996,"z" : 4.243648},"rotation" : {"w" : 0.7071067,"x" : 0,"y" : 0,"z" : 0.7071068}},{"id" : "d307898c060a157923211768ee1c09da6b07b00c","position" : {"x" : 2.200287,"y" : 0.6813452,"z" : 2.953255},"rotation" : {"w" : 0.9116248,"x" : 0.08803673,"y" : 0.2966023,"z" : -0.2705861}},{"id" : "441c5fb6468a649eaa83db1dc3d09d8b67077b0e","position" : {"x" : 3.470267,"y" : -2.294606,"z" : 4.272788}},{"id" : "e85b09aa48f25c0e0436729f3334a29dcf343cd8","position" : {"x" : 3.488311,"y" : -0.9996749,"z" : 9.101078},"rotation" : {"w" : 0.7071067,"x" : -0.7071068,"y" : 0,"z" : 0}},{"id" : "d5c9358048b484a083423e09d5bc3f32ada45622","position" : {"x" : 5.909942,"y" : -1.832091,"z" : 3.089984},"rotation" : {"w" : 0.9008605,"x" : 0,"y" : -0.4341087,"z" : 0}},{"id" : "665c7030bab074f9f6a455003eda1f40b4b72009","position" : {"x" : 0.9262815,"y" : -1.153377,"z" : 5.923676},"scale" : {"x" : 2,"y" : 2,"z" : 2}},{"id" : "da25a18cd08161823d3bcb1e295bf8ae843db65f","position" : {"x" : 3.50061,"y" : -1.294861,"z" : 4.245239},"scale" : {"x" : 1,"y" : 2,"z" : 1}}],"name" : "TestStage"}'
 };
 public var host:String;
-function Log(s:String) {
-	//Debug.Log('Restore: ' + s);
+static function Log(s:String) {
+	Debug.Log('Restore: ' + s);
 }
 
-function makeVector3(data:Hashtable):Vector3 {
+static function makeVector3(data:Hashtable):Vector3 {
 	return Vector3(data['x'], data['y'], data['z']);
 }
-function makeQuaternion(data:Hashtable):Quaternion {
+static function makeQuaternion(data:Hashtable):Quaternion {
 	return Quaternion(data['x'], data['y'], data['z'], data['w']);
 }
 
@@ -70,6 +70,11 @@ function Fill(go:GameObject, id:String, data:Hashtable) {
 	// FIXME remove go.name = data['name'];
 	obj.nametag = data['name'];
 	go.name = id;
+	obj.author = data['author'] || ''; 
+	obj.created = data['created'] || 0.0d;
+	obj.modified = data['modified'] || 0.0d;
+	// Just for bootstrapping:
+	if (obj.created == 0.0d) obj.created = Save.JSTime();
 	
 	var matData:Array = data['materials'];
 	if (matData != null) {
@@ -105,7 +110,7 @@ function Fetch(id):WWW {
 	return new WWW(host + '/db/' + id);
 	//return new WWW('file:///Users/howardstearns/Beyond-My-Wall/server/BMW/public/db/' + id);
 }
-function Parsed(www:WWW):Hashtable {
+static function Parsed(www:WWW):Hashtable {
 	var serialization = www.text;
 	var data = JSON.Parse(serialization);
 	// Handle the case of groups, in which data can be {data: dataWithoutHash, hash: hash}
@@ -185,11 +190,12 @@ function GotoObj(objId:String):IEnumerator {
 	GotoObj(objId);
 }
 
+
 function RestoreScene(combo:String) {
 	var stupidNETcharArray:char[] = [':'[0]];
 	var pair = combo.Split(stupidNETcharArray);
 	var id = pair[0]; var objId = pair[1];
-	Application.ExternalCall('notifyUser', 'restoring ' + id);
+	//Application.ExternalCall('notifyUser', 'restoring ' + id);
 	var www = Fetch(id);
    	yield www;
 	var data:Hashtable = Parsed(www);
@@ -200,7 +206,26 @@ function RestoreScene(combo:String) {
 	Application.ExternalCall('sceneReady', GetComponent(Obj).nametag);
 }
 
-public var sceneId:String = '21697b1b5dea23c59dcf00e3e7e65b572bed68e5';
+public var sceneId = '21697b1b5dea23c59dcf00e3e7e65b572bed68e5'; // for use in editor
+public var undoId = ''; // To undo to an earlier hash in editor;
+function Update() {
+	if (!undoId) return;
+	var comp = gameObject.GetComponent(Obj);
+	var id = comp.id;
+	var dummy = new GameObject(name);
+	Inflate(dummy, undoId);
+	/*for (var existing:Transform in transform) {
+		existing.parent = null;
+		Destroy(existing.gameObject);
+	}
+	for (var child:Transform in dummy.transform) {
+		child.parent = transform;
+	}
+	Destroy(dummy);*/
+	dummy.transform.parent = transform;
+	undoId = ''; 
+}
+
 function Awake () {
 	if (!enabled) { return; }
 	if (Application.isEditor) {

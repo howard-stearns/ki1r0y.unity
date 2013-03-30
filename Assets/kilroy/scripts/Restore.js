@@ -116,20 +116,17 @@ static function Parsed(www:WWW):Hashtable {
 	// Handle the case of groups, in which data can be {data: dataWithoutHash, hash: hash}
 	if (data['hash']) {
 		var realData = data['data'];
-		realData['hash'] = data['hash'];
-		data = realData;
+		if (realData) {
+			realData['hash'] = data['hash'];
+			data = realData;
+		}
 	}
 	return data;
 	// return db[id]; // simulation of server fetch
 }
 
 public var blockPrototype:Transform;
-function Inflate(temp:GameObject, id:String) {
-	var www = Fetch(id);
-	Log('fetching ' + www.url);
-   	yield www;
-	var data:Hashtable = Parsed(www);
-	//Log('Inflating ' + data['name'] + ' into ' + id);
+function makeType(data:Hashtable):GameObject {
 	var go:GameObject;
 	var type:String = data['type'];
 	var pt:Object = null;
@@ -139,15 +136,34 @@ function Inflate(temp:GameObject, id:String) {
 	if (pt != null) go = GameObject.CreatePrimitive(pt);
 	else if (type == 'Cube') go = Instantiate(blockPrototype.gameObject);
 	else {
-		go = new GameObject();
 		if (type == 'Directional') pt = LightType.Directional;
 		else if (type == 'Point') pt = LightType.Point;
 		else if (type === 'Spot') pt = LightType.Spot;
 		if (pt != null) {
+			go = new GameObject(); 
 			var light = go.AddComponent(Light);
 			light.type = pt;
 			light.intensity = data['intensity'];
-		} 
+		}
+	}
+	return go; // could still be null if group
+}
+function Inflate(temp:GameObject, id:String) {
+	var www = Fetch(id);
+	Log('fetching ' + www.url);
+   	yield www;
+	var data:Hashtable = Parsed(www);
+	//Log('Inflating ' + data['name'] + ' into ' + id);
+	var go = makeType(data);
+	if (!go) {
+		if (!data['name']) { // a group with separately stored data
+			www = Fetch(data['hash']);
+			Log('fetching group data ' + www.url);
+			yield www;
+			data = Parsed(www);
+			go = makeType(data);
+		}
+		if (!go) go = new GameObject(); // a group with no primitive
 	}
 	Fill(go, id, data);
 	// Now replace the temp with our new go.
@@ -166,7 +182,7 @@ function KillFloor():IEnumerator {
 	// For now, it is when we have an object named 'floor';
 	if (GameObject.FindWithTag('SceneRoot').GetComponent(Obj).FindNametag('floor') != null) { // FIXME remove GameObject.Find('floor')) {
 		Log('removing temporary floor');
-		Destroy(safetyNet.gameObject);
+		Destroy(safetyNet.gameObject); 
 	} else {
 		//Log('No floor yet');
 		yield WaitForSeconds(0.5);
@@ -190,40 +206,56 @@ function GotoObj(objId:String):IEnumerator {
 	GotoObj(objId);
 }
 
-
+function FillScene(fetch:String, label:String) {
+	var www = Fetch(fetch);
+   	yield www;
+	var data:Hashtable = Parsed(www);
+	if (!data['name']) { // separately stored group and object info
+		www = Fetch(data['hash']);
+		Log('fetching scene data ' + www.url);
+		yield www;
+		data = Parsed(www);
+	}
+	Fill(gameObject, label, data);
+	KillFloor();
+}
 function RestoreScene(combo:String) {
 	var stupidNETcharArray:char[] = [':'[0]];
 	var pair = combo.Split(stupidNETcharArray);
 	var id = pair[0]; var objId = pair[1];
 	//Application.ExternalCall('notifyUser', 'restoring ' + id);
-	var www = Fetch(id);
-   	yield www;
-	var data:Hashtable = Parsed(www);
-	Fill(gameObject, id, data);
-	KillFloor();
+	FillScene(id, id);
 	if (objId && (objId != id)) GotoObj(objId);
 	else Obj.SceneSelect(true);
 	Application.ExternalCall('sceneReady', GetComponent(Obj).nametag);
 }
+function ReRestoreScene(id:String) {
+	// Raise avatars up to the entry height so that they don't fall.
+	var avatars = GameObject.FindGameObjectsWithTag('Player');
+	for (var avatar in avatars) {
+		avatar.transform.position.y = 1;
+	}
+	// Remove existing children, working backwards so we can iterate properly.
+	for (var i=transform.childCount-1; i>=0; --i) {
+		Destroy(transform.GetChild(i).gameObject);
+	}
+	// Replace safetyNet
+	safetyNet = GameObject.CreatePrimitive(PrimitiveType.Plane).transform;
+	safetyNet.localScale = Vector3(10, 1, 10);
+	safetyNet.localPosition = Vector3(0, -10, 0);
+	safetyNet.name = 'SafetyNet';
+	safetyNet.parent = transform;
+	// And finally do the restoration...
+	FillScene(id, name);
+}
 
-public var sceneId = '21697b1b5dea23c59dcf00e3e7e65b572bed68e5'; // for use in editor
-public var undoId = ''; // To undo to an earlier hash in editor;
+public var sceneId = 'G1'; // for use in editor
+public var undoId = ''; // To undo to an earlier hash in editor; e.g. 186bb03e9598d6875f8b3b1bd0957531486f7498
 function Update() {
 	if (!undoId) return;
-	var comp = gameObject.GetComponent(Obj);
-	var id = comp.id;
-	var dummy = new GameObject(name);
-	Inflate(dummy, undoId);
-	/*for (var existing:Transform in transform) {
-		existing.parent = null;
-		Destroy(existing.gameObject);
-	}
-	for (var child:Transform in dummy.transform) {
-		child.parent = transform;
-	}
-	Destroy(dummy);*/
-	dummy.transform.parent = transform;
+	var id = undoId;
 	undoId = ''; 
+	ReRestoreScene(id);
 }
 
 function Awake () {

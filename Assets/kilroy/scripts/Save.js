@@ -119,7 +119,11 @@ function PersistGroup(x:GameObject):String {
 	var hash = Utils.sha1(serialized);
 	if (obj.id == 'G') obj.id = 'G' + System.Guid.NewGuid().ToString(); // New object => new id. 
 	if (hash == obj.hash) return obj.id; // No need to upload.
-	uploadData(obj.id, hash, serialized);
+	// This can be optimized. Right now, the group and object are uploaded and downloaded
+	// as two different urls. The group and object could be combined to reduce http ops.
+	uploadData(hash, hash, serialized);
+	var groupSerialization = JSON.Stringify({'hash': hash});
+	uploadData(obj.id, Utils.sha1(groupSerialization), groupSerialization);
 	obj.hash = hash;
 	return obj.id;
 }

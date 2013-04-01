@@ -52,7 +52,10 @@ public static function SceneSelect() { SceneSelect(false); }
 public static function SceneSelect(force:boolean) {
 	if (force || (selectedId != null)) {
 		selectedId = null;
-		var sname = GameObject.FindWithTag('SceneRoot').GetComponent(Obj).nametag;
+		var root = GameObject.FindWithTag('SceneRoot');
+		var rootComponent = root.GetComponent(Obj);
+		Debug.Log('SceneSelect ' + root + ' ' + rootComponent + '.');
+		var sname = rootComponent.nametag;
 		Debug.Log('browser select scene ' + sname);
 		if (Application.isWebPlayer) {
 			Application.ExternalCall('select', null, sname);

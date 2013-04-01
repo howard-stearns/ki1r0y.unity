@@ -114,7 +114,7 @@ static function JSTime() {
 //   Updates Obj.id (to the new hash) IFF it was empty.
 function PersistGroup(x:GameObject):String {
 	var obj:Obj = x.GetComponent(Obj);
-	obj.modified = JSTime();
+	obj.modified = JSTime();  // FIXME: modified cannot be part of hash!
 	var serialized = asString(x);
 	var hash = Utils.sha1(serialized);
 	if (obj.id == 'G') obj.id = 'G' + System.Guid.NewGuid().ToString(); // New object => new id. 
@@ -125,14 +125,17 @@ function PersistGroup(x:GameObject):String {
 	var groupSerialization = JSON.Stringify({'hash': hash});
 	uploadData(obj.id, Utils.sha1(groupSerialization), groupSerialization);
 	obj.hash = hash;
-	return obj.id;
+	return obj.hash;
 }
 function Persist(x:GameObject):Hashtable {
+	var instance = new Hashtable(); 
 	var obj:Obj = x.GetComponent(Obj);
 	if (!enabled || obj == null) return new Hashtable();  // for debugging/experiments
 	var id:String;
 	if (obj.isGroup()) { // FIXME: there's some duplication between these branches.
-		id = PersistGroup(x);
+		var hash = PersistGroup(x);
+		AddProperty(instance, 'hash', hash);
+		id = x.name;
 	} else {
 		var serialized = asString(x);
 		id = Utils.sha1(serialized);
@@ -142,7 +145,6 @@ function Persist(x:GameObject):Hashtable {
 		}
 	}
 	// Report only this particular instance data to caller.
-	var instance = new Hashtable(); 
 	AddProperty(instance, 'id', id);
 	if (x.transform.localPosition != Vector3.zero) 
 		AddProperty(instance, 'position', x.transform.localPosition);

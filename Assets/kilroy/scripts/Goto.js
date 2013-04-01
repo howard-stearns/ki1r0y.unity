@@ -110,7 +110,7 @@ function setupCameraAnimation(trans:Transform) {
 // will "fall" just slightly into a stable position on the floor. The horizontal 
 // positioning along the floor is currently based on a vertical line through the camera,
 // but in principle it could be based on seating or on multiple people shoulder-to-shoulder.
-function setupAvatarAnimation(trans:Transform) {
+function setupAvatarAnimation(objectPosition:Vector3) {
 	avatarStartPos = avatar.position;
 	avatarStartRot = avatar.rotation;
 	
@@ -125,7 +125,7 @@ function setupAvatarAnimation(trans:Transform) {
 		avatarEndPos = hit.point + offset;
 	}
 	
-	var endFacing = trans.position - avatarEndPos;
+	var endFacing = objectPosition - avatarEndPos;
 	endFacing.y = 0;   // Don't tilt the avatar
 	avatarEndRot = Quaternion.LookRotation(endFacing);
 }
@@ -135,7 +135,7 @@ enum GotoState {  	// The ordered states we go through.
 	Transporting,	// We've started to goto someplace, but aren't there yet.
 	FallingAtObjectAfterArrival,  	// We're there, but still falling to the floor
 	AtObject,		// Stable after arrival.
-	ResumedDriving	// We've just started driving and are still moothly animating the camera back to where it belongs.
+	ResumedDriving	// We've just started driving and are still smoothly animating the camera back to where it belongs.
 }
 var state = GotoState.None; 	// This avatar's current state.
 
@@ -158,11 +158,11 @@ function DescribeMesh(o:GameObject) {  // For debugging.
 // The current implementation goes to a fixed position/orientation based on where the assembly is
 // now, but in principle it could track moving assemblies.
 function Goto(trans:Transform, addToHistory:boolean) {
+	var obj = trans.gameObject.GetComponent(Obj);
 	/*Application.ExternalCall('notifyUser', 
 		'Goto ' + trans + ' current=' + (currentSite || 'none')
 		+ (addToHistory ? " addToHistory" : " suppressHistory"));*/
-	trans.gameObject.GetComponent(Obj).ExternalPropertyEdit('metadata', 
-		addToHistory && (trans != currentSite));
+	obj.ExternalPropertyEdit('metadata', addToHistory && (trans != currentSite));
 	if (trans == currentSite) {
 		trans.parent.gameObject.SendMessage("Wrap", trans.gameObject, SendMessageOptions.DontRequireReceiver);
 		//trans.gameObject.GetComponent(PictureDrawing).Wrap(trans.parent.gameObject);
@@ -171,7 +171,7 @@ function Goto(trans:Transform, addToHistory:boolean) {
 	}
 	currentSite = trans;
 	setupCameraAnimation(trans);
-	setupAvatarAnimation(trans);
+	setupAvatarAnimation(trans.position);
 	animationEndTime = Time.time + pulseDuration;
 	state = GotoState.Transporting;	
 	overlayControls.lockMouseMotionOff();
@@ -179,6 +179,15 @@ function Goto(trans:Transform, addToHistory:boolean) {
 }
 function GoBackTo(id:String) { // From browser back button.
 	var go = GameObject.Find(id);
+	if (!go) {  // initial scene entry, or somehow deleted
+		var start = transform.position;
+		var end = Vector3(0, 1, 0);
+		for (var t = 0.0; t < 1; t += Time.deltaTime / 0.8) {
+			transform.position = Vector3.Lerp(start, end, t);
+			yield;
+		}
+		return;
+	}
 	//Application.ExternalCall('notifyUser', 'GoBackTo ' + id + ' ' + go);
 	Goto(go.transform, false);
 }

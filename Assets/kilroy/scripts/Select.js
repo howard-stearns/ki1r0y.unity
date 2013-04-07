@@ -90,14 +90,13 @@ function importImage(url:String) {
    	var bytes = www.texture.EncodeToPNG(); // Our upload is always image/png, regardless of drop.
    	var id = Utils.sha1(bytes);
     form.AddBinaryData('fileUpload', bytes, currentDropFilename, 'image/png');
-    var host = (Application.isEditor) ? 'localhost:3000':'beyondmywall.fe100.net';
-    // Media upload is generally pretty slow, and we don't want the user
+   // Media upload is generally pretty slow, and we don't want the user
     // to exit the browser or close their laptop during that time, so we
     // we let the user know what's happening.
     // IWBNI we showed upload progress, but WWW.uploadProgress is broken in the Web player.
     var msg = 'saving ' + currentDropFilename;
     StatusMessageStart(msg);
-	www = WWW('http://' + host + '/resources/' + id, form);
+	www = WWW('http://' + Save.host + '/resources/' + id, form);
 	yield www;
 	var result = www.error ? 'failed upload of ' : 'saved ';
 	result += currentDropFilename + ': ' + (www.error || www.text);

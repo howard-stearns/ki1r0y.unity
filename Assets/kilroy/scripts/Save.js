@@ -2,9 +2,14 @@ function Log(s:String) {
 	//Debug.Log('Save: ' + s); 
 }
 
-public var userId = '100004567501627';
-function UserId(id:String) {
-	userId = id;
+public static var userId = '100004567501627';
+public static var host = 'localhost:3000';
+function ContactInfo(combo:String) {
+	var stupidNETcharArray:char[] = ['/'[0]];
+	var pair = combo.Split(stupidNETcharArray);
+	host = pair[0];
+	userId = pair[1];
+	Application.ExternalCall('notifyUser', 'combo:' + combo + ' host:' + host + ' userId:' + userId);
 }
 function uploadData(id:String, hash:String, serialized:String) {
 	// Must be separate void function to be yieldable.
@@ -16,7 +21,6 @@ function uploadData(id:String, hash:String, serialized:String) {
 	// Note that the hash cannot be part of the serialized data, as then the hash would be 
 	// circularly dependendant on its own value.
 	if (hash != id) form.AddField('hash', hash);
-	var host = (Application.isEditor) ? 'localhost:3000':'beyondmywall.fe100.net';
 	var www = WWW('http://' + host + '/db/' + id, form);
 	yield www;
 	if (www.error) print('upload ' + id + ' failed ' + www.error);

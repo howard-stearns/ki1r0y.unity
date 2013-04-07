@@ -68,6 +68,9 @@ public function Next(isForward:boolean) {
 	}
 	Goto(objs[closest], true);
 }
+public function Next(isForward:String) { // For testing from browser.
+	Next(isForward=="true");
+}
 
 public var pulseDuration = 0.8;  // The scene's natural period. Animate to next pulse.
 // FIXME: Current implementation animates over exactly pulseDuration, regardless of whether
@@ -179,7 +182,9 @@ function Goto(trans:Transform, addToHistory:boolean) {
 }
 function GoBackTo(id:String) { // From browser back button.
 	var go = GameObject.Find(id);
+	Application.ExternalCall('notifyUser', 'GoBackTo(' + id + ')=>' + go);
 	if (!go) {  // initial scene entry, or somehow deleted
+		currentSite = null;
 		var start = transform.position;
 		var end = Vector3(0, 1, 0);
 		for (var t = 0.0; t < 1; t += Time.deltaTime / 0.8) {
@@ -189,6 +194,7 @@ function GoBackTo(id:String) { // From browser back button.
 		return;
 	}
 	//Application.ExternalCall('notifyUser', 'GoBackTo ' + id + ' ' + go);
+	currentSite = null; // e.g., user picks current from history. Don't interpret as wrap.
 	Goto(go.transform, false);
 }
 

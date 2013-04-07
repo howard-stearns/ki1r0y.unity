@@ -58,8 +58,6 @@ function AddComponent(p:Hashtable, component:Obj) {
 	
 	AddProperty(p, 'name', component.nametag);
 	AddProperty(p, 'author', component.author);
-	AddProperty(p, 'created', component.created);
-	if (component.modified != 0.0d) AddProperty(p, 'modified', component.modified);
 }
 function AddComponent(p:Hashtable, component:Transform) {
 	// The only shared data for all instances is the child data.
@@ -108,25 +106,28 @@ function AddComponent(p:Hashtable, component:Light) {
 function AddComponent(p:Hashtable, component:Component) {
 }
 
-static function JSTime() {
+/*static function JSTime() {
 	return (System.DateTime.UtcNow - new System.DateTime(1970,1,1)).TotalMilliseconds;
-}
+}*/
 
+public var forceUpload = false; // forces upload even if not changed. Used for regenerating db.
 // Answers the id of this group. Side effects include:
 //   Uploads data to id IFF needed.
 //   Updates Obj.hash (so we can tell later if a new upload is needed).
-//   Updates Obj.id (to the new hash) IFF it was empty.
+//   Updates Obj.id IFF it was empty.
 function PersistGroup(x:GameObject):String {
 	var obj:Obj = x.GetComponent(Obj);
-	obj.modified = JSTime();  // FIXME: modified cannot be part of hash!
 	var serialized = asString(x);
 	var hash = Utils.sha1(serialized);
 	if (obj.id == 'G') obj.id = 'G' + System.Guid.NewGuid().ToString(); // New object => new id. 
-	if (hash == obj.hash) return obj.id; // No need to upload.
-	// This can be optimized. Right now, the group and object are uploaded and downloaded
-	// as two different urls. The group and object could be combined to reduce http ops.
+	if (!forceUpload && (hash == obj.hash)) return obj.id; // No need to upload.
+	// Upload the data needed to rebuild this version of the object.
 	uploadData(hash, hash, serialized);
-	var groupSerialization = JSON.Stringify({'hash': hash});
+	// Now upload the group container data, so that it can be referenced by id to get whatever the latest version is.
+	var groupSerialization = JSON.Stringify({
+		'hash': hash,
+		'name': obj.nametag // Including it here saves work when serving people pages
+		});
 	uploadData(obj.id, Utils.sha1(groupSerialization), groupSerialization);
 	obj.hash = hash;
 	return obj.hash;
@@ -135,21 +136,20 @@ function Persist(x:GameObject):Hashtable {
 	var instance = new Hashtable(); 
 	var obj:Obj = x.GetComponent(Obj);
 	if (!enabled || obj == null) return new Hashtable();  // for debugging/experiments
-	var id:String;
-	if (obj.isGroup()) { // FIXME: there's some duplication between these branches.
+	if (obj.isGroup()) {
 		var hash = PersistGroup(x);
-		AddProperty(instance, 'hash', hash);
-		id = x.name;
+		AddProperty(instance, 'hash', hash); // Restore must grab the hash data, not the latest.
+		// Not really needed, but useful for debugging, and not currently incluncluded in object data under hash.
+		AddProperty(instance, 'id', obj.name); 
 	} else {
 		var serialized = asString(x);
 		id = Utils.sha1(serialized);
-		if (id != obj.id) {
+		if (forceUpload || (id != obj.id)) {
 			uploadData(id, id, serialized);
 			obj.id = id;
 		}
+		AddProperty(instance, 'id', id);
 	}
-	// Report only this particular instance data to caller.
-	AddProperty(instance, 'id', id);
 	if (x.transform.localPosition != Vector3.zero) 
 		AddProperty(instance, 'position', x.transform.localPosition);
 	if (x.transform.localRotation != Quaternion.identity)

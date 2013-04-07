@@ -5,8 +5,6 @@ public var localMounting = Vector3(0, -1, 0);
 public var localFacing = Vector3(0, 0, -1);
 public var nametag = '';
 public var author = '';
-public var created = 0.0d; // .net time uses double
-public var modified = 0.0d; // hack. Not used except in PersistGroup
 
 function isGroup() {
 	if (id == '') return false;
@@ -101,8 +99,7 @@ function saveScene() { // Save whatever needs to be saved from the whole scene (
 	if (saver == null || !saver.enabled) return;
 	Application.ExternalCall('notifyUser', 'now '+ transform.position.ToString() + ' ' + transform.eulerAngles.ToString() + ' ' + transform.lossyScale.ToString());
 	
-	// Experiment to support undo.
-	var old = saver.GetComponent(Obj).hash;
+	var old = saver.GetComponent(Obj).hash; // Experiment to support undo.
 	saver.Persist(saver.gameObject);
 	if (old) Application.ExternalCall('addHistory', old);
 }

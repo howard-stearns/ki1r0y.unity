@@ -1,26 +1,5 @@
-/* Todo:
-	Real save, as needed.
-	Real db.
-	Textures.
-	Make code more data-driven.
-	What to do about change history, GC?
- */
-	
-
-public var db = 
-{
-"24faf820e829988a6b831d15ec4c25220bc7971e": '{"name" : "backWall","type" : "Plane"}',
-"d307898c060a157923211768ee1c09da6b07b00c": '{"name" : "Directional light", "type" : "Directional", "intensity" : 0.5}',
-"441c5fb6468a649eaa83db1dc3d09d8b67077b0e": '{"name" : "floor","type" : "Plane"}',
-"e85b09aa48f25c0e0436729f3334a29dcf343cd8": '{"name" : "leftWall","type" : "Plane"}',
-"d5c9358048b484a083423e09d5bc3f32ada45622": '{"name" : "rotatedCube","type" : "Cube"}',
-"665c7030bab074f9f6a455003eda1f40b4b72009": '{"name" : "Sphere","type" : "Sphere"}',
-"da25a18cd08161823d3bcb1e295bf8ae843db65f": '{"name" : "tallCube","type" : "Cube"}',
-"419d57d1fc5657815cd997fc566910e62a9830f9": 
- '{"children" : [{"id" : "24faf820e829988a6b831d15ec4c25220bc7971e","position" : {"x" : 8.450162,"y" : -0.0377996,"z" : 4.243648},"rotation" : {"w" : 0.7071067,"x" : 0,"y" : 0,"z" : 0.7071068}},{"id" : "d307898c060a157923211768ee1c09da6b07b00c","position" : {"x" : 2.200287,"y" : 0.6813452,"z" : 2.953255},"rotation" : {"w" : 0.9116248,"x" : 0.08803673,"y" : 0.2966023,"z" : -0.2705861}},{"id" : "441c5fb6468a649eaa83db1dc3d09d8b67077b0e","position" : {"x" : 3.470267,"y" : -2.294606,"z" : 4.272788}},{"id" : "e85b09aa48f25c0e0436729f3334a29dcf343cd8","position" : {"x" : 3.488311,"y" : -0.9996749,"z" : 9.101078},"rotation" : {"w" : 0.7071067,"x" : -0.7071068,"y" : 0,"z" : 0}},{"id" : "d5c9358048b484a083423e09d5bc3f32ada45622","position" : {"x" : 5.909942,"y" : -1.832091,"z" : 3.089984},"rotation" : {"w" : 0.9008605,"x" : 0,"y" : -0.4341087,"z" : 0}},{"id" : "665c7030bab074f9f6a455003eda1f40b4b72009","position" : {"x" : 0.9262815,"y" : -1.153377,"z" : 5.923676},"scale" : {"x" : 2,"y" : 2,"z" : 2}},{"id" : "da25a18cd08161823d3bcb1e295bf8ae843db65f","position" : {"x" : 3.50061,"y" : -1.294861,"z" : 4.245239},"scale" : {"x" : 1,"y" : 2,"z" : 1}}],"name" : "TestStage"}'
-};
 static function Log(s:String) {
-	Debug.Log('Restore: ' + s);  // Can be commented in/out for debugging.
+//	Debug.Log('Restore: ' + s);  // Can be commented in/out for debugging.
 }
 
 function Fetch(id):WWW {
@@ -29,35 +8,30 @@ function Fetch(id):WWW {
 }
 // Together, these two functions handle several permutations on how we might store objects:
 // {name:val0, key1:val1, ...}
-// {hash:xxx, data:{name:val0, key1:val1, ....}}
 // {hash:xxx} in one file, and {name:val0, key1:val1, ...} in file xxx.
 function Parsed(www:WWW):Hashtable {
 	var serialization = www.text;
 	var data = JSON.Parse(serialization);
-	// Handle the case of groups, in which data can be {data: dataWithoutHash, hash: hash}
-	var hash = data['hash'];
-	if (hash) {
-		var realData = data['data'];
-		if (realData) {
-			realData['hash'] = hash;
-			data = realData;
-		}
-	}
 	return data;
-	// return db[id]; // simulation of server fetch
 }
-// Coroutine to fetch id into holder[0], which may require to GETs
+// Coroutine to fetch id into holder[0], which may require two GETs.
+// The actual hash will be set in data (which might not be the same as id for Groups).
+// (Of course, hash could not be in the serialized data, because that would affect the hash.)
 function FetchInto(holder:Hashtable[], id:String) {
 	var www = Fetch(id);
 	Log('fetching ' + www.url);
    	yield www;
 	var data:Hashtable = Parsed(www);
-	if (!data['name']) { // separately stored group and object info
-		www = Fetch(data['hash']);
+	var hash:String = data['hash'];
+	if (hash) { // separately stored group and object info
+		www = Fetch(hash);
 		Log('fetching group data ' + www.url);
 		yield www;
 		data = Parsed(www);
+	} else {
+		hash = id;
 	}
+	data['hash'] = hash;
 	holder[0] = data;
 }
 
@@ -113,17 +87,17 @@ var nRemainingObjects = 0;  // The number we have started to fetch, but which ha
 // a stand-in of the correct position/size/rotation (because the parent has
 // that info). Also starts asynchronously fetching the real data. When that
 // data arrives, it will replace the cube.
-function Restore(id:String):GameObject {
+function Restore(id:String, hash:String):GameObject {
 	Log(id);
 	nRemainingObjects++;
 	var temp = GameObject.CreatePrimitive(PrimitiveType.Cube);
-	StartCoroutine( Inflate(temp, id) );
+	StartCoroutine( Inflate(temp, id, hash) );
 	return temp;
 }
 // Coroutine to fetch id data, make appropropriate gameObject, fill it, and replace temp with it.
-function Inflate(temp:GameObject, id:String) {
+function Inflate(temp:GameObject, id:String, hash:String) {
 	var holder = new Hashtable[1];
-	yield FetchInto(holder, id);
+	yield FetchInto(holder, hash || id);
 	var go = makeType(holder[0]);
 	Fill(go, id, holder[0]);
 	// Now replace the temp with our new go.
@@ -155,15 +129,10 @@ public var materialsTable = {};
 function Fill(go:GameObject, id:String, data:Hashtable) {
 	var obj:Obj = go.AddComponent(Obj);
 	obj.id = id;
-	if (obj.isGroup()) obj.hash = data.hash; // Which might not be in the data. 
-	else obj.hash = id;
+	obj.hash = data['hash'];
 	obj.nametag = data['name'];
 	go.name = id;
 	obj.author = data['author'] || ''; 
-	obj.created = data['created'] || 0.0d;
-	obj.modified = data['modified'] || 0.0d;
-	// Just for bootstrapping:
-	if (obj.created == 0.0d) obj.created = Save.JSTime();
 	
 	var matData:Array = data['materials'];
 	if (matData != null) {
@@ -184,7 +153,7 @@ function Fill(go:GameObject, id:String, data:Hashtable) {
 		go.SendMessage("NewMaterials", null, SendMessageOptions.DontRequireReceiver);
 	}
 	for (var childData:Hashtable in data['children']) {
-		var child = Restore(childData['id']);  
+		var child = Restore(childData['id'], childData['hash']);  
 		// At this point, both go and child are at top level, with no parent transform
 		child.transform.parent = go.transform;
 		var pos = childData['position'];
@@ -238,7 +207,7 @@ function ReRestoreScene(id:String) {
 }
 
 public var sceneId = 'G1'; // for use in editor
-public var undoId = ''; // To undo to an earlier hash in editor; e.g. 186bb03e9598d6875f8b3b1bd0957531486f7498
+public var undoId = ''; // To undo to an earlier hash in editor; e.g. 5682b2a56a08a4514309fed3ba64e274f0ac8c43
 function Update() {
 	if (!undoId) return;
 	var id = undoId;

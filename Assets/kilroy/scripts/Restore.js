@@ -87,37 +87,58 @@ var nRemainingObjects = 0;  // The number we have started to fetch, but which ha
 // a stand-in of the correct position/size/rotation (because the parent has
 // that info). Also starts asynchronously fetching the real data. When that
 // data arrives, it will replace the cube.
-function Restore(id:String, hash:String):GameObject {
+function Restore(id:String, hash:String):GameObject {  // FIXME remove
 	Log(id);
 	nRemainingObjects++;
 	var temp = GameObject.CreatePrimitive(PrimitiveType.Cube);
-	StartCoroutine( Inflate(temp, id, hash) );
+	StartCoroutine( Inflate(temp, id, hash, true) );
 	return temp;
 }
+// FIXME: some go stuff could just be transform throughought
 // Coroutine to fetch id data, make appropropriate gameObject, fill it, and replace temp with it.
-function Inflate(temp:GameObject, id:String, hash:String) {
+function Inflate(givenGo:GameObject, id:String, hash:String, isReplacement:boolean) {
 	var holder = new Hashtable[1];
 	yield FetchInto(holder, hash || id);
-	var go = makeType(holder[0]);
-	Fill(go, id, holder[0]);
-	// Now replace the temp with our new go.
-	go.transform.parent = temp.transform.parent; // First, before setting the following.
-	go.transform.position = temp.transform.position;
-	go.transform.rotation = temp.transform.rotation;
-	go.transform.localScale = temp.transform.localScale;
-	temp.transform.parent = null;
-	Destroy(temp);
-	Log('restored ' + holder[0]['name']);
+	Debug.Log('Inflate givenGo:' + givenGo + ' id:' + id + ' hash:' + hash + ' isReplacement:' + isReplacement);
+	if (isReplacement) {
+		var temp = givenGo;
+		var go = makeType(holder[0]);
+		go.AddComponent(Obj);
+		Fill(go, id, holder[0]);
+		// Now replace the temp with our new go.
+		go.transform.parent = temp.transform.parent; // First, before setting the following.
+		go.transform.position = temp.transform.position;
+		go.transform.rotation = temp.transform.rotation;
+		go.transform.localScale = temp.transform.localScale;
+		temp.transform.parent = null;
+		Destroy(temp);
+		Log('restored ' + holder[0]['name']);
+	} else {
+		Fill(givenGo, id, holder[0]);
+	}
 	// Careful moving this. Timing of coroutines (and positioning of objs for Goto after restore) is subtle.
 	if (!--nRemainingObjects) SceneReady();  
 }
 // Similar for acting on our gameObject (the whole scene), which doesn't need replacing, but does need the SafetyNet removed.
-function FillScene(id:String, label:String) {
+function FillScene(hash:String, label:String) {
+	Debug.Log('FillScene ' + hash + ' ' + label);
 	nRemainingObjects = 1;
 	var holder = new Hashtable[1];
-	yield FetchInto(holder, id);
+	yield FetchInto(holder, hash);
 	Fill(gameObject, label, holder[0]);
 	if (!--nRemainingObjects) SceneReady();
+}
+function RestoreInto(id:String, hash:String, parent:Transform) {
+	var child = parent.Find(id);
+	var isReplacement = !child;
+	if (isReplacement) {
+		child = GameObject.CreatePrimitive(PrimitiveType.Cube).transform;
+		child.parent = parent;
+	}
+	// FIXME: if hash is already right, we're done.
+	nRemainingObjects++;
+	StartCoroutine( Inflate(child.gameObject, id, hash, isReplacement) );
+	return child.gameObject;
 }
 
 public var materialPrototype:Material;
@@ -127,7 +148,8 @@ public var materialsTable = {};
 // When data arrives, Inflate, above, will create the appropriate GameObject.
 // This Fill takes care of common setup and the Restore (above) of each child.
 function Fill(go:GameObject, id:String, data:Hashtable) {
-	var obj:Obj = go.AddComponent(Obj);
+	var obj:Obj = go.GetComponent(Obj);
+	Debug.Log('Fill go:' + go + ' id:' + id + ' obj:' + obj);
 	obj.id = id;
 	obj.hash = data['hash'];
 	obj.nametag = data['name'];
@@ -152,10 +174,14 @@ function Fill(go:GameObject, id:String, data:Hashtable) {
 		go.renderer.materials = materials;
 		go.SendMessage("NewMaterials", null, SendMessageOptions.DontRequireReceiver);
 	}
+	// FIXME: destroy all children that are not in childData.
+	// FIXME: if the child being deleted is named floor, restore safetyNet and do the avatar thing.
 	for (var childData:Hashtable in data['children']) {
-		var child = Restore(childData['id'], childData['hash']);  
+		//var child = Restore(childData['id'], childData['hash']); 
 		// At this point, both go and child are at top level, with no parent transform
-		child.transform.parent = go.transform;
+		//child.transform.parent = go.transform;
+		child = RestoreInto(childData['id'], childData['hash'], go.transform);
+		
 		var pos = childData['position'];
 		if (pos != null) child.transform.localPosition = makeVector3(pos);
 		var rot = childData['rotation'];
@@ -168,7 +194,7 @@ function Fill(go:GameObject, id:String, data:Hashtable) {
 public var safetyNet:Transform;
 public var destinationId = '';
 function SceneReady() {
-	if (GameObject.FindWithTag('SceneRoot').GetComponent(Obj).FindNametag('floor') != null) {
+	if (safetyNet && GameObject.FindWithTag('SceneRoot').GetComponent(Obj).FindNametag('floor')) {
 		Log('removing temporary floor');
 		Destroy(safetyNet.gameObject); 
 	}
@@ -182,13 +208,14 @@ function RestoreScene(combo:String) {
 	var stupidNETcharArray:char[] = ['/'[0]];
 	var pair = combo.Split(stupidNETcharArray);
 	var id = pair[0];
-	destinationId = pair[1];
+	var hash = ((pair.length > 1) && pair[1]) || id;
+	destinationId = ((pair.length > 2) && pair[2]) || '';
 	Application.ExternalCall('notifyUser', 'restoring ' + combo + ', id ' + id + ', destination ' + destinationId);
-	FillScene(id, id);
+	FillScene(hash, id);
 }
-function ReRestoreScene(id:String) {
+function ReRestoreScene(hash:String) {
 	// Raise avatars up to the entry height so that they don't fall.
-	var avatars = GameObject.FindGameObjectsWithTag('Player');
+	/*var avatars = GameObject.FindGameObjectsWithTag('Player');
 	for (var avatar in avatars) {
 		avatar.transform.position.y = 1;
 	}
@@ -201,15 +228,16 @@ function ReRestoreScene(id:String) {
 	safetyNet.localScale = Vector3(10, 1, 10);
 	safetyNet.localPosition = Vector3(0, -10, 0);
 	safetyNet.name = 'SafetyNet';
-	safetyNet.parent = transform;
+	safetyNet.parent = transform;*/
 	// And finally do the restoration...
-	FillScene(id, name);
+	FillScene(hash, name);
 }
 
 public var sceneId = 'G1'; // for use in editor
 public var undoId = ''; // To undo to an earlier hash in editor; e.g. 5682b2a56a08a4514309fed3ba64e274f0ac8c43
 function Update() {
 	if (!undoId) return;
+	Debug.Log('Update sees ' + undoId);
 	var id = undoId;
 	undoId = ''; 
 	ReRestoreScene(id);

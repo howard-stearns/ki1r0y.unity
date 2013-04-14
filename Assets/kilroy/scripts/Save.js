@@ -9,7 +9,7 @@ function ContactInfo(combo:String) {
 	var pair = combo.Split(stupidNETcharArray);
 	host = pair[0];
 	userId = pair[1];
-	Application.ExternalCall('notifyUser', 'combo:' + combo + ' host:' + host + ' userId:' + userId);
+	Application.ExternalCall('notifyUser', 'ContactInfo host:' + host + ' userId:' + userId);
 }
 function uploadData(id:String, hash:String, serialized:String) {
 	// Must be separate void function to be yieldable.
@@ -56,7 +56,7 @@ function AddComponent(p:Hashtable, component:Obj) {
 	if (component.nametag == '') component.nametag = component.name; // Just for bootstrapping. FIXME remove.
 	if (component.author == '') component.author = userId;
 	
-	AddProperty(p, 'name', component.nametag);
+	AddProperty(p, 'nametag', component.nametag);
 	AddProperty(p, 'author', component.author);
 }
 function AddComponent(p:Hashtable, component:Transform) {
@@ -125,8 +125,8 @@ function PersistGroup(x:GameObject):String {
 	uploadData(hash, hash, serialized);
 	// Now upload the group container data, so that it can be referenced by id to get whatever the latest version is.
 	var groupSerialization = JSON.Stringify({
-		'hash': hash,
-		'name': obj.nametag // Including it here saves work when serving people pages
+		'idvtag': hash,
+		'nametag': obj.nametag // Including it here saves work when serving people pages
 		});
 	uploadData(obj.id, Utils.sha1(groupSerialization), groupSerialization);
 	obj.hash = hash;
@@ -138,9 +138,9 @@ function Persist(x:GameObject):Hashtable {
 	if (!enabled || obj == null) return new Hashtable();  // for debugging/experiments
 	if (obj.isGroup()) {
 		var hash = PersistGroup(x);
-		AddProperty(instance, 'hash', hash); // Restore must grab the hash data, not the latest.
-		// Not really needed, but useful for debugging, and not currently incluncluded in object data under hash.
-		AddProperty(instance, 'id', obj.name); 
+		AddProperty(instance, 'idvtag', hash); // Restore must grab the hash data, not the latest.
+		// Not really needed, but useful for debugging, and not currently included in object data under hash.
+		AddProperty(instance, 'idtag', obj.name); 
 	} else {
 		var serialized = asString(x);
 		id = Utils.sha1(serialized);
@@ -148,7 +148,7 @@ function Persist(x:GameObject):Hashtable {
 			uploadData(id, id, serialized);
 			obj.id = id;
 		}
-		AddProperty(instance, 'id', id);
+		AddProperty(instance, 'idtag', id);
 	}
 	if (x.transform.localPosition != Vector3.zero) 
 		AddProperty(instance, 'position', x.transform.localPosition);

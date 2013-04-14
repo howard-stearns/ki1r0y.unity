@@ -54,9 +54,10 @@ public static function SceneSelect(force:boolean) {
 		var rootComponent = root.GetComponent(Obj);
 		Debug.Log('SceneSelect ' + root + ' ' + rootComponent + '.');
 		var sname = rootComponent.nametag;
+		var shash = rootComponent.hash;
 		Debug.Log('browser select scene ' + sname);
 		if (Application.isWebPlayer) {
-			Application.ExternalCall('select', null, sname);
+			Application.ExternalCall('select', null, sname, shash);
 			Application.ExternalCall('props', '/');
 		}
 	}
@@ -76,7 +77,7 @@ function ExternalPropertyEdit(tabName:String, addToHistory:boolean) {
 		+ (addToHistory ? " addToHistory" : " suppressHistory"));*/
 	//Debug.Log('localScale ' + gameObject.transform.localScale.ToString() + ' globalScale: ' + gameObject.transform.lossyScale.ToString());
 	if (Application.isWebPlayer) {
-		Application.ExternalCall('select', id, nametag, !addToHistory);
+		Application.ExternalCall('select', id, nametag, hash, !addToHistory);
 		Application.ExternalCall('tabSelect', tabName);
 		var pos = gameObject.transform.localPosition;
 		var rot = gameObject.transform.localEulerAngles; //Not what we persist, but easier for users.
@@ -99,9 +100,10 @@ function saveScene() { // Save whatever needs to be saved from the whole scene (
 	if (saver == null || !saver.enabled) return;
 	Application.ExternalCall('notifyUser', 'now '+ transform.position.ToString() + ' ' + transform.eulerAngles.ToString() + ' ' + transform.lossyScale.ToString());
 	
-	var old = saver.GetComponent(Obj).hash; // Experiment to support undo.
+	var obj = saver.GetComponent(Obj);
+	var old = obj.hash; // Experiment to support undo.
 	saver.Persist(saver.gameObject);
-	if (old) Application.ExternalCall('addHistory', old);
+	if (old) Application.ExternalCall('saved', id, nametag, old, 'move');
 }
 
 /*****************************************************************************************/

@@ -181,9 +181,11 @@ function Goto(trans:Transform, addToHistory:boolean) {
 	head.parent = avatar; // So that it doesn't move up or down with camera until AtObject.
 }
 function GoBackTo(id:String) { // From browser back button.
-	var go = GameObject.Find(id);
-	Application.ExternalCall('notifyUser', 'GoBackTo(' + id + ')=>' + go);
-	if (!go) {  // initial scene entry, or somehow deleted
+	GoBackToObj(id && GameObject.Find(id));
+}
+function GoBackToObj(go:GameObject) {
+	Application.ExternalCall('notifyUser', 'GoBackTo ' + go);
+	if (!go) {  // initial scene re-entry, or somehow deleted
 		currentSite = null;
 		var start = transform.position;
 		var end = Vector3(0, 1, 0);
@@ -191,11 +193,18 @@ function GoBackTo(id:String) { // From browser back button.
 			transform.position = Vector3.Lerp(start, end, t);
 			yield;
 		}
+		Obj.SceneSelect(true);
 		return;
 	}
-	//Application.ExternalCall('notifyUser', 'GoBackTo ' + id + ' ' + go);
 	currentSite = null; // e.g., user picks current from history. Don't interpret as wrap.
 	Goto(go.transform, false);
+}
+
+// The scene root could be called anything, which means we can't send a browser message
+// to it (as we don't know it's scene-graph path). That's ok, though because we can figure 
+// that out from here (in Unity).
+function RestoreScene(spec:String) {
+	scene.gameObject.GetComponent(Restore).RestoreScene(spec);
 }
 
 

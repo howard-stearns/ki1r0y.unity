@@ -11,6 +11,11 @@ function Fetch(id):WWW {
 // {hash:xxx} in one file, and {name:val0, key1:val1, ...} in file xxx.
 function Parsed(www:WWW):Hashtable {
 	var serialization = www.text;
+	// Alas, www.error is empty on 404s!
+	if (!String.IsNullOrEmpty(www.error) || (www.text[0] != '{'[0])) {
+		Application.ExternalCall('errorMessage', www.error || www.text);
+		return null;
+	}
 	var data = JSON.Parse(serialization);
 	return data;
 }
@@ -22,12 +27,14 @@ function FetchInto(holder:Hashtable[], id:String) {
 	Log('fetching ' + www.url);
    	yield www;
 	var data:Hashtable = Parsed(www);
+	if (!data) { return; }
 	var hash:String = data['idvtag'];
 	if (hash) { // separately stored group and object info
 		www = Fetch(hash);
 		Log('fetching group data ' + www.url);
 		yield www;
 		data = Parsed(www);
+		if (!data) { return; }
 	} else {
 		hash = id;
 	}
@@ -105,6 +112,7 @@ function RestoreInto(id:String, hash:String, parent:Transform) {
 function Inflate(givenGo:GameObject, id:String, hash:String, isReplacement:boolean) {
 	var holder = new Hashtable[1];
 	yield FetchInto(holder, hash);
+	if (!holder[0]) { return; }  // FetchInto was responsible for alerting user.
 	if (isReplacement) {
 		var go = makeType(holder[0]);
 		go.AddComponent(Obj);
@@ -215,16 +223,19 @@ function SceneReady() {
 		var goto = Camera.main.transform.parent.GetComponent(Goto);
 		Debug.Log('telling ' + goto + ' to go back to ' + targetObj);
 		goto.GoBackToObj(targetObj);
+	} else {
+		Obj.SceneSelect(true);
 	}
 }
 
 function RestoreScene(combo:String) {
 	var stupidNETcharArray:char[] = ['/'[0]];
-	var pair = combo.Split(stupidNETcharArray);
-	var id = pair[0];
-	var hash = ((pair.length > 1) && pair[1]) || '';
-	destinationId = ((pair.length > 2) && pair[2]) || '';
-	Application.ExternalCall('notifyUser', 'RestoreScene id:' + id + ' hash:' + hash + ' destination:' + destinationId);
+	var trio = combo.Split(stupidNETcharArray);
+	var id = trio[0];
+	var hash = ((trio.length > 1) && trio[1]) || '';
+	destinationId = ((trio.length > 2) && trio[2]) || '';
+	Application.ExternalCall('notifyUser', 'RestoreScene id:' + id + ' hash:' + hash + ' destination:' + destinationId
+	);
 	FillScene(hash || id, id);
 }
 

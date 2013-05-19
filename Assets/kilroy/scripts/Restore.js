@@ -94,10 +94,11 @@ var nRemainingObjects = 0;  // The number we have started to fetch, but which ha
 // visible cube that will be used as a stand-in of the correct position/size/rotation
 // (because the parent has that info). When the data arrives, it will replace the cube.
 function RestoreInto(id:String, hash:String, parent:Transform) {
+	var fixme = hash;
 	hash = hash || id;
 	var child = parent.Find(id);
-	var isReplacement = !child;
-	if (isReplacement) {
+	var newChild = !child;
+	if (newChild) {
 		child = GameObject.CreatePrimitive(PrimitiveType.Cube).transform;
 		child.parent = parent;
 	} else {  // if hash is already right, we're done.
@@ -105,15 +106,15 @@ function RestoreInto(id:String, hash:String, parent:Transform) {
 		if (obj && (obj.hash == hash)) return child.gameObject;
 	}
 	nRemainingObjects++;
-	StartCoroutine( Inflate(child.gameObject, id, hash, isReplacement) );
+	StartCoroutine( Inflate(child.gameObject, id, hash, newChild) );
 	return child.gameObject;
 }
 // Coroutine to fetch id data, make appropropriate gameObject, fill it, and replace temp with it.
-function Inflate(givenGo:GameObject, id:String, hash:String, isReplacement:boolean) {
+function Inflate(givenGo:GameObject, id:String, hash:String, newChild:boolean) {
 	var holder = new Hashtable[1];
 	yield FetchInto(holder, hash);
 	if (!holder[0]) { return; }  // FetchInto was responsible for alerting user.
-	if (isReplacement) {
+	if (newChild) {
 		var go = makeType(holder[0]);
 		go.AddComponent(Obj);
 		Fill(go, id, holder[0]);
@@ -177,11 +178,19 @@ function FillVersions(x:GameObject, id:String, continuation:String, version:Stri
 	var obj = x.GetComponent(Obj);
 	obj.id = id;
 	if (!obj.isGroup()) { return; }
+	if (obj.versions) {  
+		// No one else will be changing groups, so no need to refetch for latest data.
+		SendMessage(continuation, version);
+		return;
+	}
+	Debug.Log(id + ' has versions.Count:' + (obj.versions ? obj.versions.Count : -1));
 	nRemainingObjects++;
 	var www = Fetch(id);
    	yield www;
 	var data:Hashtable = Parsed(www);
-	obj.hash = data['idvtag'] || obj.hash;
+	if (!obj.hash) { // e.g., if a toplevel request for the latest
+		obj.hash = data['idvtag'];
+	}
 	obj.versions = data['versions']; 
 	if (!obj.versions) { // bootstrapping. synthesize some values
 		obj.timestamp = GetComponent(Save).JSTime().ToString();
@@ -241,7 +250,6 @@ function Fill(go:GameObject, id:String, data:Hashtable) {
 			if (safetyNet && (comp.nametag == 'floor')) {
 				var avatars = GameObject.FindGameObjectsWithTag('Player');
 				for (var avatar in avatars) { avatar.transform.position.y = 1; }
-				// Remove existing children, working backwards so we can iterate properly.
 				safetyNet = GameObject.CreatePrimitive(PrimitiveType.Plane).transform;
 				safetyNet.localScale = Vector3(10, 1, 10);
 				safetyNet.localPosition = Vector3(0, -10, 0);
@@ -293,7 +301,8 @@ function RestoreScene(combo:String) {
 public var sceneId = 'G1'; // for use in editor
 public var undoId = ''; // To undo to an earlier hash in editor; e.g. 
 // G1//r4ATbSDF2oS2gXlJ3lrV3TU3Wv4
-// G1/1368993636720/r4ATbSDF2oS2gXlJ3lrV3TU3Wv4
+// G1/1368993636720/r4ATbSDF2oS2gXlJ3lrV3TU3Wv4  - penultimate
+// G1/1368993677170/r4ATbSDF2oS2gXlJ3lrV3TU3Wv4  - latest
 function Update() {
 	if (!undoId) return;
 	var id = undoId;

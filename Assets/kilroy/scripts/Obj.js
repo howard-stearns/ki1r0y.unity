@@ -5,15 +5,29 @@ public var localMounting = Vector3(0, -1, 0);
 public var localFacing = Vector3(0, 0, -1);
 public var nametag = '';
 public var author = '';
+// Usually the same as id, but cand be different for groups (such as scenes).
+// Used to determine if there's been a change.
+public var hash = ''; 
+// only used for groups
+public var versions:Object; 
+public var timestamp:String;
+
+// hashtable.Keys doesn't specify order. Here we have latest last.
+// FIXME: use this to force initialization. There are a few places in save/restore that we work around empty versions.
+function timestamps():Array {
+	if (!versions) { // bootstrapping. synthesize some values
+		timestamp = GetComponent(Save).JSTime().ToString();
+		versions = {timestamp: hash};
+	}
+	var keys = new Array(versions.Keys); 
+	return keys.Sort();
+}
 
 function isGroup() {
 	if (id == '') return false;
-	return id[0] == 'G'[0];
+	return id != hash; 
 }
 
-// Usually empty or same as id, but cand be different for groups (such as scenes).
-// Used to determine if there's been a change.
-public var hash = ''; 
 
 public var kind = '';
 function Start() {
@@ -52,12 +66,8 @@ public static function SceneSelect(force:boolean) {
 		selectedId = null;
 		var root = GameObject.FindWithTag('SceneRoot');
 		var rootComponent = root.GetComponent(Obj);
-		Debug.Log('SceneSelect ' + root + ' ' + rootComponent + '.');
-		var sname = rootComponent.nametag;
-		var shash = rootComponent.hash;
-		Debug.Log('browser select scene ' + sname);
+		Application.ExternalCall('select', null, rootComponent.nametag);
 		if (Application.isWebPlayer) {
-			Application.ExternalCall('select', null, sname, shash);
 			Application.ExternalCall('props', '/');
 		}
 	}
@@ -76,8 +86,8 @@ function ExternalPropertyEdit(tabName:String, addToHistory:boolean) {
 		'browser select ' + id + ' ' + path + ' ' + tabName 
 		+ (addToHistory ? " addToHistory" : " suppressHistory"));*/
 	//Debug.Log('localScale ' + gameObject.transform.localScale.ToString() + ' globalScale: ' + gameObject.transform.lossyScale.ToString());
+	Application.ExternalCall('select', id, nametag, !addToHistory);
 	if (Application.isWebPlayer) {
-		Application.ExternalCall('select', id, nametag, hash, !addToHistory);
 		Application.ExternalCall('tabSelect', tabName);
 		var pos = gameObject.transform.localPosition;
 		var rot = gameObject.transform.localEulerAngles; //Not what we persist, but easier for users.
@@ -101,9 +111,9 @@ function saveScene() { // Save whatever needs to be saved from the whole scene (
 	Application.ExternalCall('notifyUser', 'now '+ transform.position.ToString() + ' ' + transform.eulerAngles.ToString() + ' ' + transform.lossyScale.ToString());
 	
 	var obj = saver.GetComponent(Obj);
-	var old = obj.hash; // Experiment to support undo.
+	//var old = obj.hash; // Experiment to support undo.
 	saver.Persist(saver.gameObject);
-	if (old) Application.ExternalCall('saved', id, nametag, old, 'move');
+	Application.ExternalCall('saved', id, nametag, obj.timestamp, 'move');
 }
 
 /*****************************************************************************************/

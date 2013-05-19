@@ -106,9 +106,9 @@ function AddComponent(p:Hashtable, component:Light) {
 function AddComponent(p:Hashtable, component:Component) {
 }
 
-/*static function JSTime() {
-	return (System.DateTime.UtcNow - new System.DateTime(1970,1,1)).TotalMilliseconds;
-}*/
+static function JSTime() {
+	return System.Math.Round((System.DateTime.UtcNow - new System.DateTime(1970,1,1)).TotalMilliseconds);
+}
 
 public var forceUpload = false; // forces upload even if not changed. Used for regenerating db.
 // Answers the id of this group. Side effects include:
@@ -123,10 +123,34 @@ function PersistGroup(x:GameObject):String {
 	if (!forceUpload && (hash == obj.hash)) return obj.id; // No need to upload.
 	// Upload the data needed to rebuild this version of the object.
 	uploadData(hash, hash, serialized);
+
+	// Update the local and persisted group info.
+	if (!obj.versions) obj.versions = {};
+	obj.timestamp = JSTime().ToString();
+	obj.versions[obj.timestamp] = hash;  // adds current version
+
+	// Trim older versions. We have to gracefully handle requests for expired versions
+	// that were captured from browser histories. Given that capability, there's
+	// no reason to worry here about whether removing a version that is "live"
+	// in some long-running session.
+	var vers = {}; 
+	var keys = obj.timestamps();
+	// We could keep different amounts for different time periods.
+	// Right now, we just keep the 10 most recent.
+	var bottom = System.Math.Max(0, keys.Count - 10);
+	for (var i = keys.Count - 1; i >= bottom; i--) { // working backwards from most recent
+		var key = keys[i];
+		var val = obj.versions[key];
+		//Debug.Log(obj.id + ' copying version ' + val + ' at ' + key);
+		vers[key] = val;
+	}
+	obj.versions = vers;
+	
 	// Now upload the group container data, so that it can be referenced by id to get whatever the latest version is.
 	var groupSerialization = JSON.Stringify({
 		'idvtag': hash,
-		'nametag': obj.nametag // Including it here saves work when serving people pages
+		'nametag': obj.nametag, // Including it here saves work when serving people pages
+		'versions': obj.versions
 		});
 	uploadData(obj.id, Utils.sha1(groupSerialization), groupSerialization);
 	obj.hash = hash;

@@ -1,5 +1,5 @@
 static function Log(s:String) {
-//	Debug.Log('Restore: ' + s);  // Can be commented in/out for debugging.
+	//Debug.Log('Restore: ' + s);  // Can be commented in/out for debugging.
 }
 
 function Fetch(id):WWW {
@@ -124,20 +124,67 @@ function Inflate(givenGo:GameObject, id:String, hash:String, isReplacement:boole
 		go.transform.localScale = givenGo.transform.localScale;
 		givenGo.transform.parent = null;
 		Destroy(givenGo);
+		givenGo = go;
 		Log('restored ' + holder[0]['nametag']);
 	} else {
 		Fill(givenGo, id, holder[0]);
 	}
+	FillVersions(givenGo, id, 'SceneReady', '');
 	// Careful moving this. Timing of coroutines (and positioning of objs for Goto after restore) is subtle.
 	if (!--nRemainingObjects) SceneReady();  
 }
 // Similar for acting on our gameObject (the whole scene), which doesn't need replacing.
-function FillScene(hash:String, label:String) {
-	nRemainingObjects = 1;
+// Note that FillVersions was already called first, not last.
+function FillScene(timestamp:String) {
+	nRemainingObjects++;
+	var obj = gameObject.GetComponent(Obj);
+	if (!timestamp) {  // Use latest available
+		var stamps = obj.timestamps();
+		timestamp = stamps[stamps.Count - 1];
+	}
+	var idvtag = obj.versions[timestamp];
+	if (idvtag) { // the request was spot on
+		obj.timestamp = timestamp;
+	} else { // Find the version that was in place on that date...
+		var keys = obj.timestamps();
+		obj.timestamp = keys[0];  // ...or the oldest available;
+		for (var i = 0; i < keys.Count; i++) {
+			var key = keys[i];
+			if (key.CompareTo(timestamp) > 0) {
+				break;
+			} else {
+				obj.timestamp = key;
+			}
+		}
+		idvtag = obj.versions[obj.timestamp];
+	}
 	var holder = new Hashtable[1];
-	yield FetchInto(holder, hash);
-	Fill(gameObject, label, holder[0]);
+	yield FetchInto(holder, idvtag);
+	Fill(gameObject, obj.id, holder[0]);
 	if (!--nRemainingObjects) SceneReady();
+}	
+	
+// This function fills in the list of available version for an existing group.
+// We need that so we can save them and have them
+// not dissappear during server-side garbage collection. However, the version info
+// changes from time to time, and so it must be in the general mutable data store 
+// rather than the immutable (single-version) data storage. We arrange for
+// the immutable data stores to include the embedded (non-top-level) current version 
+// so that we don't have to look up twice, but that doesn't give us the list
+// of all versions. Hence this. 
+function FillVersions(x:GameObject, id:String, continuation:String, version:String) {
+	var obj = x.GetComponent(Obj);
+	obj.id = id;
+	if (!obj.isGroup()) { return; }
+	nRemainingObjects++;
+	var www = Fetch(id);
+   	yield www;
+	var data:Hashtable = Parsed(www);
+	if (!!data) { 
+		obj.versions = data['versions']; 
+		obj.hash = data['idvtag'];
+	}
+	if (!--nRemainingObjects) SendMessage(continuation, version);
 }
 
 public var materialPrototype:Material;
@@ -217,8 +264,10 @@ function SceneReady() {
 	var target = destinationId;
 	destinationId = '';
 	var targetObj = target && GameObject.Find(target);
-	Application.ExternalCall('sceneReady', GetComponent(Obj).nametag,
-		targetObj ? targetObj.GetComponent(Obj).nametag : '');
+	var sceneComp = gameObject.GetComponent(Obj);
+	Application.ExternalCall('sceneReady', sceneComp.nametag,
+		targetObj ? targetObj.GetComponent(Obj).nametag : '',
+		sceneComp.timestamp);
 	if (target) { // even if not found
 		var goto = Camera.main.transform.parent.GetComponent(Goto);
 		Debug.Log('telling ' + goto + ' to go back to ' + targetObj);
@@ -232,17 +281,16 @@ function RestoreScene(combo:String) {
 	var stupidNETcharArray:char[] = ['/'[0]];
 	var trio = combo.Split(stupidNETcharArray);
 	var id = trio[0];
-	var hash = ((trio.length > 1) && trio[1]) || '';
+	var version = ((trio.length > 1) && trio[1]) || '';
 	destinationId = ((trio.length > 2) && trio[2]) || '';
-	Application.ExternalCall('notifyUser', 'RestoreScene id:' + id + ' hash:' + hash + ' destination:' + destinationId
-	);
-	FillScene(hash || id, id);
+	Application.ExternalCall('notifyUser', 'RestoreScene id:' + id + ' version:' + version + ' destination:' + destinationId);
+	FillVersions(gameObject, id, 'FillScene', version);
 }
 
 public var sceneId = 'G1'; // for use in editor
 public var undoId = ''; // To undo to an earlier hash in editor; e.g. 
-// G1/aaa34e3e0169b1d24f10944fca2565e08d18d30d
-// G1/aaa34e3e0169b1d24f10944fca2565e08d18d30d/af80136d20c5da84b6817949de5ad5dd35375afe
+// G1//r4ATbSDF2oS2gXlJ3lrV3TU3Wv4
+// G1/1368984895522/r4ATbSDF2oS2gXlJ3lrV3TU3Wv4
 function Update() {
 	if (!undoId) return;
 	var id = undoId;

@@ -13,12 +13,7 @@ public var versions:Object;
 public var timestamp:String;
 
 // hashtable.Keys doesn't specify order. Here we have latest last.
-// FIXME: use this to force initialization. There are a few places in save/restore that we work around empty versions.
 function timestamps():Array {
-	if (!versions) { // bootstrapping. synthesize some values
-		timestamp = GetComponent(Save).JSTime().ToString();
-		versions = {timestamp: hash};
-	}
 	var keys = new Array(versions.Keys); 
 	return keys.Sort();
 }

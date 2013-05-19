@@ -134,7 +134,8 @@ function Inflate(givenGo:GameObject, id:String, hash:String, isReplacement:boole
 	if (!--nRemainingObjects) SceneReady();  
 }
 // Similar for acting on our gameObject (the whole scene), which doesn't need replacing.
-// Note that FillVersions was already called first, not last.
+// Intelligently picks the right idvtag for the requested timestamp.
+// Note that FillVersions was already called first (not last as above).
 function FillScene(timestamp:String) {
 	nRemainingObjects++;
 	var obj = gameObject.GetComponent(Obj);
@@ -180,9 +181,11 @@ function FillVersions(x:GameObject, id:String, continuation:String, version:Stri
 	var www = Fetch(id);
    	yield www;
 	var data:Hashtable = Parsed(www);
-	if (!!data) { 
-		obj.versions = data['versions']; 
-		obj.hash = data['idvtag'];
+	obj.hash = data['idvtag'] || obj.hash;
+	obj.versions = data['versions']; 
+	if (!obj.versions) { // bootstrapping. synthesize some values
+		obj.timestamp = GetComponent(Save).JSTime().ToString();
+		obj.versions = {obj.timestamp: obj.hash};
 	}
 	if (!--nRemainingObjects) SendMessage(continuation, version);
 }

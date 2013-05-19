@@ -120,7 +120,7 @@ function PersistGroup(x:GameObject):String {
 	var serialized = asString(x);
 	var hash = Utils.sha1(serialized);
 	if (obj.id == 'G') obj.id = 'G' + System.Guid.NewGuid().ToString(); // New object => new id. 
-	if (!forceUpload && (hash == obj.hash)) return obj.id; // No need to upload.
+	if (!forceUpload && (hash == obj.hash)) return obj.hash; // No need to upload.
 	// Upload the data needed to rebuild this version of the object.
 	uploadData(hash, hash, serialized);
 
@@ -163,8 +163,8 @@ function Persist(x:GameObject):Hashtable {
 	if (obj.isGroup()) {
 		var hash = PersistGroup(x);
 		AddProperty(instance, 'idvtag', hash); // Restore must grab the hash data, not the latest.
-		// Not really needed, but useful for debugging, and not currently included in object data under hash.
-		AddProperty(instance, 'idtag', obj.name); 
+		// Individual version data does not (currently) have general group nametag, so include it here.
+		AddProperty(instance, 'idtag', obj.id); 
 	} else {
 		var serialized = asString(x);
 		id = Utils.sha1(serialized);

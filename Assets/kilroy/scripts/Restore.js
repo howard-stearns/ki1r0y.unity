@@ -293,7 +293,7 @@ function RestoreScene(combo:String) {
 public var sceneId = 'G1'; // for use in editor
 public var undoId = ''; // To undo to an earlier hash in editor; e.g. 
 // G1//r4ATbSDF2oS2gXlJ3lrV3TU3Wv4
-// G1/1368984895522/r4ATbSDF2oS2gXlJ3lrV3TU3Wv4
+// G1/1368993636720/r4ATbSDF2oS2gXlJ3lrV3TU3Wv4
 function Update() {
 	if (!undoId) return;
 	var id = undoId;

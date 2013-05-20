@@ -33,7 +33,7 @@ private var cam:Camera;  // The camera in which screen coordinates are defined.
 ///////////////////////////////////////////////////////////////////
 // File drag and drop.
 // Message from the browser to here can only take one argument.
-// We break file drop into two messages:
+// We break file drop into multiple messages:
 //    setImportTarget('ddxdd')   - once per drop
 //    setImportFilename('name') - once per file
 //    importImage('URL') - once per file in the drop (file URL in editor, data url in browser)
@@ -269,7 +269,7 @@ function StopDragging(hit:RaycastHit) {
 	if (!!trans) trans.parent = obj.transform;
 	//Debug.Log('reparenting:' + obj + ' dragged scale:' + trans.localScale);
 	if (Vector3.Distance(firstDragPosition, lastDragPosition) > 0.2) 
-		(trans || obj).SendMessage("saveScene", null, SendMessageOptions.DontRequireReceiver);
+		(trans || obj).SendMessage("saveScene", 'move', SendMessageOptions.DontRequireReceiver);
 	else if (!!trans) Camera.main.transform.parent.GetComponent(Goto).Goto(trans, true);
 }
 

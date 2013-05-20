@@ -68,9 +68,16 @@ public static function SceneSelect(force:boolean) {
 	}
 }
 function deleteObject() {
-	transform.parent = null;
-	Destroy(gameObject);
+	transform.parent = null;  // first unhook me without destroying, so that I can save.
 //	Application.ExternalCall('notifyUser', 'deleted:' + nametag);
+	saveScene('delete');
+	Destroy(gameObject);
+}
+public var deleteMe = false; // To delete in editor
+function Update() {
+	if (!deleteMe) return;
+	deleteMe = false;
+	deleteObject();
 }
 
 // Tell external property editor about this object's editable properties.
@@ -101,14 +108,14 @@ function Awake() { // Initialize saver, if available.
 		if (root != null) saver = root.GetComponent(Save);
 	}
 }
-function saveScene() { // Save whatever needs to be saved from the whole scene (or silently skip if not set up to save).
+function saveScene(action) { // Save whatever needs to be saved from the whole scene (or silently skip if not set up to save).
 	if (saver == null || !saver.enabled) return;
-	Application.ExternalCall('notifyUser', 'now '+ transform.position.ToString() + ' ' + transform.eulerAngles.ToString() + ' ' + transform.lossyScale.ToString());
+//	Application.ExternalCall('notifyUser', 'now '+ transform.position.ToString() + ' ' + transform.eulerAngles.ToString() + ' ' + transform.lossyScale.ToString());
 	
 	var obj = saver.GetComponent(Obj);
 	//var old = obj.hash; // Experiment to support undo.
 	saver.Persist(saver.gameObject);
-	Application.ExternalCall('saved', id, nametag, obj.timestamp, 'move');
+	Application.ExternalCall('saved', id, nametag, obj.timestamp, action);
 }
 
 /*****************************************************************************************/
@@ -116,13 +123,13 @@ function saveScene() { // Save whatever needs to be saved from the whole scene (
 // e.g., from browser-based property editors using GetUnity().SentMessage(path, functionName, singleArgument).
 // SendMessage in the browser can only send one (String) argument (other than the path), so we need separate functions 
 // for each of these.
-function setPositionX(v:String) {var vec = transform.position; transform.position = Vector3(parseFloat(v), vec.y, vec.z); saveScene();}
-function setPositionY(v:String) {var vec = transform.position; transform.position = Vector3(vec.x, parseFloat(v), vec.z); saveScene();}
-function setPositionZ(v:String) {var vec = transform.position; transform.position = Vector3(vec.x, vec.y, parseFloat(v)); saveScene();}
+function setPositionX(v:String) {var vec = transform.position; transform.position = Vector3(parseFloat(v), vec.y, vec.z); saveScene('slide x');}
+function setPositionY(v:String) {var vec = transform.position; transform.position = Vector3(vec.x, parseFloat(v), vec.z); saveScene('slide y');}
+function setPositionZ(v:String) {var vec = transform.position; transform.position = Vector3(vec.x, vec.y, parseFloat(v)); saveScene('slide z');}
 
-function setRotationX(v:String) {var vec = transform.eulerAngles; transform.eulerAngles = Vector3(parseFloat(v), vec.y, vec.z); saveScene();}
-function setRotationY(v:String) {var vec = transform.eulerAngles; transform.eulerAngles = Vector3(vec.x, parseFloat(v), vec.z); saveScene();}
-function setRotationZ(v:String) {var vec = transform.eulerAngles; transform.eulerAngles = Vector3(vec.x, vec.y, parseFloat(v)); saveScene();}
+function setRotationX(v:String) {var vec = transform.eulerAngles; transform.eulerAngles = Vector3(parseFloat(v), vec.y, vec.z); saveScene('rotate x');}
+function setRotationY(v:String) {var vec = transform.eulerAngles; transform.eulerAngles = Vector3(vec.x, parseFloat(v), vec.z); saveScene('rotate y');}
+function setRotationZ(v:String) {var vec = transform.eulerAngles; transform.eulerAngles = Vector3(vec.x, vec.y, parseFloat(v)); saveScene('rotate z');}
 
 function setScale(v:String, index:int) {
 	var dbg = 'set v:' + v + ' i:' + index.ToString();
@@ -135,7 +142,7 @@ function setScale(v:String, index:int) {
 	transform.localScale = reorientedGlobal;
 	dbg += ' new:' + transform.lossyScale.ToString();
 	Application.ExternalCall('notifyUser', dbg);
-	saveScene();
+	saveScene('scale');
 }
 function setScaleX(v:String) {setScale(v, 0);}
 function setScaleY(v:String) {setScale(v, 1);}

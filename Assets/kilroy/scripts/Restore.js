@@ -183,7 +183,6 @@ function FillVersions(x:GameObject, id:String, continuation:String, version:Stri
 		SendMessage(continuation, version);
 		return;
 	}
-	Debug.Log(id + ' has versions.Count:' + (obj.versions ? obj.versions.Count : -1));
 	nRemainingObjects++;
 	var www = Fetch(id);
    	yield www;

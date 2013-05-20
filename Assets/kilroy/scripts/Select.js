@@ -34,7 +34,7 @@ private var cam:Camera;  // The camera in which screen coordinates are defined.
 // File drag and drop.
 // Message from the browser to here can only take one argument.
 // We break file drop into multiple messages:
-//    setImportTarget('ddxdd')   - once per drop
+//    setImportTarget('ScreenXxScreenY') or setImportObject(path)   - once per drop
 //    setImportFilename('name') - once per file
 //    importImage('URL') - once per file in the drop (file URL in editor, data url in browser)
 public var picturePrefab:Transform;
@@ -70,8 +70,8 @@ function importImage(url:String) {
 	if (max > 256) max = 128;
 	NotifyUser('importing: ' + url.Substring(0, max) + ' to ' + pt); //because .NET has to be different. No slice.
 
-	var www:WWW = new WWW(url);
-    yield www;
+	var inputData:WWW = new WWW(url);
+    yield inputData;
     NotifyUser('received import data');
     // FIXME: if dropObject, replace the image?
     var v = pt - cam.transform.position;
@@ -83,23 +83,25 @@ function importImage(url:String) {
     pict.transform.Rotate(90, 0, 0);
     pict.transform.parent = GameObject.FindWithTag('SceneRoot').transform;
     var mat = Material(pict.renderer.sharedMaterial);
-    mat.mainTexture = www.texture;
+    mat.mainTexture = inputData.texture;
     pict.renderer.material = mat;
+    pict.GetComponent(Obj).nametag = currentDropFilename;
     
     var form = new WWWForm();
-   	var bytes = www.texture.EncodeToPNG(); // Our upload is always image/png, regardless of drop.
+   	var bytes = inputData.texture.EncodeToPNG(); // Our upload is always image/png, regardless of drop.
    	var id = Utils.sha1(bytes);
+   	mat.mainTexture.name = id + '.png';
     form.AddBinaryData('fileUpload', bytes, currentDropFilename, 'image/png');
-   // Media upload is generally pretty slow, and we don't want the user
+   	// Media upload is generally pretty slow, and we don't want the user
     // to exit the browser or close their laptop during that time, so we
-    // we let the user know what's happening.
+    // let the user know what's happening.
     // IWBNI we showed upload progress, but WWW.uploadProgress is broken in the Web player.
     var msg = 'saving ' + currentDropFilename;
     StatusMessageStart(msg);
-	www = WWW('http://' + Save.host + '/resources/' + id, form);
-	yield www;
-	var result = www.error ? 'failed upload of ' : 'saved ';
-	result += currentDropFilename + ': ' + (www.error || www.text);
+	var upload = WWW('http://' + Save.host + '/resources/' + id, form);
+	yield upload;
+	var result = upload.error ? 'failed upload of ' : 'saved ';
+	result += currentDropFilename + ': ' + (upload.error || upload.text);
 	StatusMessageUpdate(msg, result, 1.0);
 }
 
@@ -110,7 +112,7 @@ function importImage(url:String) {
 	yield WaitForSeconds(4);
 	Debug.Log('import ' + basename);
 	//setImportTarget('374x300');
-	setImportObject('/');
+	setImportObject('/G1/G1floor/AuHu9QEqdP3ZkjKjUf3daN4uku0');
 	setImportFilename(basename);
 	importImage(furl); 
 }*/

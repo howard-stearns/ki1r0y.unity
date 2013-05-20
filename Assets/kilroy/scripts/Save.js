@@ -174,6 +174,8 @@ function Persist(x:GameObject):Hashtable {
 		}
 		AddProperty(instance, 'idtag', id);
 	}
+	// Make sure that the Unity name matches the (possibly new) obj.id, so that Find works.
+	x.name = obj.id;
 	if (x.transform.localPosition != Vector3.zero) 
 		AddProperty(instance, 'position', x.transform.localPosition);
 	if (x.transform.localRotation != Quaternion.identity)

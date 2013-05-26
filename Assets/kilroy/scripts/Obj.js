@@ -110,12 +110,9 @@ function Awake() { // Initialize saver, if available.
 }
 function saveScene(action) { // Save whatever needs to be saved from the whole scene (or silently skip if not set up to save).
 	if (saver == null || !saver.enabled) return;
-//	Application.ExternalCall('notifyUser', 'now '+ transform.position.ToString() + ' ' + transform.eulerAngles.ToString() + ' ' + transform.lossyScale.ToString());
-	
-	var obj = saver.GetComponent(Obj);
-	//var old = obj.hash; // Experiment to support undo.
-	saver.Persist(saver.gameObject);
-	Application.ExternalCall('saved', id, nametag, obj.timestamp, action);
+//	Application.ExternalCall('notifyUser', 'now '+ transform.position.ToString() + ' ' + transform.eulerAngles.ToString() + ' ' + transform.lossyScale.ToString());	
+	// Save.PersistScene() answers a timestamp.
+	Application.ExternalCall('saved', id, nametag, saver.PersistScene(), action);
 }
 
 /*****************************************************************************************/

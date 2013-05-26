@@ -11,6 +11,10 @@ function ContactInfo(combo:String) {
 	userId = pair[1];
 	Application.ExternalCall('notifyUser', 'ContactInfo host:' + host + ' userId:' + userId);
 }
+
+// It is much easier for us to debug code, and for users to match things up, when all
+// of the timestamps from a save are the same. This instance var is set w
+public var thisTimestamp = '';
 function uploadData(id:String, hash:String, serialized:String) {
 	// Must be separate void function to be yieldable.
  	Log(id + ': ' + serialized); // simulated upload
@@ -106,10 +110,6 @@ function AddComponent(p:Hashtable, component:Light) {
 function AddComponent(p:Hashtable, component:Component) {
 }
 
-static function JSTime() {
-	return System.Math.Round((System.DateTime.UtcNow - new System.DateTime(1970,1,1)).TotalMilliseconds);
-}
-
 public var forceUpload = false; // forces upload even if not changed. Used for regenerating db.
 // Answers the id of this group. Side effects include:
 //   Uploads data to id IFF needed.
@@ -126,7 +126,7 @@ function PersistGroup(x:GameObject):String {
 
 	// Update the local and persisted group info.
 	if (!obj.versions) obj.versions = {};
-	obj.timestamp = JSTime().ToString();
+	obj.timestamp = thisTimestamp;
 	obj.versions[obj.timestamp] = hash;  // adds current version
 
 	// Trim older versions. We have to gracefully handle requests for expired versions
@@ -183,4 +183,14 @@ function Persist(x:GameObject):Hashtable {
 	if (x.transform.localScale != Vector3.one)
 		AddProperty(instance, 'scale', x.transform.localScale);
 	return instance;
+}
+
+static function JSTime() { // return the same value of new Date().getTime() would in Javascript.
+	return System.Math.Round((System.DateTime.UtcNow - new System.DateTime(1970,1,1)).TotalMilliseconds);
+}
+// Persist (only) everything we need to in the attached scene, answering the timestamp.
+function PersistScene() { 
+	thisTimestamp = JSTime().ToString();
+	Persist(gameObject);
+	return thisTimestamp;
 }

@@ -98,7 +98,7 @@ function importImage(url:String) {
     // IWBNI we showed upload progress, but WWW.uploadProgress is broken in the Web player.
     var msg = 'saving ' + currentDropFilename;
     StatusMessageStart(msg);
-	var upload = WWW('http://' + Save.host + '/resources/' + id, form);
+	var upload = WWW('http://' + Save.host + '/media/' + id, form);
 	yield upload;
 	var result = upload.error ? 'failed upload of ' : 'saved ';
 	result += currentDropFilename + ': ' + (upload.error || upload.text);

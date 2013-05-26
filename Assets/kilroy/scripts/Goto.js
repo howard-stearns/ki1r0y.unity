@@ -54,13 +54,13 @@ public function Next(isForward:boolean) {
 	var target = (currentSite == null) ? avatar.position : currentSite.position;
 	for (var i:int = 0; i < objs.length; i++) {
 		var thisDistance = (target - objs[i].transform.position).magnitude;
-		Debug.Log(i.ToString() + ':' + objs[i].ToString() + ' ' + thisDistance + ' closest:'+ closestDistance);
+		//Debug.Log(i.ToString() + ':' + objs[i].ToString() + ' ' + thisDistance + ' closest:'+ closestDistance);
 		if (thisDistance < closestDistance) {
 			closestDistance = thisDistance;
 			closest = i;
 		}
 	}
-	Debug.Log('closest=' + closest + ' among ' + objs);
+	//Debug.Log('closest=' + closest + ' among ' + objs);
 	if (isForward) {
 		if (++closest >= objs.length) closest = 0;
 	} else {

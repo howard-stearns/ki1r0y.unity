@@ -21,7 +21,7 @@ function uploadData(id:String, hash:String, serialized:String) {
 	// Note that the hash cannot be part of the serialized data, as then the hash would be 
 	// circularly dependendant on its own value.
 	if (hash != id) form.AddField('hash', hash);
-	var www = WWW('http://' + host + '/db/' + id, form);
+	var www = WWW('http://' + host + '/thing/' + id, form);
 	yield www;
 	if (www.error) print('upload ' + id + ' failed ' + www.error);
 	else Log(id + ' uploaded as ' + www.text);

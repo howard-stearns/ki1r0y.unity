@@ -3,8 +3,8 @@ static function Log(s:String) {
 }
 
 function Fetch(id):WWW {
-	return new WWW('http://' + Save.host + '/db/' + id);
-	//return new WWW('file:///Users/howardstearns/Beyond-My-Wall/server/BMW/public/db/' + id);
+	return new WWW('http://' + Save.host + '/thing/' + id);
+	//return new WWW('file:///Users/howardstearns/Beyond-My-Wall/server/kilroy/db/immutable/' + id);
 }
 // Together, these two functions handle several permutations on how we might store objects:
 // {name:val0, key1:val1, ...}
@@ -79,7 +79,7 @@ function FillTexture(mat:Material, id:String) {
 	// TODO: WWW in Unity editor is certainly not caching, despite Cache-Control/Expires.
 	// See if the browser plugin and standalone is as bad.
 	// See http://unity3d.com/webplayer_setup/setup-3.x/
-	var url = 'http://' + Save.host + '/resources/' + id;
+	var url = 'http://' + Save.host + '/media/' + id;
 	Log('fetching texture ' + url + ' into ' + mat);
 	var www:WWW = new WWW(url);
    	yield www;

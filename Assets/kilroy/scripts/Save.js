@@ -27,7 +27,7 @@ function uploadData(id:String, hash:String, serialized:String) {
 	if (hash != id) form.AddField('hash', hash);
 	var www = WWW('http://' + host + '/thing/' + id, form);
 	yield www;
-	if (www.error) print('upload ' + id + ' failed ' + www.error);
+	if (!String.IsNullOrEmpty(www.error)) Application.ExternalCall('errorMessage', 'Save ' + id + ' failed:' + www.error);
 	else Log(id + ' uploaded as ' + www.text);
 }
 
@@ -122,7 +122,7 @@ function PersistGroup(x:GameObject):String {
 	if (obj.id == 'G') obj.id = 'G' + System.Guid.NewGuid().ToString(); // New object => new id. 
 	if (!forceUpload && (hash == obj.hash)) return obj.hash; // No need to upload.
 	// Upload the data needed to rebuild this version of the object.
-	uploadData(hash, hash, serialized);
+	StartCoroutine( uploadData(hash, hash, serialized) );
 
 	// Update the local and persisted group info.
 	if (!obj.versions) obj.versions = {};
@@ -152,7 +152,7 @@ function PersistGroup(x:GameObject):String {
 		'nametag': obj.nametag, // Including it here saves work when serving people pages
 		'versions': obj.versions
 		});
-	uploadData(obj.id, Utils.sha1(groupSerialization), groupSerialization);
+	StartCoroutine( uploadData(obj.id, Utils.sha1(groupSerialization), groupSerialization) );
 	obj.hash = hash;
 	return obj.hash;
 }
@@ -169,7 +169,7 @@ function Persist(x:GameObject):Hashtable {
 		var serialized = asString(x);
 		id = Utils.sha1(serialized);
 		if (forceUpload || (id != obj.id)) {
-			uploadData(id, id, serialized);
+			StartCoroutine( uploadData(id, id, serialized) );
 			obj.id = id;
 		}
 		AddProperty(instance, 'idtag', id);
@@ -189,6 +189,9 @@ static function JSTime() { // return the same value of new Date().getTime() woul
 	return System.Math.Round((System.DateTime.UtcNow - new System.DateTime(1970,1,1)).TotalMilliseconds);
 }
 // Persist (only) everything we need to in the attached scene, answering the timestamp.
+// Note that this function is synchronous: the actual uploads are coroutines, but the data computation
+// answers directly.
+// Also, media (e.g., textures) are uploaded at import time, and don't have any impact on this save.
 function PersistScene() { 
 	thisTimestamp = JSTime().ToString();
 	Persist(gameObject);

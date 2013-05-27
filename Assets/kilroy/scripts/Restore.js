@@ -117,6 +117,7 @@ function Inflate(givenGo:GameObject, id:String, hash:String, newChild:boolean) {
 	if (newChild) {
 		var go = makeType(holder[0]);
 		go.AddComponent(Obj);
+		go.AddComponent(PictureCapture);
 		Fill(go, id, holder[0]);
 		// Now replace the temp with our new go.
 		go.transform.parent = givenGo.transform.parent; // First, before setting the following.

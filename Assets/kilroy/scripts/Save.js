@@ -15,7 +15,9 @@ function ContactInfo(combo:String) {
 // It is much easier for us to debug code, and for users to match things up, when all
 // of the timestamps from a save are the same. This instance var is set w
 public var thisTimestamp = '';
-function uploadData(id:String, hash:String, serialized:String) {
+public var refs = {}; // A set of all the objects referenced by this scene.
+function uploadData(id:String, hash:String, serialized:String) { return uploadData(id, hash, serialized, 'thing'); }
+function uploadData(id:String, hash:String, serialized:String, mode:String) {
 	// Must be separate void function to be yieldable.
  	Log(id + ': ' + serialized); // simulated upload
  	var form = new WWWForm();
@@ -24,11 +26,11 @@ function uploadData(id:String, hash:String, serialized:String) {
 	// That's just an optimization, and the server is not required to actually save the hash.
 	// Note that the hash cannot be part of the serialized data, as then the hash would be 
 	// circularly dependendant on its own value.
-	if (hash != id) form.AddField('hash', hash);
-	var www = WWW('http://' + host + '/thing/' + id, form);
+	// if (hash != id) form.AddField('hash', hash);
+	var www = WWW('http://' + host + '/' + mode + '/' + id, form);
 	yield www;
 	if (!String.IsNullOrEmpty(www.error)) Application.ExternalCall('errorMessage', 'Save ' + id + ' failed:' + www.error);
-	else Log(id + ' uploaded as ' + www.text);
+	else Log(id + ' uploaded ' + www.text);
 }
 
 function asData(x:GameObject):Hashtable {
@@ -152,11 +154,12 @@ function PersistGroup(x:GameObject):String {
 		'nametag': obj.nametag, // Including it here saves work when serving people pages
 		'versions': obj.versions
 		});
-	StartCoroutine( uploadData(obj.id, Utils.sha1(groupSerialization), groupSerialization) );
+	StartCoroutine( uploadData(obj.id, Utils.sha1(groupSerialization), groupSerialization) ); // FIXME we're not really using the sha1. Remove?
 	obj.hash = hash;
 	return obj.hash;
 }
-function Persist(x:GameObject):Hashtable {
+function Persist(x:GameObject):Hashtable { return Persist(x, false); }
+function Persist(x:GameObject, isScene:boolean):Hashtable {
 	var instance = new Hashtable(); 
 	var obj:Obj = x.GetComponent(Obj);
 	if (!enabled || obj == null) return new Hashtable();  // for debugging/experiments
@@ -176,6 +179,12 @@ function Persist(x:GameObject):Hashtable {
 	}
 	// Make sure that the Unity name matches the (possibly new) obj.id, so that Find works.
 	x.name = obj.id;
+	if (isScene) {
+		// We could optimize the number of POSTs by adding a parameter to the scene data, but for now...
+		StartCoroutine( uploadData(obj.id, obj.hash, JSON.Stringify(new Array(refs.Keys)), 'refs') );
+	} else {
+		refs[obj.id] = true; // accumulate one each of all the refs as we trace.
+	}
 	if (x.transform.localPosition != Vector3.zero) 
 		AddProperty(instance, 'position', x.transform.localPosition);
 	if (x.transform.localRotation != Quaternion.identity)
@@ -194,6 +203,7 @@ static function JSTime() { // return the same value of new Date().getTime() woul
 // Also, media (e.g., textures) are uploaded at import time, and don't have any impact on this save.
 function PersistScene() { 
 	thisTimestamp = JSTime().ToString();
-	Persist(gameObject);
+	ref = {};
+	Persist(gameObject, true);
 	return thisTimestamp;
 }

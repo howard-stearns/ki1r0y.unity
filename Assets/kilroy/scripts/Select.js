@@ -225,7 +225,7 @@ function StartGizmo(trans:Transform) {
 // During dragging, we add an empty, unit-scaled pivot transform to the avatar 
 // (so that it is still in the scene graph, but with out any scaled ancestors), 
 // and then put the dragged transform under the pivot.
-private var dragged:Transform = null;
+public var dragged:Transform = null;  //public for debugging
 // During dragging, we also put the dragged onto the Ignore Raycast layer so that
 // we don't try drag the object onto itself.
 private var savedLayer:int;
@@ -235,7 +235,8 @@ private var laser:GameObject;
 function SetAssemblyLayer(obj:GameObject, layer:int) {
 	obj.layer = layer;
 	for (var child:Transform in obj.transform) {
-		SetAssemblyLayer(child.gameObject, layer);
+		if (child.tag != 'BlockFace')  // Don't change these. They start on Ignore Raycast and must remain so.
+			SetAssemblyLayer(child.gameObject, layer);
 	}
 }
 
@@ -321,7 +322,7 @@ function StartDragging(hit:RaycastHit) {
     if (isMeshCollider) obj.collider.convex = true;  // so raycast can hit back of plane
  	if (obj.collider.Raycast(reverseRay, reverseHit, Mathf.Infinity)) { 
  		offset = surfaceHit.point - reverseHit.point;
-       	Debug.Log('hit:' + surfaceHit.point + ' reverse:' + reverseHit.point + ' offset:' + offset);
+       	//Debug.Log('hit:' + surfaceHit.point + ' reverse:' + reverseHit.point + ' offset:' + offset);
 		dragged.position += offset;
 	} else { 
 		Debug.LogError('** No reverse hit! ** hit:' + surfaceHit.point + ' mounting:' + mountingDirection + ' embedded:' + embeddedPoint);
@@ -349,6 +350,7 @@ function StartDragging(hit:RaycastHit) {
 }
 
 function DoDragging(hit:RaycastHit) {
+	if (!dragged) return;
 	var delta = hit.point - lastDragPosition;
 	lastDragPosition = hit.point;
 	between(laser, shoulder.position, hit.point, 0.1);

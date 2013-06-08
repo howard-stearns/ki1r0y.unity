@@ -8,7 +8,7 @@ function constrain(axis:Transform, p:Vector3):Vector3 {
 	return firstPoint + proj;
 }
 function startDragging(assembly:Transform, axis:Transform, plane:Transform, cameraRay:Ray, hit:RaycastHit) {
-	plane.rotation = Quaternion.LookRotation(axis.right, -cameraRay.direction);
+	plane.rotation = Quaternion.LookRotation(axis.right, -Camera.main.transform.forward);
 	plane.position = firstPoint = hit.point;
 	return plane.collider;
 }

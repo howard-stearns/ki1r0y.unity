@@ -23,7 +23,7 @@ function Start() {
 function startDragging(assembly:Transform, axis:Transform, plane:Transform, cameraRay:Ray, hit:RaycastHit) {
 	norm = axis.right; 
 	// There are two distinct modes: we can click on the outside-or-inside face of the disk, 
-	// or we can click on the edge of the disk (because we're too edge-on to do effectively spin the face).
+	// or we can click on the edge of the disk (because we're too edge-on to effectively spin the face).
 	onEdge = Mathf.Abs(Vector3.Dot(norm, hit.normal)) < 0.9;
 	plane.position = firstPoint = hit.point;
 	isOutside = Vector3.Dot(cameraRay.direction, norm) < 0; // i.e., looking down the norm, against the arrow towards the origin

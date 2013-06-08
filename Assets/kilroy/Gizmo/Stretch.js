@@ -16,7 +16,7 @@ function setAssemblyIndex(assembly:Transform, axis:Transform) { // Assumes we're
 	}
 }
 function startDragging(assembly:Transform, axis:Transform, plane:Transform, cameraRay:Ray, hit:RaycastHit) {
-	plane.rotation = Quaternion.LookRotation(axis.right, -cameraRay.direction);
+	plane.rotation = Quaternion.LookRotation(axis.right, -Camera.main.transform.forward);
 	plane.position = firstPoint = hit.point;
 	setAssemblyIndex(assembly, axis);
 	firstScale = assembly.localScale[assemblyIndex];

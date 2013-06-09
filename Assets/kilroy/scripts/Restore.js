@@ -56,14 +56,12 @@ function makeType(data:Hashtable):GameObject {
 	var type:String = data['type'];
 	var pt:Object = null;
 	if (type == 'Plane') pt = PrimitiveType.Plane;
-	//else if (type == 'Cube') pt = PrimitiveType.Cube;
-	else if (type == 'Sphere') pt = PrimitiveType.Sphere;
 	if (pt != null) go = GameObject.CreatePrimitive(pt);
 	else if (type == 'Cube') go = Instantiate(blockPrototype.gameObject);
 	else {
 		if (type == 'Directional') pt = LightType.Directional;
 		else if (type == 'Point') pt = LightType.Point;
-		else if (type === 'Spot') pt = LightType.Spot;
+		else if (type == 'Spot') pt = LightType.Spot;
 		go = new GameObject(); 
 		if (pt != null) {
 			var light = go.AddComponent(Light);
@@ -252,7 +250,7 @@ function Fill(go:GameObject, id:String, data:Hashtable) {
 				for (var avatar in avatars) { avatar.transform.position.y = 1; }
 				safetyNet = GameObject.CreatePrimitive(PrimitiveType.Plane).transform;
 				safetyNet.localScale = Vector3(10, 1, 10);
-				safetyNet.localPosition = Vector3(0, -10, 0);
+				safetyNet.localPosition = Vector3(0, 0, 0);
 				safetyNet.name = 'SafetyNet';
 				safetyNet.parent = transform;
 			}

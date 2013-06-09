@@ -226,7 +226,7 @@ function Fill(go:GameObject, id:String, data:Hashtable) {
 			}
 			materials[i] = mat;
 		}
-		go.renderer.materials = materials;
+		go.renderer.sharedMaterials = materials;
 		go.SendMessage("NewMaterials", null, SendMessageOptions.DontRequireReceiver);
 	}
 	var legitimateChildren = new Array(); // Keep track of the Objs we're now supposed to have.

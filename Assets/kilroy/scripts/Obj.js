@@ -75,7 +75,7 @@ function deleteObject() {
 }
 
 public function isTargetable():boolean {
-	return !!renderer || !!gameObject.GetComponent(BlockDrawing);
+	return !!objectCollider();
 }
 
 public function bounds():Bounds { // Answer world space Bounds. (Do we want just our collider, or all children (i.e., renderer.bounds)?)

@@ -64,7 +64,7 @@ function setImportFilename(name:String) {
 	// error/progress messages.
 	currentDropFilename = name;
 }
-function importImage(url:String) {
+function importImage(url:String) {  // Here, rather than Restore or Obj, because this is per user. Might ref user data.
 	var pt = (dropObject == null) ? dropTarget.point : dropObject.position;
 	var max = url.Length;
 	if (max > 256) max = 128;
@@ -162,16 +162,16 @@ function hitNormal(hit:RaycastHit) {
 private var oldMaterials:Material[];    		// A copy of the material original material set.
 private var oscillateStartTime = 0.0;  			// 0 stops any oscillating coroutine.
 public var period = (2 * 0.8)/(2 * Mathf.PI); 	// Two beats of our standard 75bpm tempo.
-// Highlight obj. Behavior is undefined if any object (same obj or not) is already highted.
-function Highlight(obj:GameObject) {
-	if (!obj.renderer) return;  // Attempt to highlight the avatar or some such
+// Highlight go. Behavior is undefined if any object (same go or not) is already highted.
+function Highlight(go:GameObject) {
+	var obj = go.GetComponent(Obj);
+	if (!go.renderer || !obj) return;  // Attempt to highlight the avatar or some such
 	oscillateStartTime = Time.time;
 	// We must make a copy of the materials before we start throbbing them, because they might share with other materials.
-	oldMaterials = obj.renderer.sharedMaterials;
-	var mats = obj.renderer.materials;
-	obj.renderer.materials = mats;
-	// Allows block faces to continue sharing material with the block (so that they oscillate, too).
-	obj.SendMessage("NewMaterials", null, SendMessageOptions.DontRequireReceiver);
+	oldMaterials = obj.sharedMaterials();
+	var mats = new Material[oldMaterials.Length];
+	for (var m = 0; m < mats.Length; m++) mats[m] = Material(oldMaterials[m]);
+	obj.sharedMaterials(mats);
 	//mat.SetColor('_Emission', Color.white);
 	while (oscillateStartTime != 0.0) {
 		var fraction = (1 + Mathf.Sin((Time.time - oscillateStartTime)/period + Mathf.PI/2.0)) /2.0;
@@ -185,13 +185,13 @@ function Highlight(obj:GameObject) {
 	}
 }
 // Remove highlighting from obj. Behavior is undefined if obj was not the most recently highlighted.
-function UnHighlight() { if (selection != null) UnHighlight(selection.gameObject); }
-function UnHighlight(obj:GameObject) {
-	if (obj.renderer == null) return;
+function UnHighlight() { if (selection != null) UnHighlight(selection); }
+function UnHighlight(go:GameObject) {
 	if (!oldMaterials || !oldMaterials.length) return;
-	obj.renderer.sharedMaterials = oldMaterials;
+	var obj = go.GetComponent(Obj);
+	if (!go.renderer || !obj) return;
 	oscillateStartTime = 0;
-	obj.SendMessage("NewMaterials", null, SendMessageOptions.DontRequireReceiver);
+	obj.sharedMaterials(oldMaterials);
 	oldMaterials = null;
 }
 
@@ -203,8 +203,8 @@ public var gizmoOldParent:Transform; // When gizmo is on, it's parent object is 
 public var overlayControls:OverlayControls; // A script that controls whether mouse motion is tracked.
 function StopGizmo() {
 	if (!gizmo) return;
-	gizmo.parent.parent = gizmoOldParent;
-	gizmoOldParent = null;
+	//gizmo.parent.parent = gizmoOldParent;
+	//gizmoOldParent = null;
 	gizmo.parent = null;
 	Destroy(gizmo.gameObject);
 	gizmo = null;
@@ -214,8 +214,8 @@ function StartGizmo(trans:Transform) {
 	gizmo = Instantiate(gizmoPrefab, trans.position, trans.rotation).transform;
 	gizmo.parent = trans;
 	// trans.parent.localScale will mess us up:
-	gizmoOldParent = trans.parent;
-	trans.parent = transform; // e.g. avatar
+	//gizmoOldParent = trans.parent;
+	//trans.parent = transform; // e.g. avatar
 	overlayControls.lockMouseMotionOff();
 }
 
@@ -232,9 +232,9 @@ private var savedLayer:int;
 private var cursorOffsetToSurface:Vector3 = Vector3.zero;
 private var laser:GameObject;
 
-function SetAssemblyLayer(obj:GameObject, layer:int) {
-	obj.layer = layer;
-	for (var child:Transform in obj.transform) {
+function SetAssemblyLayer(go:GameObject, layer:int) {
+	go.layer = layer;
+	for (var child:Transform in go.transform) {
 		if (child.tag != 'BlockFace')  // Don't change these. They start on Ignore Raycast and must remain so.
 			SetAssemblyLayer(child.gameObject, layer);
 	}
@@ -268,11 +268,11 @@ function StopDragging(hit:RaycastHit) {
 	StopDragging();
 	// Make the dragged object a child of the hit.
 	// After things stabilize, this could be combined with the reparenting above.
-	var obj:GameObject = hit.collider.gameObject;
-	if (!!trans) trans.parent = obj.transform;
-	//Debug.Log('reparenting:' + obj + ' dragged scale:' + trans.localScale);
+	var go:GameObject = Obj.ColliderGameObject(hit.collider);
+	if (!!trans) trans.parent = go.transform;
+	//Debug.Log('reparenting:' + go + ' dragged scale:' + trans.localScale);
 	if (Vector3.Distance(firstDragPosition, lastDragPosition) > 0.2) 
-		(trans || obj).SendMessage("saveScene", 'move', SendMessageOptions.DontRequireReceiver);
+		(trans || go).SendMessage("saveScene", 'move', SendMessageOptions.DontRequireReceiver);
 	else if (!!trans) Camera.main.transform.parent.GetComponent(Goto).Goto(trans, true);
 }
 
@@ -286,48 +286,50 @@ private var rt1:Vector3;
 private var fwd1:Vector3;
 
 function StartDragging(hit:RaycastHit) {
-	var obj:GameObject = hit.collider.gameObject;
-	savedLayer = obj.layer;
-	dragged = obj.transform;
-	var comp = obj.GetComponent(Obj);
-	var mountingDirection = comp ? dragged.TransformDirection(comp.localMounting) : -dragged.up;
+	var go:GameObject = Obj.ColliderGameObject(hit.collider);
+	savedLayer = go.layer;
+	dragged = go.transform;
+	var obj = go.GetComponent(Obj);
+	var mountingDirection = obj ? dragged.TransformDirection(obj.localMounting) : -dragged.up;
 //	var debugStart = dragged.position;
-	if (selection != obj.collider) Debug.Error('FIXME selection does not match hit.collider');
+	if (selection != go) Debug.Error('FIXME selection does not match hit.collider');
 	
 	// Two Tests:
 		
 	// We will project the hit.point along the mountingDirection until we hit
 	// a surface to slide along. No surface means we give up. 
 	var surfaceHit:RaycastHit; 
-	SetAssemblyLayer(obj, 2); //Don't intersect with the object itself.
-	var selectedHit = hit.point;  // Start with where the user clicked on the obj.
-	// Push the selectedHit a bit towards the obj center, so that we don't miss the edge on reversal.
-	selectedHit += (obj.renderer.bounds.center - selectedHit).normalized * 0.1;
+	SetAssemblyLayer(go, 2); //Don't intersect with the object itself.
+	var selectedHit = hit.point;  // Start with where the user clicked on the go.
+	// Push the selectedHit a bit towards the go center, so that we don't miss the edge on reversal.
+	var bounds = obj.bounds();
+	selectedHit += (bounds.center - selectedHit).normalized * 0.1;
 	// Any object on any layer will do. (No layer mask.)
 	if (!Physics.Raycast(selectedHit, mountingDirection, surfaceHit)) { 
 		NotifyUser("Nothing under object to slide along.");
 		dragged = null;
-		SetAssemblyLayer(obj, savedLayer);
+		SetAssemblyLayer(go, savedLayer);
 		return; 
 	}
 
     // Now the reverse: the surfaceHit.point back to the object.
     var reverseHit:RaycastHit; 
     // But use a point "below" the hit.point (into surface, by depth of object) so we can catch embedded objects.
-    var embeddedPoint = surfaceHit.point + (mountingDirection * obj.renderer.bounds.size.magnitude); //obj.transform.localScale.magnitude);  
+    var embeddedPoint = surfaceHit.point + (mountingDirection * bounds.size.magnitude); //go.transform.localScale.magnitude);  
     var reverseRay = Ray(embeddedPoint, -mountingDirection);
     var offset = Vector3.zero;
-    var isMeshCollider = obj.GetComponent(MeshCollider) != null;
-    var oldConvex = isMeshCollider && obj.collider.convex;
-    if (isMeshCollider) obj.collider.convex = true;  // so raycast can hit back of plane
- 	if (obj.collider.Raycast(reverseRay, reverseHit, Mathf.Infinity)) { 
+    var col = obj.objectCollider();
+    var isMeshCollider = col.GetType().Name == 'MeshCollider';
+    var oldConvex = isMeshCollider && col.convex;
+    if (isMeshCollider) col.convex = true;  // so raycast can hit back of plane
+ 	if (col.Raycast(reverseRay, reverseHit, Mathf.Infinity)) { 
  		offset = surfaceHit.point - reverseHit.point;
        	//Debug.Log('hit:' + surfaceHit.point + ' reverse:' + reverseHit.point + ' offset:' + offset);
 		dragged.position += offset;
 	} else { 
 		Debug.LogError('** No reverse hit! ** hit:' + surfaceHit.point + ' mounting:' + mountingDirection + ' embedded:' + embeddedPoint);
 	}
-	if (isMeshCollider) obj.collider.convex = oldConvex;
+	if (isMeshCollider) col.convex = oldConvex;
 	// Set drag state
 	firstDragPosition = surfaceHit.point;
 	lastDragPosition = firstDragPosition;
@@ -382,18 +384,18 @@ function DoDragging(hit:RaycastHit) {
 }
 
 /************************************************************************************/
-public var selection:Collider;
-function Selection(col:Collider) {
+public var selection:GameObject;
+function Selection(col:GameObject) {
 	if (col == selection) return;
 	UnSelection();
 	selection = col;
-	Highlight(selection.gameObject);
+	Highlight(selection);
 }
 function UnSelection():boolean { // May or may not have been dragging. Answer true if we were.
 	var didSomething:boolean = !!dragged && !!selection;
 	StopDragging();  // before we unselect.
 	if (selection != null) {
-		UnHighlight(selection.gameObject);
+		UnHighlight(selection);
 		selection = null;
 	} 
 	return didSomething;
@@ -413,7 +415,7 @@ function Update () {
 	if (Physics.Raycast(pointerRay, hit, Mathf.Infinity, (1<<0))) {
 		if (Input.GetMouseButtonDown(1) || 
 			(Input.GetMouseButtonDown(0) && (Input.GetAxis('Fire2') || Input.GetAxis('Fire3')))) {
-			hit.collider.gameObject.GetComponent(Obj).ExternalPropertyEdit('properties', true);
+			Obj.ColliderGameObject(hit.collider).GetComponent(Obj).ExternalPropertyEdit('properties', true);
 			if (!Application.isWebPlayer) StartGizmo(hit.transform);
 			// else changing tab will call back to us to StartGizmo.
 		} else if (Input.GetMouseButtonDown(0)) { 
@@ -424,7 +426,7 @@ function Update () {
 			if (!selection) { StopDragging(); return; }
 			DoDragging(hit);		
 		} else {
-			Selection(hit.collider);
+			Selection(Obj.ColliderGameObject(hit.collider));
 		}
 	} else {
 		if (UnSelection()) NotifyUser("You have reached the edge of all surfaces.");
@@ -436,23 +438,3 @@ function Awake() {
 	cam = Camera.main;
 	if (overlayControls == null) overlayControls = GameObject.Find('/PlayerOverlay').GetComponent(OverlayControls);
 }
-
-
-// FIXME: Move this to update so as to be independent of load.
-// FIXME: Set the distance to travel in StartDragging, but don't actually
-// start moving until we're actually dragging, and cancel if no drag.
-/*function animateSelectionToSurface(displacement:Vector3) {
-	var span = 0.500;   
-	var interval = 0.025;
-	var trans = selection.transform;
-	if (displacement.sqrMagnitude < 0.02) {
-		trans.localPosition += displacement;
-		return;
-	}
-	var steps = span/interval;
-	var increment = displacement / steps;
-	while (steps-- > 0) {
-		trans.localPosition += increment;
-		yield WaitForSeconds(interval);
-	}
-}*/

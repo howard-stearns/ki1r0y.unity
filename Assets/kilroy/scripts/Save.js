@@ -64,6 +64,26 @@ function AddComponent(p:Hashtable, component:Obj) {
 	
 	AddProperty(p, 'nametag', component.nametag);
 	AddProperty(p, 'author', component.author);
+	// Save obj.sharedMaterials() here, rather than letting Renderer component do it on its own, 
+	// because Obj component may indirect sharedMaterials in different ways.
+	var mats:Array = []; var any = false;
+	for (var mat in component.sharedMaterials()) {
+		var txt = mat.mainTexture;
+		if (txt == null) {
+			mats.Push('');
+			continue;
+		}
+		any = true;
+		// We can't add our own scripts and properties (e.g., id and hash) to 
+		// materials and textures. However, we can treat them as immutable, and
+		// arrange to make sure that they are always given a unique name and
+		// uploaded at creation time. All we have to do here is just include that
+		// name, and we never have to worry about potentially slow texture uploads 
+		// during scene saves. 
+		// FIXME: encode other properties (scale, offset).
+		mats.Push(txt.name);
+	}
+	if (any) AddProperty(p, 'materials', mats);
 }
 function AddComponent(p:Hashtable, component:Transform) {
 	// The only shared data for all instances is the child data.
@@ -84,26 +104,6 @@ function AddComponent(p:Hashtable, component:MeshFilter) {
 	var index = type.IndexOf(' Instance');
 	if (index >= 0) type = type.Remove(index);
 	AddProperty(p, 'type', type);
-}
-function AddComponent(p:Hashtable, component:Renderer) {
-	var mats:Array = []; var any = false;
-	for (var mat in component.sharedMaterials) {
-		var txt = mat.mainTexture;
-		if (txt == null) {
-			mats.Push('');
-			continue;
-		}
-		any = true;
-		// We can't add our own scripts and properties (e.g., id and hash) to 
-		// materials and textures. However, we can treat them as immutable, and
-		// arrange to make sure that they are always given a unique name and
-		// uploaded at creation time. All we have to do here is just include that
-		// name, and we never have to worry about potentially slow texture uploads 
-		// during scene saves. 
-		// FIXME: encode other properties (scale, offset).
-		mats.Push(txt.name);
-	}
-	if (any) AddProperty(p, 'materials', mats);
 }
 function AddComponent(p:Hashtable, component:Light) {
 	AddProperty(p, 'type', component.type.ToString());

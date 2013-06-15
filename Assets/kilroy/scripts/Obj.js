@@ -20,7 +20,7 @@ function timestamps():Array {
 
 function isGroup() {
 	if (id == '') return false;
-	return id != hash; 
+	return id.length != hash.length; 
 }
 
 
@@ -73,6 +73,40 @@ function deleteObject() {
 	saveScene('delete');
 	Destroy(gameObject);
 }
+
+public function bounds():Bounds { // Answer world space Bounds
+	return gameObject.renderer.bounds;
+}
+public function objectCollider():Collider { // Answer our Collider
+	return gameObject.collider;
+}
+// Answer our shared Materials array (even if just an array of one). Side-effecting any resulting element (but not the whole Array) changes for all.
+public function sharedMaterials():Material[] { 
+	var r = gameObject.renderer;
+	var m:Material[];
+	if (!r) m = new Material[0];
+	else if (!r.enabled) {
+		var block = gameObject.GetComponent(BlockDrawing);
+		m = block.sharedMaterials();
+	} else m = r.sharedMaterials;
+	return m;
+}
+// Assign new sharedMaterials and answer the new value.
+public function sharedMaterials(mats:Material[]):Material[] {
+	var r = gameObject.renderer;
+	if (!r && !mats.Length) return mats;
+	else if (!r.enabled) {
+		var block = gameObject.GetComponent(BlockDrawing);
+		block.sharedMaterials(mats);
+	} else r.sharedMaterials = mats;	
+	return mats;
+}
+
+// Answer the Kilroy GameObject of the given c, or null.
+public static function ColliderGameObject(c:Collider):GameObject { 
+	return c.gameObject;
+}
+
 public var deleteMe = false; // To delete in editor
 function Update() {
 	if (!deleteMe) return;

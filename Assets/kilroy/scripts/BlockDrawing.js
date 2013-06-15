@@ -6,21 +6,25 @@ public var top:Transform;
 public var back:Transform;
 public var bottom:Transform;
 
-// Distribute each of our six sharedMaterials to one of the faces.
-// Used whenever our (block) sharedMaterials is changed.
-// This allows, e.g., highlighting to just change the Obj materials, and have it affect the faces.
-function NewMaterials() {
-	var shared = renderer.sharedMaterials;
-	front.renderer.sharedMaterial = shared[0]; 
-	left.renderer.sharedMaterial = shared[1]; 
-	right.renderer.sharedMaterial = shared[2];
-	top.renderer.sharedMaterial = shared[3];
-	back.renderer.sharedMaterial = shared[4];   
-	bottom.renderer.sharedMaterial = shared[5]; 
+public function sharedMaterials():Material[] { 
+	var m = new Material[6];
+	m[0] = front.renderer.sharedMaterial;
+	m[1] = left.renderer.sharedMaterial;
+	m[2] = right.renderer.sharedMaterial;
+	m[3] = top.renderer.sharedMaterial;
+	m[4] = back.renderer.sharedMaterial;
+	m[5] = bottom.renderer.sharedMaterial;
+	return m;
 }
-
-function Awake() {
-	NewMaterials();
+// Assign new sharedMaterials and answer the new value.
+public function sharedMaterials(mats:Material[]):Material[] {
+	front.renderer.sharedMaterial = mats[0];
+	left.renderer.sharedMaterial = mats[1];
+	right.renderer.sharedMaterial = mats[2];
+	top.renderer.sharedMaterial = mats[3];
+	back.renderer.sharedMaterial = mats[4];
+	bottom.renderer.sharedMaterial = mats[5];
+	return mats;
 }
 
 // Wrap the given picture around the appropriate face.

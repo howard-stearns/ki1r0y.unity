@@ -74,8 +74,12 @@ function deleteObject() {
 	Destroy(gameObject);
 }
 
-public function bounds():Bounds { // Answer world space Bounds
-	return gameObject.renderer.bounds;
+public function isTargetable():boolean {
+	return !!renderer || !!gameObject.GetComponent(BlockDrawing);
+}
+
+public function bounds():Bounds { // Answer world space Bounds. (Do we want just our collider, or all children (i.e., renderer.bounds)?)
+	return gameObject.collider.bounds;
 }
 public function objectCollider():Collider { // Answer our Collider
 	return gameObject.collider;
@@ -84,21 +88,19 @@ public function objectCollider():Collider { // Answer our Collider
 public function sharedMaterials():Material[] { 
 	var r = gameObject.renderer;
 	var m:Material[];
-	if (!r) m = new Material[0];
-	else if (!r.enabled) {
-		var block = gameObject.GetComponent(BlockDrawing);
-		m = block.sharedMaterials();
-	} else m = r.sharedMaterials;
+	var block = gameObject.GetComponent(BlockDrawing);
+	if (!r && !block) m = new Material[0];
+	else if (block) m = block.sharedMaterials();
+	else m = r.sharedMaterials;
 	return m;
 }
 // Assign new sharedMaterials and answer the new value.
 public function sharedMaterials(mats:Material[]):Material[] {
 	var r = gameObject.renderer;
-	if (!r && !mats.Length) return mats;
-	else if (!r.enabled) {
-		var block = gameObject.GetComponent(BlockDrawing);
-		block.sharedMaterials(mats);
-	} else r.sharedMaterials = mats;	
+	var block = gameObject.GetComponent(BlockDrawing);
+	if (!r && !block && !mats.Length) return mats;
+	else if (block) block.sharedMaterials(mats);
+	else r.sharedMaterials = mats;	
 	return mats;
 }
 

@@ -30,9 +30,9 @@ function GetAssemblies(trans:Transform):Array {
 	for (var child:Transform in trans) {
 		var go = child.gameObject;
 		var oc = go.GetComponent(Obj);
-		if (oc && oc.renderer!=null)
+		if (oc && oc.isTargetable())
 			assemblies.push(child);
-		if (child.gameObject.GetComponent(Obj).isGroup()) 
+		if (oc.isGroup()) 
 			assemblies = assemblies.Concat(GetAssemblies(child));
 	}
 	return assemblies;  // FIXME: how shall we sort this?

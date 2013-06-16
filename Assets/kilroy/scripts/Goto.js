@@ -29,11 +29,12 @@ function GetAssemblies(trans:Transform):Array {
 	var assemblies = new Array();
 	for (var child:Transform in trans) {
 		var go = child.gameObject;
-		var oc = go.GetComponent(Obj);
-		if (oc && oc.isTargetable())
+		var oc = go.GetComponent.<Obj>();
+		if (oc && oc.isTargetable()) {
 			assemblies.push(child);
-		if (oc.isGroup()) 
-			assemblies = assemblies.Concat(GetAssemblies(child));
+			if (oc.isGroup()) 
+				assemblies = assemblies.Concat(GetAssemblies(child));
+		}
 	}
 	return assemblies;  // FIXME: how shall we sort this?
 }

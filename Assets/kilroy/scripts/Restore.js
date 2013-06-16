@@ -51,12 +51,19 @@ static function makeQuaternion(data:Hashtable):Quaternion {
 }
 public var blockPrototype:Transform;  // Our 6-textured block
 // Answer a primitive appropriate for the given data, or null for unknown/group.
-function makeType(data:Hashtable):GameObject {
+function makeType(data:Hashtable):Obj {
 	var go:GameObject;
+	var obj:Obj;
 	var type:String = data['type'];
 	var pt:Object = null;
 	if (type == 'Plane') pt = PrimitiveType.Plane;
-	if (pt != null) go = GameObject.CreatePrimitive(pt);
+	if (pt != null) {
+		go = new GameObject();
+		obj = go.AddComponent.<Obj>();
+		obj.mesh = GameObject.CreatePrimitive(pt);
+		obj.mesh.transform.parent = go.transform;
+		//go = GameObject.CreatePrimitive(pt);
+	}
 	else if (type == 'Cube') go = Instantiate(blockPrototype.gameObject);
 	else {
 		if (type == 'Directional') pt = LightType.Directional;
@@ -69,7 +76,9 @@ function makeType(data:Hashtable):GameObject {
 			light.intensity = data['intensity'];
 		} // else group
 	}
-	return go; 
+	if (!obj) obj = go.AddComponent.<Obj>();
+	obj.kind = type;
+	return obj; 
 }
 
 
@@ -98,6 +107,7 @@ function RestoreInto(id:String, hash:String, parent:Transform) {
 	var newChild = !child;
 	if (newChild) {
 		child = GameObject.CreatePrimitive(PrimitiveType.Cube).transform;
+		child.gameObject.AddComponent(Obj);
 		child.parent = parent;
 	} else {  // if hash is already right, we're done.
 		var obj = child.GetComponent(Obj);
@@ -113,15 +123,15 @@ function Inflate(givenGo:GameObject, id:String, hash:String, newChild:boolean) {
 	yield FetchInto(holder, hash);
 	if (!holder[0]) { return; }  // FetchInto was responsible for alerting user.
 	if (newChild) {
-		var go = makeType(holder[0]);
-		go.AddComponent(Obj);
+		var obj = makeType(holder[0]);
+		var go = obj.gameObject;
 		go.AddComponent(PictureCapture);
 		Fill(go, id, holder[0]);
 		// Now replace the temp with our new go.
 		go.transform.parent = givenGo.transform.parent; // First, before setting the following.
 		go.transform.position = givenGo.transform.position;
 		go.transform.rotation = givenGo.transform.rotation;
-		go.transform.localScale = givenGo.transform.localScale;
+		obj.size(givenGo.GetComponent(Obj).size());
 		givenGo.transform.parent = null;
 		Destroy(givenGo);
 		givenGo = go;
@@ -231,13 +241,16 @@ function Fill(go:GameObject, id:String, data:Hashtable) {
 	var legitimateChildren = new Array(); // Keep track of the Objs we're now supposed to have.
 	for (var childData:Hashtable in data['children']) {
 		child = RestoreInto(childData['idtag'], childData['idvtag'], go.transform);
-		legitimateChildren.Push(child.GetComponent(Obj));
+		var childObj = child.GetComponent.<Obj>();
+		legitimateChildren.Push(childObj);
 		var pos = childData['position'];
 		if (pos != null) child.transform.localPosition = makeVector3(pos);
 		var rot = childData['rotation'];
 		if (rot != null) child.transform.localRotation = makeQuaternion(rot);
-		var scale = childData['scale'];
+		var scale = childData['scale'];  // obsolete
 		if (scale != null) child.transform.localScale = makeVector3(scale);
+		var size = childData['size'];
+		if (size != null) childObj.size(makeVector3(size));
 	}
 	// Destroy any children with Obj components that are obsolete (not legitimate).
 	for (var childTransform:Transform in go.transform) {

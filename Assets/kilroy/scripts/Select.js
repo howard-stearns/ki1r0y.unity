@@ -164,8 +164,9 @@ private var oscillateStartTime = 0.0;  			// 0 stops any oscillating coroutine.
 public var period = (2 * 0.8)/(2 * Mathf.PI); 	// Two beats of our standard 75bpm tempo.
 // Highlight go. Behavior is undefined if any object (same go or not) is already highted.
 function Highlight(go:GameObject) {
-	var obj = go.GetComponent(Obj);
-	if (!go.renderer || !obj) return;  // Attempt to highlight the avatar or some such
+	if (!go) return;
+	var obj = go.GetComponent.<Obj>();
+	if (!obj || !obj.isTargetable()) return;  // Attempt to highlight the avatar or some such
 	oscillateStartTime = Time.time;
 	// We must make a copy of the materials before we start throbbing them, because they might share with other materials.
 	oldMaterials = obj.sharedMaterials();
@@ -188,8 +189,8 @@ function Highlight(go:GameObject) {
 function UnHighlight() { if (selection != null) UnHighlight(selection); }
 function UnHighlight(go:GameObject) {
 	if (!oldMaterials || !oldMaterials.length) return;
-	var obj = go.GetComponent(Obj);
-	if (!go.renderer || !obj) return;
+	var obj = go.GetComponent.<Obj>();
+	if (!obj || !obj.isTargetable()) return;
 	oscillateStartTime = 0;
 	obj.sharedMaterials(oldMaterials);
 	oldMaterials = null;

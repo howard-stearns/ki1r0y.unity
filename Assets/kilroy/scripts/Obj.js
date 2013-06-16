@@ -28,7 +28,16 @@ public var kind = '';
 function Start() {
 	if (kind == '') {
 		var m = gameObject.GetComponent(MeshFilter);
-		if (m != null)  kind = m.sharedMesh.name;
+		if (!!m)  {
+			kind = m.sharedMesh.name;
+		} else {
+			l = gameObject.GetComponent(Light);
+			if (!!l) kind = l.type.ToString();
+		}
+		// When a prefab gets frobbed, the name changes from 'Foo' to 'Foo instance'.
+		// We don't want that. (IWBNI we tracked that down.)
+		var index = kind.IndexOf(' Instance');
+		if (index >= 0) kind = kind.Remove(index);
 	}
 	if (kind == 'Plane') localFacing = Vector3(0, 1, 0);
 }
@@ -74,19 +83,43 @@ function deleteObject() {
 	Destroy(gameObject);
 }
 
+public var mesh:GameObject;
+public var dims:Vector3; // public for debuggin only. Use size().
+public function size() { 
+	if (!mesh) {
+		var v = gameObject.transform.localScale;
+		//var v = gameObject.transform.lossyScale;
+		//Debug.Log(kind + '.size() => ' + v + '  ' + gameObject);
+		return v;
+	}
+	return dims;
+}
+public function size(v:Vector3) { 
+	if (!mesh) {
+		gameObject.transform.localScale = v;
+		dims = gameObject.transform.lossyScale;
+		return v;
+	}
+	mesh.transform.localScale = v;   // real version
+//	gameObject.transform.localScale = v;  // transitional version
+	dims = v;
+	return v;
+}
 public function isTargetable():boolean {
 	return !!objectCollider();
 }
-
 public function bounds():Bounds { // Answer world space Bounds. (Do we want just our collider, or all children (i.e., renderer.bounds)?)
-	return gameObject.collider.bounds;
+	var go = !!mesh ? mesh : gameObject;
+	return go.collider.bounds;
 }
 public function objectCollider():Collider { // Answer our Collider
-	return gameObject.collider;
+	var go = !!mesh ? mesh : gameObject;
+	return go.collider;
 }
 // Answer our shared Materials array (even if just an array of one). Side-effecting any resulting element (but not the whole Array) changes for all.
 public function sharedMaterials():Material[] { 
-	var r = gameObject.renderer;
+	var go = !!mesh ? mesh : gameObject;
+	var r = go.renderer;
 	var m:Material[];
 	var block = gameObject.GetComponent(BlockDrawing);
 	if (!r && !block) m = new Material[0];
@@ -96,7 +129,8 @@ public function sharedMaterials():Material[] {
 }
 // Assign new sharedMaterials and answer the new value.
 public function sharedMaterials(mats:Material[]):Material[] {
-	var r = gameObject.renderer;
+	var go = !!mesh ? mesh : gameObject;
+	var r = go.renderer;
 	var block = gameObject.GetComponent(BlockDrawing);
 	if (!r && !block && !mats.Length) return mats;
 	else if (block) block.sharedMaterials(mats);
@@ -106,7 +140,10 @@ public function sharedMaterials(mats:Material[]):Material[] {
 
 // Answer the Kilroy GameObject of the given c, or null.
 public static function ColliderGameObject(c:Collider):GameObject { 
-	return c.gameObject;
+	if (c.gameObject.GetComponent(Obj)) return c.gameObject;
+	//Debug.Log('colliderGameObject(' + c.gameObject + ') parent:' + c.transform.parent.gameObject);
+	if (!c.transform.parent) return null;  // e.g., avatar
+	return c.transform.parent.gameObject;
 }
 
 public var deleteMe = false; // To delete in editor

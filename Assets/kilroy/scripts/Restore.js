@@ -287,7 +287,8 @@ public var destinationId = '';
 function SceneReady() {
 	if (safetyNet && GameObject.FindWithTag('SceneRoot').GetComponent(Obj).FindNametag('floor')) {
 		Log('removing temporary floor');
-		Destroy(safetyNet.gameObject); 
+		Destroy(safetyNet.gameObject);
+		safetyNet = null; 
 	}
 	var target = destinationId;
 	destinationId = '';

@@ -50,6 +50,7 @@ static function makeQuaternion(data:Hashtable):Quaternion {
 	return Quaternion(data['x'], data['y'], data['z'], data['w']);
 }
 public var blockPrototype:Transform;  // Our 6-textured block
+public var flatPrototype:Transform;
 // Answer a primitive appropriate for the given data, or null for unknown/group.
 function makeType(data:Hashtable):Obj {
 	var go:GameObject;
@@ -58,11 +59,14 @@ function makeType(data:Hashtable):Obj {
 	var pt:Object = null;
 	if (type == 'Plane') pt = PrimitiveType.Plane;
 	if (pt != null) {
+		/* FIXME remove
 		go = new GameObject();
 		obj = go.AddComponent.<Obj>();
 		obj.mesh = GameObject.CreatePrimitive(pt);
 		obj.mesh.transform.parent = go.transform;
-		//go = GameObject.CreatePrimitive(pt);
+		//go = GameObject.CreatePrimitive(pt);*/
+		go = Instantiate(flatPrototype.gameObject);
+		obj = go.GetComponent.<Obj>();
 	} else if (type == 'Cube') {
 		go = Instantiate(blockPrototype.gameObject);
 		obj = go.GetComponent.<Obj>();
@@ -75,6 +79,7 @@ function makeType(data:Hashtable):Obj {
 			var light = go.AddComponent(Light);
 			light.type = pt;
 			light.intensity = data['intensity'];
+			go.AddComponent(PictureCapture);
 		} // else group
 	}
 	if (!obj) obj = go.AddComponent.<Obj>();
@@ -126,7 +131,6 @@ function Inflate(givenGo:GameObject, id:String, hash:String, newChild:boolean) {
 	if (newChild) {
 		var obj = makeType(holder[0]);
 		var go = obj.gameObject;
-		go.AddComponent(PictureCapture);
 		Fill(go, id, holder[0]);
 		// Now replace the temp with our new go.
 		go.transform.parent = givenGo.transform.parent; // First, before setting the following.
@@ -214,6 +218,7 @@ public var materialPrototype:Material;
 public var materialsTable = {};
 // When data arrives, Inflate, above, will create the appropriate GameObject.
 // This Fill takes care of common setup and the Restore (above) of each child.
+public var safetyNetPrototype:Transform;
 function Fill(go:GameObject, id:String, data:Hashtable) {
 	var obj:Obj = go.GetComponent(Obj);
 	obj.id = id;
@@ -261,10 +266,11 @@ function Fill(go:GameObject, id:String, data:Hashtable) {
 			if (safetyNet && (comp.nametag == 'floor')) {
 				var avatars = GameObject.FindGameObjectsWithTag('Player');
 				for (var avatar in avatars) { avatar.transform.position.y = 1; }
-				safetyNet = GameObject.CreatePrimitive(PrimitiveType.Plane).transform;
+				safetyNet = Instantiate(safetyNetPrototype.gameObject).transform;
+				/*safetyNet = GameObject.CreatePrimitive(PrimitiveType.Plane).transform;
 				safetyNet.localScale = Vector3(10, 1, 10);
 				safetyNet.localPosition = Vector3(0, 0, 0);
-				safetyNet.name = 'SafetyNet';
+				safetyNet.name = 'SafetyNet'; */
 				safetyNet.parent = transform;
 			}
 			Destroy(childTransform.gameObject);

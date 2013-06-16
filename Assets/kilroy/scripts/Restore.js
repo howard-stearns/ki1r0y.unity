@@ -63,9 +63,10 @@ function makeType(data:Hashtable):Obj {
 		obj.mesh = GameObject.CreatePrimitive(pt);
 		obj.mesh.transform.parent = go.transform;
 		//go = GameObject.CreatePrimitive(pt);
-	}
-	else if (type == 'Cube') go = Instantiate(blockPrototype.gameObject);
-	else {
+	} else if (type == 'Cube') {
+		go = Instantiate(blockPrototype.gameObject);
+		obj = go.GetComponent.<Obj>();
+	} else {
 		if (type == 'Directional') pt = LightType.Directional;
 		else if (type == 'Point') pt = LightType.Point;
 		else if (type == 'Spot') pt = LightType.Spot;

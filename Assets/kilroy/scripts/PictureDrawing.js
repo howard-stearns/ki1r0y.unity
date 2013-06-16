@@ -49,7 +49,7 @@ function Wrap(picture:GameObject) {
 		var offsetScaled = Vector2.Scale(-scale, offset); 
 		Log(face + ' min:' + Vector2(minU, minV) + ' max:' + Vector2(maxU, maxV));
 		Log(face + ' scale: ' + scale + ' offset:' + offset  + ' offsetScaled:' + offsetScaled);
-		var obj = face.transform.parent.gameObject.GetComponent(Obj);
+		var obj = face.transform.parent.parent.gameObject.GetComponent(Obj);  // Warning: Demeter not happy about being dependent on Block->Cube->face structure.
 		var parentMats:Material[] = obj.sharedMaterials();
 		var targetMat:Material = face.renderer.sharedMaterial;
 		var parentIndex = parentMats.IndexOf(parentMats, targetMat);
@@ -60,8 +60,6 @@ function Wrap(picture:GameObject) {
 			targetMat.mainTextureOffset = offsetScaled;
 			parentMats[parentIndex] = targetMat;
 			obj.sharedMaterials(parentMats);
-			parentMats = obj.sharedMaterials();
-			targetMat = face.renderer.sharedMaterial;
 			success = true;
 			Log(face + ' after scale: ' + scale + ' offset:' + offset + ' offsetScaled:' + offsetScaled); 
 			Log(face + ' texture scale: ' + face.renderer.material.mainTextureScale + ' offset:' + face.renderer.material.mainTextureOffset); 

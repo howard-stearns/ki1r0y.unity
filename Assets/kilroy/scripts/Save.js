@@ -186,9 +186,9 @@ function Persist(x:GameObject, isScene:boolean):Hashtable {
 	} else {
 		refs[obj.id] = true; // accumulate one each of all the refs as we trace.
 	}
-/* //real code FIXME restore in place of below
+ //real code FIXME restore in place of below
 	if (x.transform.localPosition != Vector3.zero) 
-		AddProperty(instance, 'position', x.transform.localPosition);*/
+		AddProperty(instance, 'position', x.transform.localPosition);
 	// Temporary code to make things not fly apart
 	/*var m: Matrix4x4; var tran = x.transform.parent;
 	if (!!tran) {
@@ -196,18 +196,20 @@ function Persist(x:GameObject, isScene:boolean):Hashtable {
    	 	var p = m.MultiplyPoint3x4(x.transform.position);
 		if (p != Vector3.zero) AddProperty(instance, 'position', p);
 	}*/
-	if (x.transform.localPosition != Vector3.zero) {
+	/*if (x.transform.localPosition != Vector3.zero) {
 		var v = x.transform.localPosition;
 		if (x.transform.parent) v.Scale(x.transform.parent.lossyScale);
 		AddProperty(instance, 'position', v);
-	}
+	}*/
 
 	if (x.transform.localRotation != Quaternion.identity)
 		AddProperty(instance, 'rotation', x.transform.localRotation);
 	/* old fixme remove if (x.transform.localScale != Vector3.one)
 		AddProperty(instance, 'scale', x.transform.localScale);*/
-	if (x.transform.lossyScale != Vector3.one)
-		AddProperty(instance, 'size', x.transform.lossyScale);
+	/*if (x.transform.lossyScale != Vector3.one)
+		AddProperty(instance, 'size', x.transform.lossyScale);*/
+	var size = obj.size();
+	if (size != Vector3.one) AddProperty(instance, 'size', size);
 	return instance;
 }
 

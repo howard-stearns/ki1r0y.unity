@@ -162,16 +162,16 @@ function ExternalPropertyEdit(tabName:String, addToHistory:boolean) {
 		+ (addToHistory ? " addToHistory" : " suppressHistory"));*/
 	//Debug.Log('localScale ' + gameObject.transform.localScale.ToString() + ' globalScale: ' + gameObject.transform.lossyScale.ToString());
 	Application.ExternalCall('select', id, nametag, !addToHistory);
-	if (Application.isWebPlayer) {
+	//if (Application.isWebPlayer) {
 		Application.ExternalCall('tabSelect', tabName);
 		var pos = gameObject.transform.localPosition;
 		var rot = gameObject.transform.localEulerAngles; //Not what we persist, but easier for users.
-		var scale = gameObject.transform.lossyScale;
+		var size = size();
 		Application.ExternalCall('updatePosition', pos.x, pos.y, pos.z);
 		Application.ExternalCall('updateRotation', rot.x, rot.y, rot.z);
-		// FIXME: we must use id as name, because tags/name are not guaranteed to be unique!!
-		Application.ExternalCall('props', path, scale.x, scale.y, scale.z);
-	}
+		Application.ExternalCall('updateSize', size.x, size.y, size.z);
+		Application.ExternalCall('props', path, true);
+	//}
 }
 
 public var saver:Save; // Save script, if available.
@@ -194,27 +194,15 @@ function saveScene(action) { // Save whatever needs to be saved from the whole s
 // e.g., from browser-based property editors using GetUnity().SentMessage(path, functionName, singleArgument).
 // SendMessage in the browser can only send one (String) argument (other than the path), so we need separate functions 
 // for each of these.
-function setPositionX(v:String) {var vec = transform.position; transform.position = Vector3(parseFloat(v), vec.y, vec.z); saveScene('slide x');}
-function setPositionY(v:String) {var vec = transform.position; transform.position = Vector3(vec.x, parseFloat(v), vec.z); saveScene('slide y');}
-function setPositionZ(v:String) {var vec = transform.position; transform.position = Vector3(vec.x, vec.y, parseFloat(v)); saveScene('slide z');}
+function setPositionX(v:String) {var vec = transform.localPosition; transform.localPosition = Vector3(parseFloat(v), vec.y, vec.z); saveScene('sway');}
+function setPositionY(v:String) {var vec = transform.localPosition; transform.localPosition = Vector3(vec.x, parseFloat(v), vec.z); saveScene('heave');}
+function setPositionZ(v:String) {var vec = transform.localPosition; transform.localPosition = Vector3(vec.x, vec.y, parseFloat(v)); saveScene('surge');}
 
-function setRotationX(v:String) {var vec = transform.eulerAngles; transform.eulerAngles = Vector3(parseFloat(v), vec.y, vec.z); saveScene('rotate x');}
-function setRotationY(v:String) {var vec = transform.eulerAngles; transform.eulerAngles = Vector3(vec.x, parseFloat(v), vec.z); saveScene('rotate y');}
-function setRotationZ(v:String) {var vec = transform.eulerAngles; transform.eulerAngles = Vector3(vec.x, vec.y, parseFloat(v)); saveScene('rotate z');}
+function setRotationX(v:String) {var vec = transform.localEulerAngles; transform.localEulerAngles = Vector3(parseFloat(v), vec.y, vec.z); saveScene('pitch');}
+function setRotationY(v:String) {var vec = transform.localEulerAngles; transform.localEulerAngles = Vector3(vec.x, parseFloat(v), vec.z); saveScene('yaw');} 
+function setRotationZ(v:String) {var vec = transform.localEulerAngles; transform.localEulerAngles = Vector3(vec.x, vec.y, parseFloat(v)); saveScene('roll');}
 
-function setScale(v:String, index:int) {
-	var dbg = 'set v:' + v + ' i:' + index.ToString();
-	var global = transform.lossyScale; 
-	dbg += ' lossy:' + global.ToString();
-	global[index] = parseFloat(v);
-	dbg += ' now:' + global.ToString();
-	var reorientedGlobal = transform.parent.InverseTransformDirection(global);
-	dbg += ' transfd:' + reorientedGlobal.ToString();
-	transform.localScale = reorientedGlobal;
-	dbg += ' new:' + transform.lossyScale.ToString();
-	Application.ExternalCall('notifyUser', dbg);
-	saveScene('scale');
-}
-function setScaleX(v:String) {setScale(v, 0);}
-function setScaleY(v:String) {setScale(v, 1);}
-function setScaleZ(v:String) {setScale(v, 2);}
+// While the gizmo is up, we just set localScale. StopGizmo() will recompute size from localScale.
+function setSizeX(v:String) {var vec = transform.localScale; transform.localScale = Vector3(parseFloat(v)/size().x, vec.y, vec.z); saveScene('width');}
+function setSizeY(v:String) {var vec = transform.localScale; transform.localScale = Vector3(vec.x, parseFloat(v)/size().y, vec.z); saveScene('height');}
+function setSizeZ(v:String) {var vec = transform.localScale; transform.localScale = Vector3(vec.x, vec.y, parseFloat(v)/size().z); saveScene('length');}

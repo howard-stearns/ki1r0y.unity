@@ -20,6 +20,7 @@ function Start() {
 	}
 }
 
+private var lastAngle = 0.0;
 function startDragging(assembly:Transform, axis:Transform, plane:Transform, cameraRay:Ray, hit:RaycastHit) {
 	norm = axis.right; 
 	// There are two distinct modes: we can click on the outside-or-inside face of the disk, 
@@ -34,7 +35,7 @@ function startDragging(assembly:Transform, axis:Transform, plane:Transform, came
 		Debug.Log('WTF?');
 	centerPoint = plane.position = hit.point;  // We want to rotate around the shaft, not the firstPoint.
 	startV = firstPoint - plane.position;
-	initAngle = isOutside ? outsideAngle : insideAngle;
+	lastAngle = initAngle = isOutside ? outsideAngle : insideAngle;
 	return onEdge ? collider : plane.collider;
 }
 
@@ -56,7 +57,11 @@ function doDragging(assembly:Transform, axis:Transform, plane:Transform, hit:Ray
 	Debug.DrawRay(centerPoint, startV, Color.green);
 	Debug.DrawRay(centerPoint, v, Color.blue);
 	Debug.DrawRay(centerPoint, cross, Color.white);
-	assembly.localEulerAngles.y = initAngle + angle;                                                                                                                             
+	assembly.transform.RotateAround(centerPoint, norm, initAngle + angle - lastAngle);
+	lastAngle = initAngle + angle;
+	//assembly.localEulerAngles.y = initAngle + angle; 
+	v = assembly.localEulerAngles;
+	Application.ExternalCall('updateRotation', v.x, v.y, v.z);
 }
 
 }

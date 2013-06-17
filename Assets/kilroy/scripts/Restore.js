@@ -1,5 +1,5 @@
 static function Log(s:String) {
-	//Debug.Log('Restore: ' + s);  // Can be commented in/out for debugging.
+	Debug.Log('Restore: ' + s);  // Can be commented in/out for debugging.
 }
 
 function Fetch(id):WWW {
@@ -98,7 +98,7 @@ function FillTexture(mat:Material, id:String) {
    	yield www;
    	mat.mainTexture = www.texture;
    	mat.mainTexture.name = id;
-   	Log('retrived texture ' + id + 'into ' + mat);
+   	Log('retrived texture ' + id + ' into ' + mat);
 }
 
 var nRemainingObjects = 0;  // The number we have started to fetch, but which have not yet been resolved (not counting media).
@@ -261,9 +261,10 @@ function Fill(go:GameObject, id:String, data:Hashtable) {
 	// Destroy any children with Obj components that are obsolete (not legitimate).
 	for (var childTransform:Transform in go.transform) {
 		var comp = childTransform.gameObject.GetComponent(Obj);
-		if (comp && !IsInArray(comp, legitimateChildren)) {
+		if (comp && (child.transform.tag == 'SafetyNet') && !IsInArray(comp, legitimateChildren)) {
 			// If we're about to kill the floor, set up the safetyNet again.
 			if (safetyNet && (comp.nametag == 'floor')) {
+				Log('creating safetyNet');
 				var avatars = GameObject.FindGameObjectsWithTag('Player');
 				for (var avatar in avatars) { avatar.transform.position.y = 1; }
 				safetyNet = Instantiate(safetyNetPrototype.gameObject).transform;
@@ -273,6 +274,7 @@ function Fill(go:GameObject, id:String, data:Hashtable) {
 				safetyNet.name = 'SafetyNet'; */
 				safetyNet.parent = transform;
 			}
+			Log('destroying obsolete ' + childTransform);
 			Destroy(childTransform.gameObject);
 		}
 	}
@@ -299,7 +301,6 @@ function SceneReady() {
 		sceneComp.timestamp);
 	if (target) { // even if not found
 		var goto = Camera.main.transform.parent.GetComponent(Goto);
-		Debug.Log('telling ' + goto + ' to go back to ' + targetObj);
 		goto.GoBackToObj(targetObj);
 	} else {
 		Obj.SceneSelect(true);

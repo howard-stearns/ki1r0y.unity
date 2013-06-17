@@ -206,18 +206,24 @@ function StopGizmo() {
 	if (!gizmo) return;
 	//gizmo.parent.parent = gizmoOldParent;
 	//gizmoOldParent = null;
-	gizmo.parent = null;
+	Directional.ApplyChanges(gizmo.parent);
 	Destroy(gizmo.gameObject);
 	gizmo = null;
 }
-function StartGizmo(trans:Transform) {
+function StartGizmo(go:GameObject) {
 	StopGizmo();
+	UnSelection();
+	var trans = go.transform;
 	gizmo = Instantiate(gizmoPrefab, trans.position, trans.rotation).transform;
 	gizmo.parent = trans;
 	// trans.parent.localScale will mess us up:
 	//gizmoOldParent = trans.parent;
 	//trans.parent = transform; // e.g. avatar
 	overlayControls.lockMouseMotionOff();
+}
+function StartGizmo(id:String) {
+	if (!id) return;
+	StartGizmo(GameObject.Find(id));
 }
 
 /***************************************************************************/
@@ -408,6 +414,7 @@ function Update () {
 		Obj.SceneSelect();
 		return;
 	}
+	if (gizmo) return;
     var hit:RaycastHit;
     var pointerRay:Ray = cam.ScreenPointToRay(Input.mousePosition + cursorOffsetToSurface);
     // We don't use OnMouseDown and friends, because that doesn't tell us the precise hit.point.
@@ -416,8 +423,9 @@ function Update () {
 	if (Physics.Raycast(pointerRay, hit, Mathf.Infinity, (1<<0))) {
 		if (Input.GetMouseButtonDown(1) || 
 			(Input.GetMouseButtonDown(0) && (Input.GetAxis('Fire2') || Input.GetAxis('Fire3')))) {
-			Obj.ColliderGameObject(hit.collider).GetComponent(Obj).ExternalPropertyEdit('properties', true);
-			if (!Application.isWebPlayer) StartGizmo(hit.transform);
+			var go = Obj.ColliderGameObject(hit.collider);
+			go.GetComponent.<Obj>().ExternalPropertyEdit('properties', true);
+			if (!Application.isWebPlayer) StartGizmo(go);
 			// else changing tab will call back to us to StartGizmo.
 		} else if (Input.GetMouseButtonDown(0)) { 
 			StartDragging(hit);

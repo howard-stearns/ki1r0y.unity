@@ -39,6 +39,13 @@ function Start() {
 	//renderer.material.SetColor("_Emission", normalColor); // In case the scene is dark.
 	if (assembly == null) assembly = axis.parent.parent;
 }
+public static function ApplyChanges(assy:Transform):Obj {
+	var pobj = assy.GetComponent.<Obj>();
+	pobj.size(Vector3.Scale(pobj.size(), assy.localScale));
+	assy.localScale = Vector3.one;
+	return pobj;
+}
+
 // While moving, we insert a plane into the scene graph, just above the assembly.
 public var showPlane = false;
 private var plane:GameObject;
@@ -52,16 +59,17 @@ function startDragging1(cameraRay:Ray, hit:RaycastHit) {
 	plane.name = planeName;
 	dragCollider = startDragging(assembly, axis, plane.transform, cameraRay, hit);
 	plane.transform.parent = assembly.parent;
-	assembly.parent = plane.transform;
+	//assembly.parent = plane.transform;
 }
 function stopDragging() {
 	if (!isMoving) return;
 	renderer.enabled = true; // In case of mouse up when the last doDragging() turned it off.
-	assembly.parent = plane.transform.parent;
+	//assembly.parent = plane.transform.parent;
 	plane.transform.parent = null;
 	Destroy(plane);
 	isMoving = false;
 	if (!isActive) renderer.material.color = normalColor;
+	ApplyChanges(assembly).saveScene('adjust');
 }
 function startDragging(assembly:Transform, axis:Transform, plane:Transform, cameraRay:Ray, hit:RaycastHit):Collider  {
 	throw "Subclass must define to set initial plane position and rotation.";

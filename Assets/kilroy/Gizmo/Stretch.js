@@ -44,5 +44,7 @@ function doDragging(assembly:Transform, axis:Transform, plane:Transform, hit:Ray
 	}
 	//assembly.localScale[0] = s; //adjust for our orientation
 	//Debug.Log('d:' + d.ToString() + ' d0:' + d0.ToString() + ' s:' + s.ToString() + assembly.localScale.ToString());
+	v = Vector3.Scale(assembly.localScale, assembly.GetComponent.<Obj>().size());
+	Application.ExternalCall('updateSize', v.x, v.y, v.z);
 }
 }

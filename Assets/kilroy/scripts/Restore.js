@@ -51,26 +51,24 @@ static function makeQuaternion(data:Hashtable):Quaternion {
 }
 public var blockPrototype:Transform;  // Our 6-textured block
 public var flatPrototype:Transform;
+public var meshPrototype:Transform;
 // Answer a primitive appropriate for the given data, or null for unknown/group.
 function makeType(data:Hashtable):Obj {
 	var go:GameObject;
 	var obj:Obj;
 	var type:String = data['type'];
-	var pt:Object = null;
-	if (type == 'Plane') pt = PrimitiveType.Plane;
-	if (pt != null) {
-		/* FIXME remove
-		go = new GameObject();
-		obj = go.AddComponent.<Obj>();
-		obj.mesh = GameObject.CreatePrimitive(pt);
-		obj.mesh.transform.parent = go.transform;
-		//go = GameObject.CreatePrimitive(pt);*/
+	if (type == 'Plane') {
 		go = Instantiate(flatPrototype.gameObject);
 		obj = go.GetComponent.<Obj>();
 	} else if (type == 'Cube') {
 		go = Instantiate(blockPrototype.gameObject);
 		obj = go.GetComponent.<Obj>();
+	} else if (type == 'Mesh') {
+		go = Instantiate(meshPrototype.gameObject);
+		obj = go.GetComponent.<Obj>();
+		obj.mesh.GetComponent.<ObjMesh>().objPath = 'http://' + Save.host + '/media/' + data['mesh'];
 	} else {
+		var pt:Object = null;
 		if (type == 'Directional') pt = LightType.Directional;
 		else if (type == 'Point') pt = LightType.Point;
 		else if (type == 'Spot') pt = LightType.Spot;
@@ -308,8 +306,7 @@ function SceneReady() {
 }
 
 function RestoreScene(combo:String) {
-	var stupidNETcharArray:char[] = ['/'[0]];
-	var trio = combo.Split(stupidNETcharArray);
+	var trio = Save.splitPath(combo);
 	var id = trio[0];
 	var version = ((trio.length > 1) && trio[1]) || '';
 	destinationId = ((trio.length > 2) && trio[2]) || '';

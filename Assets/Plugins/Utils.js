@@ -1,7 +1,7 @@
 static function sha1(bytes:byte[]) {
 	var hash = System.Security.Cryptography.SHA1.Create().ComputeHash(bytes);
 	var str = System.Convert.ToBase64String(hash);
-	// base64url -- 27 chars for the 160-byte sha1
+	// base64url -- 27 chars for the 160-bit sha1
 	str = str.Replace('=', '').Replace('+', '-').Replace('/', '_');
 	// This is the earlier hex version, which is 40 chars long
 	/* var sb = new System.Text.StringBuilder();

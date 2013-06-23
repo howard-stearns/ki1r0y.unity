@@ -47,8 +47,7 @@ function setImportObject(path:String) {
 	NotifyUser('drop to ' + dropObject + ' @' + dropObject.position);
 }
 function setImportTarget(coordinates:String) {
-	var stupidNETcharArray:char[] = ['x'[0]];
-	var pair = coordinates.Split(stupidNETcharArray);
+	var pair = Save.splitPath(coordinates, 'x'); 
 	var x:int = int.Parse(pair[0]);
 	var y:int = int.Parse(pair[1]);
     var pointerRay:Ray = cam.ScreenPointToRay(Vector3(x, y, 0));
@@ -394,6 +393,7 @@ function DoDragging(hit:RaycastHit) {
 public var selection:GameObject;
 function Selection(col:GameObject) {
 	if (col == selection) return;
+	Debug.Log('select ' + col);
 	UnSelection();
 	selection = col;
 	Highlight(selection);

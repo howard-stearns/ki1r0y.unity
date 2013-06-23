@@ -1,16 +1,12 @@
 function Log(s:String) {
 	//Debug.Log('Save: ' + s); 
 }
-public static function splitPath(path:String, sep:String) {
-	var stupidNETcharArray:char[] = [sep[0]];
-	return path.Split(stupidNETcharArray);
-}
-public static function splitPath(path:String) { return splitPath(path, '/'); }
 
 public static var userId = '100004567501627';
 public static var host = 'localhost:3000';
 function ContactInfo(combo:String) {
-	var pair = splitPath(combo);
+	var stupidNETcharArray:char[] = ['/'[0]];
+	var pair = combo.Split(stupidNETcharArray);
 	host = pair[0];
 	userId = pair[1];
 	Application.ExternalCall('notifyUser', 'ContactInfo host:' + host + ' userId:' + userId);
@@ -19,9 +15,7 @@ function ContactInfo(combo:String) {
 // It is much easier for us to debug code, and for users to match things up, when all
 // of the timestamps from a save are the same. This instance var is set w
 public var thisTimestamp = '';
-public var refs = {}; // A set of all the objects referenced by this scene.
-function uploadData(id:String, hash:String, serialized:String) { return uploadData(id, hash, serialized, 'thing'); }
-function uploadData(id:String, hash:String, serialized:String, mode:String) {
+function uploadData(id:String, hash:String, serialized:String) {
 	// Must be separate void function to be yieldable.
  	Log(id + ': ' + serialized); // simulated upload
  	var form = new WWWForm();
@@ -30,11 +24,11 @@ function uploadData(id:String, hash:String, serialized:String, mode:String) {
 	// That's just an optimization, and the server is not required to actually save the hash.
 	// Note that the hash cannot be part of the serialized data, as then the hash would be 
 	// circularly dependendant on its own value.
-	// if (hash != id) form.AddField('hash', hash);
-	var www = WWW('http://' + host + '/' + mode + '/' + id, form);
+	if (hash != id) form.AddField('hash', hash);
+	var www = WWW('http://' + host + '/thing/' + id, form);
 	yield www;
 	if (!String.IsNullOrEmpty(www.error)) Application.ExternalCall('errorMessage', 'Save ' + id + ' failed:' + www.error);
-	else Log(id + ' uploaded ' + www.text);
+	else Log(id + ' uploaded as ' + www.text);
 }
 
 function asData(x:GameObject):Hashtable {
@@ -51,13 +45,18 @@ function asString(x:GameObject):String {
 }
 
 function AddProperty (p:Hashtable, key:String, x) {
-	p[key] = x;
+	if (x) p[key] = x;
+}
+function AddProperty (p:Hashtable, key:String, a:Array) {
+	if (a.Count) p[key] = a;
 }
 function AddProperty (p:Hashtable, key:String, v:Vector3) {
-	AddProperty(p, key, {'x':v.x, 'y':v.y, 'z':v.z});
+	if (v != Vector3.one) 
+		AddProperty(p, key, {'x':v.x, 'y':v.y, 'z':v.z});
 }
 function AddProperty (p:Hashtable, key:String, q:Quaternion) {
-	AddProperty(p, key, {'x':q.x, 'y':q.y, 'z':q.z, 'w':q.w});
+	if (q != Quaternion.identity) 
+		AddProperty(p, key, {'x':q.x, 'y':q.y, 'z':q.z, 'w':q.w});
 }
 
 function AddComponent(p:Hashtable, component:Obj) {
@@ -66,57 +65,60 @@ function AddComponent(p:Hashtable, component:Obj) {
 	if (component.nametag == '') component.nametag = component.name; // Just for bootstrapping. FIXME remove.
 	if (component.author == '') component.author = userId;
 	
-	AddProperty(p, 'type', component.kind);
 	AddProperty(p, 'nametag', component.nametag);
 	AddProperty(p, 'author', component.author);
-	// Save obj.sharedMaterials() here, rather than letting Renderer component do it on its own, 
-	// because Obj component may indirect sharedMaterials in different ways.
-	var mats:Array = []; var any = false;
-	if (component.kind == 'Mesh') {
-		var path = splitPath(component.mesh.GetComponent.<ObjMesh>().objPath);
-		AddProperty(p, 'mesh', path[path.length - 1]);  // Specifies materials within data at objPath.
-	} else {
-		for (var mat in component.sharedMaterials()) {
-			var txt = mat.mainTexture;
-			if (txt == null) {
-				mats.Push('');
-				continue;
-			}
-			any = true;
-			// We can't add our own scripts and properties (e.g., id and hash) to 
-			// materials and textures. However, we can treat them as immutable, and
-			// arrange to make sure that they are always given a unique name and
-			// uploaded at creation time. All we have to do here is just include that
-			// name, and we never have to worry about potentially slow texture uploads 
-			// during scene saves. 
-			// FIXME: encode other properties (scale, offset).
-			mats.Push(txt.name);
-		}
-	}
-	if (any) AddProperty(p, 'materials', mats);
 }
 function AddComponent(p:Hashtable, component:Transform) {
 	// The only shared data for all instances is the child data.
 	// The instance-specific transform data (position/rotation/scale) is above.
 	var children:Array = [];
+	// p['refs'] is a list of all descendant idtags. It is a db optimization, and this is the only place in unity that it shows up.
+	var refs = {};
 	for (var child:Transform in component) {
 		var persisted:Hashtable = Persist(child.gameObject);
-		if (persisted.Count != 0)
+		if (persisted.Count != 0) {
 			children.Push(persisted);
+			refs[persisted['idtag']] = true;
+			for (var ref in persisted['refs']) refs[ref] = true;
+		}
 	}
-	if (children.length != 0)
+	var refsArray = new Array(refs.Keys);
+	Debug.Log(component.gameObject.GetComponent(Obj).nametag + ' ' + component.name + ' ' + refsArray.Count + ' ' + refs.Count + ' ' + refsArray);
+	AddProperty(p, 'refs', refsArray);
+	if (children.length != 0) {
 		AddProperty(p, 'children', children);
+	}
 }
-/* old. FIXME remove function AddComponent(p:Hashtable, component:MeshFilter) {
+function AddComponent(p:Hashtable, component:MeshFilter) {
 	var type = component.sharedMesh.name;
 	// When a prefab gets frobbed, the name changes from 'Foo' to 'Foo instance'.
 	// We don't want that. (IWBNI we tracked that down.)
 	var index = type.IndexOf(' Instance');
 	if (index >= 0) type = type.Remove(index);
 	AddProperty(p, 'type', type);
-}*/
+}
+function AddComponent(p:Hashtable, component:Renderer) {
+	var mats:Array = []; var any = false;
+	for (var mat in component.sharedMaterials) {
+		var txt = mat.mainTexture;
+		if (txt == null) {
+			mats.Push('');
+			continue;
+		}
+		any = true;
+		// We can't add our own scripts and properties (e.g., id and hash) to 
+		// materials and textures. However, we can treat them as immutable, and
+		// arrange to make sure that they are always given a unique name and
+		// uploaded at creation time. All we have to do here is just include that
+		// name, and we never have to worry about potentially slow texture uploads 
+		// during scene saves. 
+		// FIXME: encode other properties (scale, offset).
+		mats.Push(txt.name);
+	}
+	if (any) AddProperty(p, 'materials', mats);
+}
 function AddComponent(p:Hashtable, component:Light) {
-	//AddProperty(p, 'type', component.type.ToString());
+	AddProperty(p, 'type', component.type.ToString());
 	AddProperty(p, 'intensity', component.intensity);
 }
 function AddComponent(p:Hashtable, component:Component) {
@@ -164,12 +166,11 @@ function PersistGroup(x:GameObject):String {
 		'nametag': obj.nametag, // Including it here saves work when serving people pages
 		'versions': obj.versions
 		});
-	StartCoroutine( uploadData(obj.id, Utils.sha1(groupSerialization), groupSerialization) ); // FIXME we're not really using the sha1. Remove?
+	StartCoroutine( uploadData(obj.id, Utils.sha1(groupSerialization), groupSerialization) );
 	obj.hash = hash;
 	return obj.hash;
 }
-function Persist(x:GameObject):Hashtable { return Persist(x, false); }
-function Persist(x:GameObject, isScene:boolean):Hashtable {
+function Persist(x:GameObject):Hashtable {
 	var instance = new Hashtable(); 
 	var obj:Obj = x.GetComponent(Obj);
 	if (!enabled || obj == null) return new Hashtable();  // for debugging/experiments
@@ -189,36 +190,12 @@ function Persist(x:GameObject, isScene:boolean):Hashtable {
 	}
 	// Make sure that the Unity name matches the (possibly new) obj.id, so that Find works.
 	x.name = obj.id;
-	if (isScene) {
-		// We could optimize the number of POSTs by adding a parameter to the scene data, but for now...
-		StartCoroutine( uploadData(obj.id, obj.hash, JSON.Stringify(new Array(refs.Keys)), 'refs') );
-	} else {
-		refs[obj.id] = true; // accumulate one each of all the refs as we trace.
-	}
- //real code FIXME restore in place of below
 	if (x.transform.localPosition != Vector3.zero) 
 		AddProperty(instance, 'position', x.transform.localPosition);
-	// Temporary code to make things not fly apart
-	/*var m: Matrix4x4; var tran = x.transform.parent;
-	if (!!tran) {
-    	m.SetTRS(tran.position, tran.rotation, Vector3.one);
-   	 	var p = m.MultiplyPoint3x4(x.transform.position);
-		if (p != Vector3.zero) AddProperty(instance, 'position', p);
-	}*/
-	/*if (x.transform.localPosition != Vector3.zero) {
-		var v = x.transform.localPosition;
-		if (x.transform.parent) v.Scale(x.transform.parent.lossyScale);
-		AddProperty(instance, 'position', v);
-	}*/
-
 	if (x.transform.localRotation != Quaternion.identity)
 		AddProperty(instance, 'rotation', x.transform.localRotation);
-	/* old fixme remove if (x.transform.localScale != Vector3.one)
-		AddProperty(instance, 'scale', x.transform.localScale);*/
-	/*if (x.transform.lossyScale != Vector3.one)
-		AddProperty(instance, 'size', x.transform.lossyScale);*/
-	var size = obj.size();
-	if (size != Vector3.one) AddProperty(instance, 'size', size);
+	if (x.transform.localScale != Vector3.one)
+		AddProperty(instance, 'scale', x.transform.localScale);
 	return instance;
 }
 
@@ -231,7 +208,6 @@ static function JSTime() { // return the same value of new Date().getTime() woul
 // Also, media (e.g., textures) are uploaded at import time, and don't have any impact on this save.
 function PersistScene() { 
 	thisTimestamp = JSTime().ToString();
-	ref = {};
-	Persist(gameObject, true);
+	Persist(gameObject);
 	return thisTimestamp;
 }

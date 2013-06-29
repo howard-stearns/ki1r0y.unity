@@ -1,5 +1,5 @@
 static function Log(s:String) {
-	Debug.Log('Restore: ' + s);  // Can be commented in/out for debugging.
+	//Debug.Log('Restore: ' + s);  // Can be commented in/out for debugging.
 }
 
 function Fetch(id):WWW {
@@ -52,8 +52,8 @@ static function makeQuaternion(data:Hashtable):Quaternion {
 public var blockPrototype:Transform;  // Our 6-textured block
 public var flatPrototype:Transform;
 public var meshPrototype:Transform;
-// Answer a primitive appropriate for the given data, or null for unknown/group.
-function makeType(data:Hashtable):Obj {
+// Coroutine to place into objHolder[0] an Obj attached to a primitive appropriate for the given data.
+function makeType(data:Hashtable, objHolder:Obj[]) {
 	var go:GameObject;
 	var obj:Obj;
 	var type:String = data['type'];
@@ -66,7 +66,8 @@ function makeType(data:Hashtable):Obj {
 	} else if (type == 'Mesh') {
 		go = Instantiate(meshPrototype.gameObject);
 		obj = go.GetComponent.<Obj>();
-		obj.mesh.GetComponent.<ObjMesh>().objPath = 'http://' + Save.host + '/media/' + data['mesh'];
+		var objMesh = obj.mesh.GetComponent.<ObjMesh>();
+		yield objMesh.Load('http://' + Save.host + '/media/' + data['mesh']);
 	} else {
 		var pt:Object = null;
 		if (type == 'Directional') pt = LightType.Directional;
@@ -82,7 +83,7 @@ function makeType(data:Hashtable):Obj {
 	}
 	if (!obj) obj = go.AddComponent.<Obj>();
 	obj.kind = type;
-	return obj; 
+	objHolder[0] = obj;
 }
 
 
@@ -94,8 +95,13 @@ function FillTexture(mat:Material, id:String) {
 	Log('fetching texture ' + url + ' into ' + mat);
 	var www:WWW = new WWW(url);
    	yield www;
-   	mat.mainTexture = www.texture;
-   	mat.mainTexture.name = id;
+   	var parts = Save.splitPath(id, '.');
+   	if (parts[parts.Length - 1] == 'mtl') {
+   		
+   	} else {
+   		mat.mainTexture = www.texture;
+   		mat.mainTexture.name = id;
+   	}
    	Log('retrived texture ' + id + ' into ' + mat);
 }
 
@@ -105,7 +111,6 @@ var nRemainingObjects = 0;  // The number we have started to fetch, but which ha
 // visible cube that will be used as a stand-in of the correct position/size/rotation
 // (because the parent has that info). When the data arrives, it will replace the cube.
 function RestoreInto(id:String, hash:String, parent:Transform) {
-	var fixme = hash;
 	hash = hash || id;
 	var child = parent.Find(id);
 	var newChild = !child;
@@ -123,13 +128,15 @@ function RestoreInto(id:String, hash:String, parent:Transform) {
 }
 // Coroutine to fetch id data, make appropropriate gameObject, fill it, and replace temp with it.
 function Inflate(givenGo:GameObject, id:String, hash:String, newChild:boolean) {
-	var holder = new Hashtable[1];
-	yield FetchInto(holder, hash);
-	if (!holder[0]) { return; }  // FetchInto was responsible for alerting user.
+	var dataHolder = new Hashtable[1];
+	yield FetchInto(dataHolder, hash);
+	if (!dataHolder[0]) { return; }  // FetchInto was responsible for alerting user.
 	if (newChild) {
-		var obj = makeType(holder[0]);
+		var objHolder = new Obj[1];
+		yield makeType(dataHolder[0], objHolder);
+		var obj = objHolder[0];
 		var go = obj.gameObject;
-		Fill(go, id, holder[0]);
+		Fill(go, id, dataHolder[0]);
 		// Now replace the temp with our new go.
 		go.transform.parent = givenGo.transform.parent; // First, before setting the following.
 		go.transform.position = givenGo.transform.position;
@@ -138,9 +145,9 @@ function Inflate(givenGo:GameObject, id:String, hash:String, newChild:boolean) {
 		givenGo.transform.parent = null;
 		Destroy(givenGo);
 		givenGo = go;
-		Log('restored ' + holder[0]['nametag']);
+		Log('restored ' + dataHolder[0]['nametag']);
 	} else {
-		Fill(givenGo, id, holder[0]);
+		Fill(givenGo, id, dataHolder[0]);
 	}
 	FillVersions(givenGo, id, 'SceneReady', '');
 	// Careful moving this. Timing of coroutines (and positioning of objs for Goto after restore) is subtle.

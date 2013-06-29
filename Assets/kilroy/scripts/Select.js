@@ -393,7 +393,6 @@ function DoDragging(hit:RaycastHit) {
 public var selection:GameObject;
 function Selection(col:GameObject) {
 	if (col == selection) return;
-	Debug.Log('select ' + col);
 	UnSelection();
 	selection = col;
 	Highlight(selection);

@@ -2,20 +2,9 @@ using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 
-public class Mtllib {
-	
-	public string[] Load(string mtllibContent) { // Answers an array of texturePathnameOrNull
-		SetMaterialData(mtllibContent);
-		int n = materialData.Count;
-		string [] filenames = new string[n];
-		for (int i = 0; i < n; i++) { filenames[i] = materialData[i].diffuseTexPath; }
-		return filenames;
-	}
-	public void SetTexture(int i, Texture2D texture) {
-		materialData[i].diffuseTex = texture;
-	}
-	//public Material Build(Material mat) {
-	//}
+public class Mtllib : MonoBehaviour {
+	public string basepath;
+	// Converts our materialData into a dictionary of name->Material
 	public Dictionary<string, Material> Build(bool hasMaterials) {
 		Dictionary<string, Material> materials = new Dictionary<string, Material>();
 	
@@ -27,6 +16,29 @@ public class Mtllib {
 			materials.Add("default", new Material(Shader.Find("VertexLit")));
 		}
 		return materials;
+	}
+			
+	private Material GetMaterial(MaterialData md) {
+		Material m;
+		if(md.illumType == 2) {
+			m =  new Material(Shader.Find("Specular"));
+			m.shader = Shader.Find("Specular");
+			m.SetColor("_SpecColor", md.specular);
+			m.SetFloat("_Shininess", md.shininess);
+		} else {
+			m =  new Material(Shader.Find("Diffuse"));
+			m.shader = Shader.Find("Diffuse");
+		}
+
+		m.SetColor("_Color", md.diffuse);
+		
+		StartCoroutine( ResourceLoader.instance.FetchTexture(basepath, md.diffuseTexPath, m) );
+		
+		return m;
+	}
+	
+	private Color gc(string[] p) {
+		return new Color( ObjUtil.cf(p[1]), ObjUtil.cf(p[2]), ObjUtil.cf(p[3]) );
 	}
 			
 	/* MTL file tags */
@@ -51,10 +63,10 @@ public class Mtllib {
    		public float alpha;
    		public int illumType;
    		public string diffuseTexPath;
-   		public Texture2D diffuseTex;
 	}
 	
-	private void SetMaterialData(string data) {
+	// FIXME was private 
+	public void SetMaterialData(string data) {
 		string[] lines = data.Split("\n".ToCharArray());
 		
 		materialData = new List<MaterialData>();
@@ -97,28 +109,5 @@ public class Mtllib {
 					
 			}
 		}	
-	}
-			
-	private Material GetMaterial(MaterialData md) {
-		Material m;
-		if(md.illumType == 2) {
-			m =  new Material(Shader.Find("Specular"));
-			m.shader = Shader.Find("Specular");
-			m.SetColor("_SpecColor", md.specular);
-			m.SetFloat("_Shininess", md.shininess);
-		} else {
-			m =  new Material(Shader.Find("Diffuse"));
-			m.shader = Shader.Find("Diffuse");
-		}
-
-		m.SetColor("_Color", md.diffuse);
-		
-		if(md.diffuseTex != null) m.SetTexture("_MainTex", md.diffuseTex);
-		
-		return m;
-	}
-	
-	private Color gc(string[] p) {
-		return new Color( ObjUtil.cf(p[1]), ObjUtil.cf(p[2]), ObjUtil.cf(p[3]) );
 	}
 }

@@ -66,6 +66,8 @@ function makeType(data:Hashtable, objHolder:Obj[]) {
 	} else if (type == 'Mesh') {
 		go = Instantiate(meshPrototype.gameObject);
 		obj = go.GetComponent.<Obj>();
+		// Optimization? Should we instead have a priority queue of meshes to load?
+		// IWBNI playing audio/video came first, then object definitions, visible meshes, visible textures, non-visible meshes, non-visible textures, and non-playing audio/video.
 		var objMesh = obj.mesh.GetComponent.<ObjMesh>();
 		yield objMesh.Load('http://' + Save.host + '/media/' + data['mesh']);
 	} else {
@@ -84,25 +86,6 @@ function makeType(data:Hashtable, objHolder:Obj[]) {
 	if (!obj) obj = go.AddComponent.<Obj>();
 	obj.kind = type;
 	objHolder[0] = obj;
-}
-
-
-function FillTexture(mat:Material, id:String) {
-	// TODO: WWW in Unity editor is certainly not caching, despite Cache-Control/Expires.
-	// See if the browser plugin and standalone is as bad.
-	// See http://unity3d.com/webplayer_setup/setup-3.x/
-	var url = 'http://' + Save.host + '/media/' + id;
-	Log('fetching texture ' + url + ' into ' + mat);
-	var www:WWW = new WWW(url);
-   	yield www;
-   	var parts = Save.splitPath(id, '.');
-   	if (parts[parts.Length - 1] == 'mtl') {
-   		
-   	} else {
-   		mat.mainTexture = www.texture;
-   		mat.mainTexture.name = id;
-   	}
-   	Log('retrived texture ' + id + ' into ' + mat);
 }
 
 var nRemainingObjects = 0;  // The number we have started to fetch, but which have not yet been resolved (not counting media).
@@ -243,7 +226,7 @@ function Fill(go:GameObject, id:String, data:Hashtable) {
 				// FIXME: decode other properties from mData (scale, offset)
 				mat = new Material(materialPrototype);
 				materialsTable[mData] = mat;
-				StartCoroutine( FillTexture(mat, mData) );
+				StartCoroutine( ResourceLoader.instance.FetchTexture('http://' + Save.host + '/media/', mData, mat) );
 			}
 			materials[i] = mat;
 		}

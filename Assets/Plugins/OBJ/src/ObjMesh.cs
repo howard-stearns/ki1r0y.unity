@@ -29,38 +29,36 @@ public class ObjMesh : MonoBehaviour {
 	
 	private string basepath;
 	private string mtllib;
-	private Mtllib lib;
 	private GeometryBuffer buffer;
 
 	void Start ()
 	{
 		buffer = new GeometryBuffer ();
-		lib = gameObject.GetComponent<Mtllib>();
 	}
 	
+	private WWW loader;
 	public IEnumerator Load(string path) {
 		objPath = path;
 		basepath = (path.IndexOf("/") == -1) ? "" : path.Substring(0, path.LastIndexOf("/") + 1);
 		
-		WWW loader = new WWW(path);
+		loader = new WWW(path);
 		yield return loader;
 		SetGeometryData(loader.text);
 		
 		if(hasMaterials) {
 			loader = new WWW(basepath + mtllib);
 			yield return loader;
-			lib.basepath = basepath;
-			lib.SetMaterialData(loader.text); 
+
 		}
-		Build(lib);
+		Build();
 	}
 
 	// Assigns a GameObject for each object in the data buffer, with MeshFilter and MeshRenderer components for each.
 	// If there's just one object, our gameObject is used directly. Otherwise each new GameObject is a child of us.
-	// An array of these GameObjects and a dictionary of Materials is then given to the buffer to fill.
+	// We (synchonously) parse the loader.text into a new dictionary of materials.
+	// Each GameObject is assigned the sharedMaterials fetched from the dictionary.
 	// Finally, a BoxCollider is added for us as a whole.
-	private void Build(Mtllib lib) {
-		Dictionary<string, Material> materials = lib.Build(hasMaterials);
+	private void Build() {
 		GameObject[] ms = new GameObject[buffer.numObjects];
 		
 		if(buffer.numObjects == 1) {
@@ -76,7 +74,10 @@ public class ObjMesh : MonoBehaviour {
 				ms[i] = go;
 			}
 		}	
-		buffer.PopulateMeshes(ms, materials);
+		Dictionary<string, Material> materials = ResourceLoader.instance.ParseInto(basepath, hasMaterials ? loader.text : null, new Dictionary<string, Material>());
+		string[][] names = new string[buffer.numObjects][];
+		buffer.PopulateMeshes(ms, names);
+		for (int ii = 0; ii < buffer.numObjects; ii++) StartCoroutine( ResourceLoader.instance.FetchMaterials(names[ii], materials, ms[ii]) );
 		gameObject.AddComponent(typeof(BoxCollider));
 	}
 	private void SetGeometryData(string data) {

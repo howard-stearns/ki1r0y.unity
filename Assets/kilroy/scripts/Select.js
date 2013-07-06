@@ -169,16 +169,24 @@ function Highlight(go:GameObject) {
 	oscillateStartTime = Time.time;
 	// We must make a copy of the materials before we start throbbing them, because they might share with other materials.
 	oldMaterials = obj.sharedMaterials();
+	// If material hasn't loaded yet, there are several places and times, below where there might be nulls.
+	if ((oldMaterials == null) || !oldMaterials.Length) return;  
 	var mats = new Material[oldMaterials.Length];
-	for (var m = 0; m < mats.Length; m++) mats[m] = Material(oldMaterials[m]);
+	var oldColors = new Color[oldMaterials.Length];
+	for (var m = 0; m < mats.Length; m++) {
+		var oldMat = oldMaterials[m];
+		if (oldMat == null)  return;
+		mats[m] = Material(oldMat);
+		oldColors[m] = oldMat.color;
+	}
 	obj.sharedMaterials(mats);
 	//mat.SetColor('_Emission', Color.white);
 	while (oscillateStartTime != 0.0) {
 		var fraction = (1 + Mathf.Sin((Time.time - oscillateStartTime)/period + Mathf.PI/2.0)) /2.0;
 		//var fraction = Mathf.PingPong(Time.time - oscillateStart, 1.0);
 		fraction = fraction / 3.0 + 0.666667;
-		for (var i = 0; i < mats.Length && i < oldMaterials.Length; i++) {
-			mats[i].color = fraction * oldMaterials[i].color;
+		for (var i = 0; i < mats.Length; i++) {
+			mats[i].color = fraction * oldColors[i];
 			//mat.SetColor('_Emission', (1 - fraction) * oscillateStartColor);
 		}
 		yield;

@@ -114,7 +114,9 @@ public class GeometryBuffer {
 	public bool hasUVs { get { return uvs.Count > 0; } }
 	public bool hasNormals { get { return normals.Count > 0; } }
 	
-	public void PopulateMeshes(GameObject[] gs, Dictionary<string, Material> mats) {
+	// Adds the data to gs and matNames, which must be the same length.
+	// Each matNames[i] will be filled with an array of material name strings which names the materials used by gs[i].
+	public void PopulateMeshes(GameObject[] gs, string[][] matNames) {
 		if(gs.Length != numObjects) return; // Should not happen unless obj file is corrupt...
 		
 		for(int i = 0; i < gs.Length; i++) {
@@ -138,10 +140,13 @@ public class GeometryBuffer {
 			m.vertices = tvertices;
 			if(hasUVs) m.uv = tuvs;
 			if(hasNormals) m.normals = tnormals;
+			int gl = od.groups.Count;
+			string[] theseNames = new string[gl];
+			matNames[i] = theseNames;
 			
-			if(od.groups.Count == 1) {
+			if(gl == 1) {
 				GroupData gd = od.groups[0];
-				gs[i].renderer.material =  mats[(gd.materialName == null) ? "default" : gd.materialName];
+				theseNames[0] = (gd.materialName == null) ? "default" : gd.materialName;
 				
 				int[] triangles = new int[gd.faces.Count];
 				for(int j = 0; j < triangles.Length; j++) triangles[j] = j;
@@ -149,49 +154,18 @@ public class GeometryBuffer {
 				m.triangles = triangles;
 				
 			} else {
-				int gl = od.groups.Count;
-				Material[] sml = new Material[gl];
 				m.subMeshCount = gl;
 				int c = 0;
 				
 				for(int j = 0; j < gl; j++) {
-					sml[j] = mats[od.groups[j].materialName]; 
+					theseNames[j] = od.groups[j].materialName;
 					int[] triangles = new int[od.groups[j].faces.Count];
 					int l = od.groups[j].faces.Count + c;
 					int s = 0;
 					for(; c < l; c++, s++) triangles[s] = c;
 					m.SetTriangles(triangles, j);
 				}
-				
-				gs[i].renderer.materials = sml;
 			}
 		}
 	}
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -22,7 +22,7 @@ function Parsed(www:WWW):Hashtable {
 // Coroutine to fetch id into holder[0], which may require two GETs.
 // The actual hash will be set in data (which might not be the same as id for Groups).
 // (Of course, hash could not be in the serialized data, because that would affect the hash.)
-function FetchInto(holder:Hashtable[], id:String) {
+function CoFetchObjectData(holder:Hashtable[], id:String) {
 	var www = Fetch(id);
 	Log('fetching ' + www.url);
    	yield www;
@@ -49,51 +49,13 @@ static function makeVector3(data:Hashtable):Vector3 {
 static function makeQuaternion(data:Hashtable):Quaternion {
 	return Quaternion(data['x'], data['y'], data['z'], data['w']);
 }
-public var blockPrototype:Transform;  // Our 6-textured block
-public var flatPrototype:Transform;
-public var meshPrototype:Transform;
-// Coroutine to place into objHolder[0] an Obj attached to a primitive appropriate for the given data.
-function makeType(data:Hashtable, objHolder:Obj[]) {
-	var go:GameObject;
-	var obj:Obj;
-	var type:String = data['type'];
-	if (type == 'Plane') {
-		go = Instantiate(flatPrototype.gameObject);
-		obj = go.GetComponent.<Obj>();
-	} else if (type == 'Cube') {
-		go = Instantiate(blockPrototype.gameObject);
-		obj = go.GetComponent.<Obj>();
-	} else if (type == 'Mesh') {
-		go = Instantiate(meshPrototype.gameObject);
-		obj = go.GetComponent.<Obj>();
-		// Optimization? Should we instead have a priority queue of meshes to load?
-		// IWBNI playing audio/video came first, then object definitions, visible meshes, visible textures, non-visible meshes, non-visible textures, and non-playing audio/video.
-		var objMesh = obj.mesh.GetComponent.<ObjMesh>();
-		yield objMesh.Load('http://' + Save.host + '/media/' + data['mesh']);
-	} else {
-		var pt:Object = null;
-		if (type == 'Directional') pt = LightType.Directional;
-		else if (type == 'Point') pt = LightType.Point;
-		else if (type == 'Spot') pt = LightType.Spot;
-		go = new GameObject(); 
-		if (pt != null) {
-			var light = go.AddComponent(Light);
-			light.type = pt;
-			light.intensity = data['intensity'];
-			go.AddComponent(PictureCapture);
-		} // else group
-	}
-	if (!obj) obj = go.AddComponent.<Obj>();
-	obj.kind = type;
-	objHolder[0] = obj;
-}
 
 var nRemainingObjects = 0;  // The number we have started to fetch, but which have not yet been resolved (not counting media).
 // Immediately answers a (possibly new) child of parent, and starts asynchronously 
 // fetching the real data. If id does not already name a child, then create a 
 // visible cube that will be used as a stand-in of the correct position/size/rotation
 // (because the parent has that info). When the data arrives, it will replace the cube.
-function RestoreInto(id:String, hash:String, parent:Transform) {
+function RestoreChild(id:String, hash:String, parent:Transform) {
 	hash = hash || id;
 	var child = parent.Find(id);
 	var newChild = !child;
@@ -106,40 +68,54 @@ function RestoreInto(id:String, hash:String, parent:Transform) {
 		if (obj && (obj.hash == hash)) return child.gameObject;
 	}
 	nRemainingObjects++;
-	StartCoroutine( Inflate(child.gameObject, id, hash, newChild) );
+	StartCoroutine( CoInflate(child.gameObject, id, hash, newChild) );
 	return child.gameObject;
 }
-// Coroutine to fetch id data, make appropropriate gameObject, fill it, and replace temp with it.
-function Inflate(givenGo:GameObject, id:String, hash:String, newChild:boolean) {
+public var blockPrototype:Transform;  // Our 6-textured block
+public var flatPrototype:Transform;
+public var meshPrototype:Transform;
+public var lightPrototype:Transform;
+// Coroutine to fetch id data and either use it to fill the existing object, 
+// or replace the temporary existing object with a correctly filled new object.
+function CoInflate(existing:GameObject, id:String, hash:String, newChild:boolean) {
 	var dataHolder = new Hashtable[1];
-	yield FetchInto(dataHolder, hash);
-	if (!dataHolder[0]) { return; }  // FetchInto was responsible for alerting user.
+	yield CoFetchObjectData(dataHolder, hash);
+	var data = dataHolder[0];
+	if (!data) { return; }  // CoFetchObjectData was responsible for alerting user.
 	if (newChild) {
-		var objHolder = new Obj[1];
-		yield makeType(dataHolder[0], objHolder);
-		var obj = objHolder[0];
-		var go = obj.gameObject;
-		Fill(go, id, dataHolder[0]);
+		var proto:Transform;
+		switch (data['type']) {
+		case 'Plane': proto = flatPrototype; break;
+		case 'Cube': proto = blockPrototype; break;
+		case 'Mesh': proto = meshPrototype; break;
+		case 'Directional':
+		case 'Spot':
+		case 'Point': proto = lightPrototype; break;
+		}
+		var go = Instantiate(proto.gameObject);
+		var obj = go.GetComponent.<Obj>();	
+		obj.kind = data['type'];
+		yield CoFill(go, id, data);
 		// Now replace the temp with our new go.
-		go.transform.parent = givenGo.transform.parent; // First, before setting the following.
-		go.transform.position = givenGo.transform.position;
-		go.transform.rotation = givenGo.transform.rotation;
-		obj.size(givenGo.GetComponent(Obj).size());
-		givenGo.transform.parent = null;
-		Destroy(givenGo);
-		givenGo = go;
-		Log('restored ' + dataHolder[0]['nametag']);
+		go.transform.parent = existing.transform.parent; // First, before setting the following.
+		go.transform.position = existing.transform.position;
+		go.transform.rotation = existing.transform.rotation;
+		obj.size(existing.GetComponent(Obj).size());
+		existing.transform.parent = null;
+		Destroy(existing);
+		existing = go;
+		Log('restored ' + data['nametag']);
 	} else {
-		Fill(givenGo, id, dataHolder[0]);
+		yield CoFill(existing, id, data);
 	}
-	FillVersions(givenGo, id, 'SceneReady', '');
+	StartCoroutine( CoFillVersions(existing, id, 'SceneReady', '') );
 	// Careful moving this. Timing of coroutines (and positioning of objs for Goto after restore) is subtle.
 	if (!--nRemainingObjects) SceneReady();  
 }
 // Similar for acting on our gameObject (the whole scene), which doesn't need replacing.
 // Intelligently picks the right idvtag for the requested timestamp.
-// Note that FillVersions was already called first (not last as above).
-function FillScene(timestamp:String) {
+// Note that CoFillVersions was already called first (not last as above).
+function CoFillScene(timestamp:String) {
 	nRemainingObjects++;
 	var obj = gameObject.GetComponent(Obj);
 	if (!timestamp) {  // Use latest available
@@ -163,8 +139,8 @@ function FillScene(timestamp:String) {
 		idvtag = obj.versions[obj.timestamp];
 	}
 	var holder = new Hashtable[1];
-	yield FetchInto(holder, idvtag);
-	Fill(gameObject, obj.id, holder[0]);
+	yield CoFetchObjectData(holder, idvtag);
+	yield CoFill(gameObject, obj.id, holder[0]);
 	if (!--nRemainingObjects) SceneReady();
 }	
 	
@@ -176,7 +152,7 @@ function FillScene(timestamp:String) {
 // the immutable data stores to include the embedded (non-top-level) current version 
 // so that we don't have to look up twice, but that doesn't give us the list
 // of all versions. Hence this. 
-function FillVersions(x:GameObject, id:String, continuation:String, version:String) {
+function CoFillVersions(x:GameObject, id:String, continuation:String, version:String) {
 	var obj = x.GetComponent(Obj);
 	obj.id = id;
 	if (!obj.isGroup()) { return; }
@@ -204,17 +180,34 @@ public var materialPrototype:Material;
 // Materials based on the same data must be shared. This is not only for
 // memory, but also so that when a texture downloads, it updates all.
 public var materialsTable = {};
-// When data arrives, Inflate, above, will create the appropriate GameObject.
-// This Fill takes care of common setup and the Restore (above) of each child.
 public var safetyNetPrototype:Transform;
-function Fill(go:GameObject, id:String, data:Hashtable) {
+// When data arrives, CoInflate, above, will create the appropriate GameObject.
+// This CoFill takes care of common setup and the Restore (above) of each child.
+// It is a coroutine that waits for any necessary media (except materials), because go might be an original being refreshed.
+// (If go is an original rather than a temp, we're relying on the kind not changing.)
+function CoFill(go:GameObject, id:String, data:Hashtable):IEnumerator {
 	var obj:Obj = go.GetComponent(Obj);
 	obj.id = id;
 	obj.hash = data['idvtag'];
 	obj.nametag = data['nametag'];
 	go.name = id;
 	obj.author = data['author'] || ''; 
-	
+	// Now any type-specific initialization:
+	switch (obj.kind) {
+	case 'Directional':
+	case 'Spot':
+	case 'Point': 
+		var light = go.GetComponent.<Light>();
+		light.type = System.Enum.Parse( typeof( LightType ), data['type'] );
+		light.intensity = data['intensity'];
+		break;
+	case 'Mesh':
+		// Should we go through ResourceLoader?
+		var objMesh = obj.mesh.GetComponent.<ObjMesh>();
+		yield objMesh.Load('http://' + Save.host + '/media/' + data['mesh']); // Don't replace existing until we have the replacement. It's ok, we'll wait.
+		break;
+	}
+
 	var matData:Array = data['materials'];
 	if (matData != null) {
 		var nMats = matData.length;
@@ -234,7 +227,8 @@ function Fill(go:GameObject, id:String, data:Hashtable) {
 	}
 	var legitimateChildren = new Array(); // Keep track of the Objs we're now supposed to have.
 	for (var childData:Hashtable in data['children']) {
-		child = RestoreInto(childData['idtag'], childData['idvtag'], go.transform);
+		// Immediately defines a child, but also starts a coroutine to fetch that child's data.
+		child = RestoreChild(childData['idtag'], childData['idvtag'], go.transform);
 		var childObj = child.GetComponent.<Obj>();
 		legitimateChildren.Push(childObj);
 		var pos = childData['position'];
@@ -256,10 +250,6 @@ function Fill(go:GameObject, id:String, data:Hashtable) {
 				var avatars = GameObject.FindGameObjectsWithTag('Player');
 				for (var avatar in avatars) { avatar.transform.position.y = 1; }
 				safetyNet = Instantiate(safetyNetPrototype.gameObject).transform;
-				/*safetyNet = GameObject.CreatePrimitive(PrimitiveType.Plane).transform;
-				safetyNet.localScale = Vector3(10, 1, 10);
-				safetyNet.localPosition = Vector3(0, 0, 0);
-				safetyNet.name = 'SafetyNet'; */
 				safetyNet.parent = transform;
 			}
 			Log('destroying obsolete ' + childTransform);
@@ -301,7 +291,7 @@ function RestoreScene(combo:String) {
 	var version = ((trio.length > 1) && trio[1]) || '';
 	destinationId = ((trio.length > 2) && trio[2]) || '';
 	Application.ExternalCall('notifyUser', 'RestoreScene id:' + id + ' version:' + version + ' destination:' + destinationId);
-	FillVersions(gameObject, id, 'FillScene', version);
+	StartCoroutine( CoFillVersions(gameObject, id, 'CoFillScene', version) );
 }
 
 public var sceneId = 'G1'; // for use in editor

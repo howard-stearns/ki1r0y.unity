@@ -113,6 +113,7 @@ public class GeometryBuffer {
 	public bool isEmpty { get { return vertices.Count == 0; } }
 	public bool hasUVs { get { return uvs.Count > 0; } }
 	public bool hasNormals { get { return normals.Count > 0; } }
+	private string matName(string n) { return (n == null) ? "default" : n; }
 	
 	// Adds the data to gs and matNames, which must be the same length.
 	// Each matNames[i] will be filled with an array of material name strings which names the materials used by gs[i].
@@ -143,10 +144,11 @@ public class GeometryBuffer {
 			int gl = od.groups.Count;
 			string[] theseNames = new string[gl];
 			matNames[i] = theseNames;
+			Debug.Log("i:" + i + " gl:" + gl);
 			
 			if(gl == 1) {
 				GroupData gd = od.groups[0];
-				theseNames[0] = (gd.materialName == null) ? "default" : gd.materialName;
+				theseNames[0] = matName(gd.materialName);
 				
 				int[] triangles = new int[gd.faces.Count];
 				for(int j = 0; j < triangles.Length; j++) triangles[j] = j;
@@ -158,11 +160,22 @@ public class GeometryBuffer {
 				int c = 0;
 				
 				for(int j = 0; j < gl; j++) {
-					theseNames[j] = od.groups[j].materialName;
-					int[] triangles = new int[od.groups[j].faces.Count];
-					int l = od.groups[j].faces.Count + c;
+					GroupData gd = od.groups[j];
+					theseNames[j] = matName(gd.materialName);
+					int count = gd.faces.Count;
+					/*// Some files have an extra triangle.
+					if (((count - 1) % 3) == 0) count--;
+					// Some files leave off the last triangle.
+					bool repeatFirst = ((count + 1) % 3) == 0;
+					if (repeatFirst) count++;*/
+					
+					int[] triangles = new int[count];
+					int l = count + c;
 					int s = 0;
+					if (triangles.Length != (l - c)) Debug.Log("triangle length " + triangles.Length + " does not match l-c " + (l - c));
 					for(; c < l; c++, s++) triangles[s] = c;
+					if (triangles.Length != s) Debug.Log("triangle length " + triangles.Length + " does not match s " + s);
+					if ((s % 3) != 0) Debug.Log("s " + s + " is not a multiple of 3");
 					m.SetTriangles(triangles, j);
 				}
 			}

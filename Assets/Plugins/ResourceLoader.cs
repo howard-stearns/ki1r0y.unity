@@ -13,11 +13,17 @@ public class ResourceLoader : MonoBehaviour {
 		else instance = this;
 	}
 	
-	private const int DEBUG = 5;
-	private const int TRACE = 6;
-	public int logging = 0;
+	private const int WARN = 4;
+	private const int INFO = 6;
+	private const int DEBUG = 7;
+	public int logging = WARN;
 	private void Log(int level, string activity, string msg) { 
 		if (logging >= level) Debug.Log("Loader: " + activity + " " + msg);
+	}
+	private List<string> errors = new List<string>();
+	private void Warn(string msg) {
+		Log(WARN, "", msg);
+		errors.Add(msg);
 	}
 	
 	// Optimization: WWW in Unity editor is certainly not caching, despite Cache-Control/Expires.
@@ -29,21 +35,28 @@ public class ResourceLoader : MonoBehaviour {
 	
 	// Asynchronously loads basepath+name into material, and sets the texture's name as well.
 	public IEnumerator FetchTexture(string basepath, string name, Material material) {
-		string path = basepath + name;
-		Log(TRACE, "fetch", path);
+		return FetchTexture(basepath + name, material);
+	}
+	public IEnumerator FetchTexture(string path, Material material) {
+		Log(INFO, "fetch", path);
 		WWW loader = new WWW(path);
 		yield return loader;
 		Log(DEBUG, "received", path);
-		material.mainTexture = loader.texture;
-   		material.mainTexture.name = name;
+		if (loader.error != null && loader.error != "") { 
+			Warn(loader.error); 
+		} else {
+			material.mainTexture = loader.texture;
+   			material.mainTexture.name = name;
+		}
 	}
 	
 	// Optimization? Keep dictionaries of fetched textures so that we don't repeatedly get the same thing?
 	// private Dictionary<string, Texture> textures = new Dictionary<string, Texture>();
 	
+	public string defaultTexturePath;
 	// Blocking (synchronous) parse of .mtllib data into a dictionary of name->Material.
 	public Dictionary<string, Material> ParseInto(string basepath, string libtext, Dictionary<string, Material> materials) {
-		//Dictionary<string, Material> materials = new Dictionary<string, Material>();
+		Debug.Log("ParseInto " + basepath + ((libtext == null) ? " empty " : " library ") + ((defaultTexturePath == null) ? "none" : defaultTexturePath));
 	
 		if(libtext != null) {
 			SetMaterialData(libtext);
@@ -51,7 +64,10 @@ public class ResourceLoader : MonoBehaviour {
 				materials.Add(md.name, GetMaterial(basepath, md));
 			}
 		} else {
-			materials.Add("default", new Material(Shader.Find("VertexLit")));
+			Material mat = new Material(Shader.Find("VertexLit"));
+			Log(INFO, "setup fetch", defaultTexturePath);
+			if (defaultTexturePath != null) StartCoroutine( FetchTexture(defaultTexturePath, mat) );
+			materials.Add("default", mat);
 		}
 		return materials;
 	}
@@ -61,7 +77,16 @@ public class ResourceLoader : MonoBehaviour {
 		Material[] mats = new Material[names.Length];
 		yield return new WaitForFixedUpdate();
 		for (int ii = 0; ii < names.Length; ii++) {
-			mats[ii] = materials[names[ii]];  // FIXME: if it isn't in the dictionary, go find it.
+			string name = names[ii];
+			Material existing = materials.ContainsKey(name) ? materials[name] : null;
+			if (existing == null) {
+				Log(INFO, "Creating missing material", name);
+				bool hasDefault = materials.ContainsKey("default");
+				existing = hasDefault ? materials["default"] : new Material(Shader.Find("Diffuse"));
+				if (!hasDefault) materials.Add("default", existing);
+				materials.Add(name, existing);
+			}
+			mats[ii] = existing; 
 		}
 		go.renderer.materials = mats; // FIXME: go through Obj.sharedMaterials();
 	}

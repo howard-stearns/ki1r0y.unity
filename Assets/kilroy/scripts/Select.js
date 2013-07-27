@@ -306,7 +306,11 @@ function StartDragging(hit:RaycastHit) {
 	var obj = go.GetComponent(Obj);
 	var mountingDirection = obj ? dragged.TransformDirection(obj.localMounting) : -dragged.up;
 //	var debugStart = dragged.position;
-	if (selection != go) Debug.Error('FIXME selection does not match hit.collider');
+	if (selection != go) { 
+		Debug.Error('FIXME selection does not match hit.collider');
+		StopDragging(hit);
+		return;
+	}
 	
 	// Two Tests:
 		

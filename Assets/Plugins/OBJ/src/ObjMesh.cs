@@ -34,18 +34,24 @@ public class ObjMesh : MonoBehaviour {
 	void Start ()
 	{
 		buffer = new GeometryBuffer ();
+		if (objPath != null) StartCoroutine(Load(objPath)); // fixme remove after testing
 	}
 	
 	private WWW loader;
+	private string defaultTexturePath;
 	public IEnumerator Load(string path) {
 		objPath = path;
-		basepath = (path.IndexOf("/") == -1) ? "" : path.Substring(0, path.LastIndexOf("/") + 1);
-		
+		int baseStart = path.LastIndexOf("/");
+		basepath = (baseStart == -1) ? "" : path.Substring(0, baseStart + 1);
+		Debug.Log("Loading " + path + " base:" + basepath);
+		defaultTexturePath = ((baseStart == -1) ? path.Split(".".ToCharArray())[0] : (basepath + path.Substring(baseStart + 1).Split(".".ToCharArray())[0])) + ".jpg";
+				
 		loader = new WWW(path);
 		yield return loader;
 		SetGeometryData(loader.text);
 		
 		if(hasMaterials) {
+			Debug.Log("Loading material " + basepath + mtllib);
 			loader = new WWW(basepath + mtllib);
 			yield return loader;
 
@@ -74,6 +80,8 @@ public class ObjMesh : MonoBehaviour {
 				ms[i] = go;
 			}
 		}	
+		ResourceLoader.instance.logging = 6;
+		ResourceLoader.instance.defaultTexturePath = defaultTexturePath;
 		Dictionary<string, Material> materials = ResourceLoader.instance.ParseInto(basepath, hasMaterials ? loader.text : null, new Dictionary<string, Material>());
 		string[][] names = new string[buffer.numObjects][];
 		buffer.PopulateMeshes(ms, names);
@@ -83,18 +91,25 @@ public class ObjMesh : MonoBehaviour {
 	private void SetGeometryData(string data) {
 		string[] lines = data.Split("\n".ToCharArray());
 		
+		//int ii = 0;
 		for(int i = 0; i < lines.Length; i++) {
 			string l = lines[i];
 			
-			if(l.IndexOf("#") != -1) l = l.Substring(0, l.IndexOf("#"));
-			string[] p = l.Split(" ".ToCharArray());
+			if(l.IndexOf("#") != -1) l = l.Substring(0, l.IndexOf("#"));  // remove comments
+			// Get rid of whitespace (including double spaces) during trimming. See http://msdn.microsoft.com/en-us/library/tabh47cf.aspx
+			string[] p = l.Split(null as string[], StringSplitOptions.RemoveEmptyEntries);
+			/*string bb = "" + ii + " l: " + l + " p[" + p.Length + "]:";
+			for (int pi = 0; pi < p.Length; pi++) bb += " " + p[pi];
+			Debug.Log(bb);
+			ii++;*/
+			if (p.Length < 1) continue;
 			
 			switch(p[0]) {
 				case O:
-					buffer.PushObject(p[1].Trim());
+					buffer.PushObject(p[1]);
 					break;
 				case G:
-					buffer.PushGroup(p[1].Trim());
+					buffer.PushGroup(p[1]);
 					break;
 				case V:
 					buffer.PushVertex( new Vector3( ObjUtil.cf(p[1]), ObjUtil.cf(p[2]), ObjUtil.cf(p[3]) ) );
@@ -106,25 +121,41 @@ public class ObjMesh : MonoBehaviour {
 					buffer.PushNormal(new Vector3( ObjUtil.cf(p[1]), ObjUtil.cf(p[2]), ObjUtil.cf(p[3]) ));
 					break;
 				case F:
+					if (p.Length == 5) { // 'f' and four v/t/n groups as a polygon
+						string[] adjustedP = new string[7]; //make two triangles
+						adjustedP[0] = p[0]; // not used, just being consistent.
+						adjustedP[1] = p[1];
+						adjustedP[2] = p[2];
+						adjustedP[3] = p[3];
+						adjustedP[4] = p[3]; // keep the same handedness!
+						adjustedP[5] = p[4];
+						adjustedP[6] = p[1];
+						p = adjustedP;
+					}			
 					for(int j = 1; j < p.Length; j++) {
-						string[] c = p[j].Trim().Split("/".ToCharArray());
+						string[] c = p[j].Split("/".ToCharArray());  // do not remove empties!
+						
+						/*string bb2 = "" + ii + " c[" + c.Length + "]:";
+						for (int pi2 = 0; pi2 < c.Length; pi2++) bb2 += " " + c[pi2];
+						Debug.Log(bb2 + ".");*/
+
 						FaceIndices fi = new FaceIndices();
 						fi.vi = ObjUtil.ci(c[0])-1;	
-						if(c.Length > 1 && c[1] != "") fi.vu = ObjUtil.ci(c[1])-1;
-						if(c.Length > 2 && c[2] != "") fi.vn = ObjUtil.ci(c[2])-1;
+						if ((c.Length > 1) && (c[1] != "")) fi.vu = ObjUtil.ci(c[1])-1;
+						if ((c.Length > 2) && (c[2] != "")) fi.vn = ObjUtil.ci(c[2])-1;
 						buffer.PushFace(fi);
 					}
 					break;
 				case MTL:
-					mtllib = p[1].Trim();
+					mtllib = p[1];
 					break;
 				case UML:
-					buffer.PushMaterialName(p[1].Trim());
+					buffer.PushMaterialName(p[1]);
 					break;
 			}
 		}
 		
-		// buffer.Trace();
+		buffer.Trace();
 	}
 		
 	private bool hasMaterials {

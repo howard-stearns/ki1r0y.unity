@@ -161,7 +161,8 @@ function PersistGroup(x:GameObject):String {
 	// Now upload the group container data, so that it can be referenced by id to get whatever the latest version is.
 	var groupSerialization = JSON.Stringify({
 		'idvtag': hash,
-		'nametag': obj.nametag, // Including it here saves work when serving people pages
+		'nametag': obj.nametag, // Including it here saves work when serving initial related results
+		'author': obj.author, // ditto
 		'versions': obj.versions
 		});
 	StartCoroutine( uploadData(obj.id, Utils.sha1(groupSerialization), groupSerialization, 'place') ); // FIXME we're not really using the sha1. Remove?

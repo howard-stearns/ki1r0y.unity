@@ -45,7 +45,7 @@ public function GetRelated() {
 	var sceneNametag = root.nametag;
 	for (var i:int = 0; i < objs.length; i++) {
 		var obj = objs[i].gameObject.GetComponent(Obj);
-		data.push({'idvtag': obj.hash, 'nametag': sceneNametag, 'modified': obj.timestamp,'objectNametag': obj.nametag});
+		data.push({'idvtag': obj.hash, 'nametag': sceneNametag, 'modified': obj.timestamp,'objectNametag': obj.nametag, 'userIdtag': obj.author});
 	}
 	Application.ExternalCall('setRelated', JSON.Stringify(data));
 }

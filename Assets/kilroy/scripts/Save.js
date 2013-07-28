@@ -32,6 +32,7 @@ function uploadData(id:String, hash:String, serialized:String, mode:String) {
 	// if (hash != id) form.AddField('hash', hash);
 	var www = new WWW('http://' + host + '/' + mode + '/' + id, form);
 	yield www;
+	// FIXME: Unity post error messages are stupid.
 	if (!String.IsNullOrEmpty(www.error)) Application.ExternalCall('errorMessage', 'Save ' + id + ' failed:' + www.error);
 	else Log(id + ' uploaded ' + www.text);
 }

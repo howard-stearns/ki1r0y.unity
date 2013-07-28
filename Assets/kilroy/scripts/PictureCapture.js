@@ -14,6 +14,9 @@
 // FIXME: If we go into production without the above, we should change this to
 // upload once, with the server taking care of the second copy.
 //
+// FIXME: BUG: This only has provision for a secondaryId (the scene), but in fact, all the
+// objects in the path between id and the scene will be changed, and need pictures.
+//
 // In any case, this function is always a coroutine, because the upload will 
 // certainly be asynchronous.
 function Thumbnail (id:String, secondaryId:String) {

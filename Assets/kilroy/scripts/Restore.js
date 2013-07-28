@@ -253,6 +253,7 @@ function CoFill(go:GameObject, id:String, data:Hashtable):IEnumerator {
 				safetyNet.parent = transform;
 			}
 			Log('destroying obsolete ' + childTransform);
+			childTransform.parent = null;
 			Destroy(childTransform.gameObject);
 		}
 	}
@@ -267,6 +268,7 @@ public var destinationId = '';
 function SceneReady() {
 	if (safetyNet && GameObject.FindWithTag('SceneRoot').GetComponent.<Obj>().FindNametag('floor')) {
 		Log('removing temporary floor');
+		safetyNet.parent = null;
 		Destroy(safetyNet.gameObject);
 		safetyNet = null; 
 	}

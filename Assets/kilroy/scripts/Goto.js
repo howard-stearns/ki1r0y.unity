@@ -38,6 +38,17 @@ function GetAssemblies(trans:Transform):Array {
 	}
 	return assemblies;  // FIXME: how shall we sort this?
 }
+public function GetRelated() {
+	var objs = GetAssemblies(scene);
+	var data = new Array();
+	var root = GameObject.FindWithTag('SceneRoot').GetComponent.<Obj>();
+	var sceneNametag = root.nametag;
+	for (var i:int = 0; i < objs.length; i++) {
+		var obj = objs[i].gameObject.GetComponent(Obj);
+		data.push({'idvtag': obj.hash, 'nametag': sceneNametag, 'modified': obj.timestamp,'objectNametag': obj.nametag});
+	}
+	Application.ExternalCall('setRelated', JSON.Stringify(data));
+}
 
 // We keep track of where we are: In a crowded scene, we may be positioned right in front of one object,
 // with the avatar actually closer to some object next to the avatar. So if we just look for

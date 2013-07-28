@@ -2,8 +2,8 @@ static function Log(s:String) {
 	//Debug.Log('Restore: ' + s);  // Can be commented in/out for debugging.
 }
 
-function Fetch(id):WWW {
-	return new WWW('http://' + Save.host + '/thing/' + id);
+function Fetch(id:String, mode:String):WWW {
+	return new WWW('http://' + Save.host + '/' + mode + '/' + id);
 	//return new WWW('file:///Users/howardstearns/Beyond-My-Wall/server/kilroy/db/immutable/' + id);
 }
 // Together, these two functions handle several permutations on how we might store objects:
@@ -23,14 +23,14 @@ function Parsed(www:WWW):Hashtable {
 // The actual hash will be set in data (which might not be the same as id for Groups).
 // (Of course, hash could not be in the serialized data, because that would affect the hash.)
 function CoFetchObjectData(holder:Hashtable[], id:String) {
-	var www = Fetch(id);
+	var www = Fetch(id, 'thing');
 	Log('fetching ' + www.url);
    	yield www;
 	var data:Hashtable = Parsed(www);
 	if (!data) { return; }
 	var hash:String = data['idvtag'];
 	if (hash) { // separately stored group and object info
-		www = Fetch(hash);
+		www = Fetch(hash, 'thing');
 		Log('fetching group data ' + www.url);
 		yield www;
 		data = Parsed(www);
@@ -64,7 +64,7 @@ function RestoreChild(id:String, hash:String, parent:Transform) {
 		child.gameObject.AddComponent(Obj);
 		child.parent = parent;
 	} else {  // if hash is already right, we're done.
-		var obj = child.GetComponent(Obj);
+		var obj = child.GetComponent.<Obj>();
 		if (obj && (obj.hash == hash)) return child.gameObject;
 	}
 	nRemainingObjects++;
@@ -100,7 +100,7 @@ function CoInflate(existing:GameObject, id:String, hash:String, newChild:boolean
 		go.transform.parent = existing.transform.parent; // First, before setting the following.
 		go.transform.position = existing.transform.position;
 		go.transform.rotation = existing.transform.rotation;
-		obj.size(existing.GetComponent(Obj).size());
+		obj.size(existing.GetComponent.<Obj>().size());
 		existing.transform.parent = null;
 		Destroy(existing);
 		existing = go;
@@ -117,7 +117,7 @@ function CoInflate(existing:GameObject, id:String, hash:String, newChild:boolean
 // Note that CoFillVersions was already called first (not last as above).
 function CoFillScene(timestamp:String) {
 	nRemainingObjects++;
-	var obj = gameObject.GetComponent(Obj);
+	var obj = gameObject.GetComponent.<Obj>();
 	if (!timestamp) {  // Use latest available
 		var stamps = obj.timestamps();
 		timestamp = stamps[stamps.Count - 1];
@@ -153,7 +153,7 @@ function CoFillScene(timestamp:String) {
 // so that we don't have to look up twice, but that doesn't give us the list
 // of all versions. Hence this. 
 function CoFillVersions(x:GameObject, id:String, continuation:String, version:String) {
-	var obj = x.GetComponent(Obj);
+	var obj = x.GetComponent.<Obj>();
 	obj.id = id;
 	if (!obj.isGroup()) { return; }
 	if (obj.versions) {  
@@ -162,7 +162,7 @@ function CoFillVersions(x:GameObject, id:String, continuation:String, version:St
 		return;
 	}
 	nRemainingObjects++;
-	var www = Fetch(id);
+	var www = Fetch(id, 'place');
    	yield www;
 	var data:Hashtable = Parsed(www);
 	if (!obj.hash) { // e.g., if a toplevel request for the latest
@@ -170,7 +170,7 @@ function CoFillVersions(x:GameObject, id:String, continuation:String, version:St
 	}
 	obj.versions = data['versions']; 
 	if (!obj.versions) { // bootstrapping. synthesize some values
-		obj.timestamp = GetComponent(Save).JSTime().ToString();
+		obj.timestamp = GetComponent.<Save>().JSTime().ToString();
 		obj.versions = {obj.timestamp: obj.hash};
 	}
 	if (!--nRemainingObjects) SendMessage(continuation, version);
@@ -186,7 +186,7 @@ public var safetyNetPrototype:Transform;
 // It is a coroutine that waits for any necessary media (except materials), because go might be an original being refreshed.
 // (If go is an original rather than a temp, we're relying on the kind not changing.)
 function CoFill(go:GameObject, id:String, data:Hashtable):IEnumerator {
-	var obj:Obj = go.GetComponent(Obj);
+	var obj:Obj = go.GetComponent.<Obj>();
 	obj.id = id;
 	obj.hash = data['idvtag'];
 	obj.nametag = data['nametag'];
@@ -219,7 +219,7 @@ function CoFill(go:GameObject, id:String, data:Hashtable):IEnumerator {
 				// FIXME: decode other properties from mData (scale, offset)
 				mat = new Material(materialPrototype);
 				materialsTable[mData] = mat;
-				StartCoroutine( ResourceLoader.instance.FetchTexture('http://' + Save.host + '/media/', mData, mat) );
+				StartCoroutine( ResourceLoader.instance.FetchTexture('http://' + Save.host + '/media/' + mData, mData, mat) );
 			}
 			materials[i] = mat;
 		}
@@ -242,7 +242,7 @@ function CoFill(go:GameObject, id:String, data:Hashtable):IEnumerator {
 	}
 	// Destroy any children with Obj components that are obsolete (not legitimate).
 	for (var childTransform:Transform in go.transform) {
-		var comp = childTransform.gameObject.GetComponent(Obj);
+		var comp = childTransform.gameObject.GetComponent.<Obj>();
 		if (comp && (child.transform.tag == 'SafetyNet') && !IsInArray(comp, legitimateChildren)) {
 			// If we're about to kill the floor, set up the safetyNet again.
 			if (safetyNet && (comp.nametag == 'floor')) {
@@ -265,7 +265,7 @@ function IsInArray(item, array:Array):boolean {
 public var safetyNet:Transform;
 public var destinationId = '';
 function SceneReady() {
-	if (safetyNet && GameObject.FindWithTag('SceneRoot').GetComponent(Obj).FindNametag('floor')) {
+	if (safetyNet && GameObject.FindWithTag('SceneRoot').GetComponent.<Obj>().FindNametag('floor')) {
 		Log('removing temporary floor');
 		Destroy(safetyNet.gameObject);
 		safetyNet = null; 
@@ -273,12 +273,12 @@ function SceneReady() {
 	var target = destinationId;
 	destinationId = '';
 	var targetObj = target && GameObject.Find(target);
-	var sceneComp = gameObject.GetComponent(Obj);
+	var sceneComp = gameObject.GetComponent.<Obj>();
 	Application.ExternalCall('sceneReady', sceneComp.nametag,
 		targetObj ? targetObj.GetComponent(Obj).nametag : '',
 		sceneComp.timestamp);
 	if (target) { // even if not found
-		var goto = Camera.main.transform.parent.GetComponent(Goto);
+		var goto = Camera.main.transform.parent.GetComponent.<Goto>();
 		goto.GoBackToObj(targetObj);
 	} else {
 		Obj.SceneSelect(true);

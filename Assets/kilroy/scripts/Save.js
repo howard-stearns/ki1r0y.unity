@@ -20,7 +20,6 @@ function ContactInfo(combo:String) {
 // of the timestamps from a save are the same. This instance var is set w
 public var thisTimestamp = '';
 public var refs = {}; // A set of all the objects referenced by this scene.
-function uploadData(id:String, hash:String, serialized:String) { return uploadData(id, hash, serialized, 'thing'); }
 function uploadData(id:String, hash:String, serialized:String, mode:String) {
 	// Must be separate void function to be yieldable.
  	Log(id + ': ' + serialized); // simulated upload
@@ -31,7 +30,7 @@ function uploadData(id:String, hash:String, serialized:String, mode:String) {
 	// Note that the hash cannot be part of the serialized data, as then the hash would be 
 	// circularly dependendant on its own value.
 	// if (hash != id) form.AddField('hash', hash);
-	var www = WWW('http://' + host + '/' + mode + '/' + id, form);
+	var www = new WWW('http://' + host + '/' + mode + '/' + id, form);
 	yield www;
 	if (!String.IsNullOrEmpty(www.error)) Application.ExternalCall('errorMessage', 'Save ' + id + ' failed:' + www.error);
 	else Log(id + ' uploaded ' + www.text);
@@ -128,13 +127,13 @@ public var forceUpload = false; // forces upload even if not changed. Used for r
 //   Updates Obj.hash (so we can tell later if a new upload is needed).
 //   Updates Obj.id IFF it was empty.
 function PersistGroup(x:GameObject):String {
-	var obj:Obj = x.GetComponent(Obj);
+	var obj:Obj = x.GetComponent.<Obj>();
 	var serialized = asString(x);
 	var hash = Utils.sha1(serialized);
 	if (obj.id == 'G') obj.id = 'G' + System.Guid.NewGuid().ToString(); // New object => new id. 
 	if (!forceUpload && (hash == obj.hash)) return obj.hash; // No need to upload.
 	// Upload the data needed to rebuild this version of the object.
-	StartCoroutine( uploadData(hash, hash, serialized) );
+	StartCoroutine( uploadData(hash, hash, serialized, "thing") );
 
 	// Update the local and persisted group info.
 	if (!obj.versions) obj.versions = {};
@@ -164,14 +163,14 @@ function PersistGroup(x:GameObject):String {
 		'nametag': obj.nametag, // Including it here saves work when serving people pages
 		'versions': obj.versions
 		});
-	StartCoroutine( uploadData(obj.id, Utils.sha1(groupSerialization), groupSerialization) ); // FIXME we're not really using the sha1. Remove?
+	StartCoroutine( uploadData(obj.id, Utils.sha1(groupSerialization), groupSerialization, 'place') ); // FIXME we're not really using the sha1. Remove?
 	obj.hash = hash;
 	return obj.hash;
 }
 function Persist(x:GameObject):Hashtable { return Persist(x, false); }
 function Persist(x:GameObject, isScene:boolean):Hashtable {
 	var instance = new Hashtable(); 
-	var obj:Obj = x.GetComponent(Obj);
+	var obj:Obj = x.GetComponent.<Obj>();
 	if (!enabled || obj == null) return new Hashtable();  // for debugging/experiments
 	if (obj.isGroup()) {
 		var hash = PersistGroup(x);
@@ -182,7 +181,7 @@ function Persist(x:GameObject, isScene:boolean):Hashtable {
 		var serialized = asString(x);
 		id = Utils.sha1(serialized);
 		if (forceUpload || (id != obj.id)) {
-			StartCoroutine( uploadData(id, id, serialized) );
+			StartCoroutine( uploadData(id, id, serialized, 'thing') );
 			obj.id = id;
 		}
 		AddProperty(instance, 'idtag', id);

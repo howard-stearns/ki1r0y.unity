@@ -34,10 +34,7 @@ public class ResourceLoader : MonoBehaviour {
 	// IWBNI playing audio/video came first, then object definitions, visible meshes, visible textures, non-visible meshes, non-visible textures, and non-playing audio/video.
 	
 	// Asynchronously loads basepath+name into material, and sets the texture's name as well.
-	public IEnumerator FetchTexture(string basepath, string name, Material material) {
-		return FetchTexture(basepath + name, material);
-	}
-	public IEnumerator FetchTexture(string path, Material material) {
+	public IEnumerator FetchTexture(string path, string textureName, Material material) {
 		Log(INFO, "fetch", path);
 		WWW loader = new WWW(path);
 		yield return loader;
@@ -46,7 +43,7 @@ public class ResourceLoader : MonoBehaviour {
 			Warn(loader.error); 
 		} else {
 			material.mainTexture = loader.texture;
-   			material.mainTexture.name = name;
+   			material.mainTexture.name = textureName;
 		}
 	}
 	
@@ -66,7 +63,7 @@ public class ResourceLoader : MonoBehaviour {
 		} else {
 			Material mat = new Material(Shader.Find("VertexLit"));
 			Log(INFO, "setup fetch", defaultTexturePath);
-			if (defaultTexturePath != null) StartCoroutine( FetchTexture(defaultTexturePath, mat) );
+			if (defaultTexturePath != null) StartCoroutine( FetchTexture(defaultTexturePath, name, mat) );
 			materials.Add("default", mat);
 		}
 		return materials;
@@ -176,7 +173,7 @@ public class ResourceLoader : MonoBehaviour {
 
 		m.SetColor("_Color", md.diffuse);
 		
-		StartCoroutine( FetchTexture(basepath, md.diffuseTexPath, m) );
+		StartCoroutine( FetchTexture(basepath + md.diffuseTexPath, md.diffuseTexPath, m) );
 		
 		return m;
 	}

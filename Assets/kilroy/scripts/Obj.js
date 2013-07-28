@@ -27,11 +27,11 @@ function isGroup() {
 public var kind = '';
 function Start() {
 	if (kind == '') {
-		var m = gameObject.GetComponent(MeshFilter);
+		var m = gameObject.GetComponent.<MeshFilter>();
 		if (!!m)  {
 			kind = m.sharedMesh.name;
 		} else {
-			l = gameObject.GetComponent(Light);
+			l = gameObject.GetComponent.<Light>();
 			if (!!l) kind = l.type.ToString();
 		}
 		// When a prefab gets frobbed, the name changes from 'Foo' to 'Foo instance'.
@@ -57,7 +57,7 @@ function GameObjectPath():String {
 function FindNametag(t:String):Transform {
 	if (nametag == t) return transform;
 	for (var child:Transform in transform) {
-		var childObj = child.GetComponent(Obj);
+		var childObj = child.GetComponent.<Obj>();
 		var got = childObj ? childObj.FindNametag(t) : null;
 		if (got != null) return got;
 	}
@@ -69,7 +69,7 @@ public static function SceneSelect(force:boolean) {
 	if (force || (selectedId != null)) {
 		selectedId = null;
 		var root = GameObject.FindWithTag('SceneRoot');
-		var rootComponent = root.GetComponent(Obj);
+		var rootComponent = root.GetComponent.<Obj>();
 		Application.ExternalCall('select', null, rootComponent.nametag);
 		if (Application.isWebPlayer) {
 			Application.ExternalCall('props', '/');
@@ -121,7 +121,7 @@ public function sharedMaterials():Material[] {
 	var go = !!mesh ? mesh : gameObject;
 	var r = go.renderer;
 	var m:Material[];
-	var block = gameObject.GetComponent(BlockDrawing);
+	var block = gameObject.GetComponent.<BlockDrawing>();
 	if (!r && !block) m = new Material[0];
 	else if (block) m = block.sharedMaterials();
 	else m = r.sharedMaterials;
@@ -131,7 +131,7 @@ public function sharedMaterials():Material[] {
 public function sharedMaterials(mats:Material[]):Material[] {
 	var go = !!mesh ? mesh : gameObject;
 	var r = go.renderer;
-	var block = gameObject.GetComponent(BlockDrawing);
+	var block = gameObject.GetComponent.<BlockDrawing>();
 	if (!r && !block && !mats.Length) return mats;
 	else if (block) block.sharedMaterials(mats);
 	else r.sharedMaterials = mats;	
@@ -140,7 +140,7 @@ public function sharedMaterials(mats:Material[]):Material[] {
 
 // Answer the Kilroy GameObject of the given c, or null.
 public static function ColliderGameObject(c:Collider):GameObject { 
-	if (c.gameObject.GetComponent(Obj)) return c.gameObject;
+	if (c.gameObject.GetComponent.<Obj>()) return c.gameObject;
 	//Debug.Log('colliderGameObject(' + c.gameObject + ') parent:' + c.transform.parent.gameObject);
 	if (!c.transform.parent) return null;  // e.g., avatar
 	return c.transform.parent.gameObject;
@@ -178,7 +178,7 @@ public var saver:Save; // Save script, if available.
 function Awake() { // Initialize saver, if available.
 	if (saver == null) {
 		var root = GameObject.FindWithTag('SceneRoot'); // Tag, because it could be named anything.
-		if (root != null) saver = root.GetComponent(Save);
+		if (root != null) saver = root.GetComponent.<Save>();
 	}
 }
 function saveScene(action) { // Save whatever needs to be saved from the whole scene (or silently skip if not set up to save).
@@ -186,7 +186,7 @@ function saveScene(action) { // Save whatever needs to be saved from the whole s
 	//	debugging: Application.ExternalCall('notifyUser', 'now '+ transform.position.ToString() + ' ' + transform.eulerAngles.ToString() + ' ' + transform.lossyScale.ToString());	
 	var tstamp = saver.PersistScene(); // for value and for the side-effect on id.
 	Application.ExternalCall('saved', id, nametag, tstamp, action);
-	gameObject.GetComponent(PictureCapture).Thumbnail(id, saver.name);
+	gameObject.GetComponent.<PictureCapture>().Thumbnail(id, saver.GetComponent.<Obj>().hash);
 }
 
 /*****************************************************************************************/

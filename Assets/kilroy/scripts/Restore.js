@@ -2,6 +2,12 @@ static function Log(s:String) {
 	//Debug.Log('Restore: ' + s);  // Can be commented in/out for debugging.
 }
 
+// Turn on or off normal avatar stuff such as whether moving platform is enabled (which can get really weird during restoration).
+function avatarActions(on:boolean) {
+	var avatars = GameObject.FindGameObjectsWithTag('Player');
+	for (var avatar in avatars) { avatar.GetComponent.<CharacterMotor>().movingPlatform.enabled = on; }
+}
+
 function Fetch(id:String, mode:String):WWW {
 	return new WWW('http://' + Save.host + '/' + mode + '/' + id);
 	//return new WWW('file:///Users/howardstearns/Beyond-My-Wall/server/kilroy/db/immutable/' + id);
@@ -272,19 +278,20 @@ function SceneReady() {
 		Destroy(safetyNet.gameObject);
 		safetyNet = null; 
 	}
+	avatarActions(true);
 	var target = destinationId;
 	destinationId = '';
-	var targetObj = target && GameObject.Find(target);
+	var targetObj:GameObject = target ? GameObject.Find(target) : null;
 	var sceneComp = gameObject.GetComponent.<Obj>();
 	Application.ExternalCall('sceneReady', sceneComp.nametag,
 		targetObj ? targetObj.GetComponent(Obj).nametag : '',
 		sceneComp.timestamp);
-	if (target) { // even if not found
+	//if (target) { // even if not found  // FIXME: remove if this works out
 		var goto = Camera.main.transform.parent.GetComponent.<Goto>();
-		goto.GoBackToObj(targetObj);
-	} else {
-		Obj.SceneSelect(true);
-	}
+		goto.GoBackToObj(targetObj ? targetObj : null);  // FIXME scene gameObject is probably not the right thing on undo!
+	//} else {
+	//	Obj.SceneSelect(true);
+	//}
 }
 
 function RestoreScene(combo:String) {
@@ -293,6 +300,7 @@ function RestoreScene(combo:String) {
 	var version = ((trio.length > 1) && trio[1]) || '';
 	destinationId = ((trio.length > 2) && trio[2]) || '';
 	Application.ExternalCall('notifyUser', 'RestoreScene id:' + id + ' version:' + version + ' destination:' + destinationId);
+	avatarActions(false);
 	StartCoroutine( CoFillVersions(gameObject, id, 'CoFillScene', version) );
 }
 

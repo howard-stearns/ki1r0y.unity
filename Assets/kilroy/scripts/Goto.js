@@ -45,7 +45,10 @@ public function GetRelated() {
 	var sceneNametag = root.nametag;
 	for (var i:int = 0; i < objs.length; i++) {
 		var obj = objs[i].gameObject.GetComponent(Obj);
-		data.push({'idvtag': obj.hash, 'nametag': sceneNametag, 'modified': obj.timestamp,'objectNametag': obj.nametag, 'userIdtag': obj.author});
+		data.push({
+			'objectIdtag': obj.hash, 'objectNametag': obj.nametag, 
+			'sceneNametag': sceneNametag, 'timestamp': obj.timestamp,
+			'userIdtag': obj.author});
 	}
 	Application.ExternalCall('setRelated', JSON.Stringify(data));
 }
@@ -108,17 +111,23 @@ function setupCameraAnimation(obj:Obj) {
 	
 	//cameraEndPos = trans.position - (trans.forward * 2); // simplifed version of the following
 	var trans = obj.transform;
-	var size = obj.bounds().size; // BoundingBox in world space alignment
+	cameraEndPos = trans.position;
+	var bounds = obj.bounds();
+	var size = bounds.size; // BoundingBox in world space alignment
 	var vertical = size.y;  // Global y is right, but add a margin.
-	var horizontalMax = Vector3(size.x, size.z, 0).magnitude; // regardless of orientation 
-	var distByHeight = vertical / 
-		(2 * Mathf.Tan(Mathf.Deg2Rad * Camera.main.fieldOfView/2));
-	var distByWidth = horizontalMax /
-		(2 * Mathf.Tan(Mathf.Deg2Rad * Camera.main.fieldOfView*Camera.main.aspect/2));
-	var facing = trans.TransformDirection(obj.localFacing);
-	cameraEndPos = trans.position 
-				+ (facing * (horizontalMax/2 + Mathf.Max(distByHeight, distByWidth)));
-	cameraEndRot = Quaternion.LookRotation(trans.position - cameraEndPos);
+	if (vertical && size.x) { // guard to not blow up
+		var horizontalMax = Vector3(size.x, size.z, 0).magnitude; // regardless of orientation 
+		var distByHeight = vertical / 
+			(2 * Mathf.Tan(Mathf.Deg2Rad * Camera.main.fieldOfView/2));
+		var distByWidth = horizontalMax /
+			(2 * Mathf.Tan(Mathf.Deg2Rad * Camera.main.fieldOfView*Camera.main.aspect/2));
+		var facing = trans.TransformDirection(obj.localFacing);
+		cameraEndPos += (facing * (horizontalMax/2 + Mathf.Max(distByHeight, distByWidth)));
+		cameraEndRot = Quaternion.LookRotation(trans.position - cameraEndPos);
+	} else { // e.g., if no collider or size
+		cameraEndPos += Vector3.up; // A slight overview, and not, e.g,, in the ground
+		camerEndRot = Quaternion.LookRotation(Vector3.forward);
+	}
 }
 
 // Setup avatar's start/end position/rotation so that after animation, the avatar
@@ -190,7 +199,7 @@ function GoBackToObj(go:GameObject) {
 			transform.position = Vector3.Lerp(start, end, t);
 			yield;
 		}
-		Obj.SceneSelect(true);
+		Obj.SceneSelect(); // we used to force here (argument of true). necessary?
 		return;
 	}
 	currentSite = null; // e.g., user picks current from history. Don't interpret as wrap.

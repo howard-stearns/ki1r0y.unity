@@ -110,6 +110,7 @@ public function isTargetable():boolean {
 }
 public function bounds():Bounds { // Answer world space Bounds. (Do we want just our collider, or all children (i.e., renderer.bounds)?)
 	var go = !!mesh ? mesh : gameObject;
+	if (!go.collider) { return Bounds(go.transform.position, Vector3.zero); }
 	return go.collider.bounds;
 }
 public function objectCollider():Collider { // Answer our Collider

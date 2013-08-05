@@ -115,19 +115,14 @@ function setupCameraAnimation(obj:Obj) {
 	var bounds = obj.bounds();
 	var size = bounds.size; // BoundingBox in world space alignment
 	var vertical = size.y;  // Global y is right, but add a margin.
-	if (vertical && size.x) { // guard to not blow up
-		var horizontalMax = Vector3(size.x, size.z, 0).magnitude; // regardless of orientation 
-		var distByHeight = vertical / 
-			(2 * Mathf.Tan(Mathf.Deg2Rad * Camera.main.fieldOfView/2));
-		var distByWidth = horizontalMax /
-			(2 * Mathf.Tan(Mathf.Deg2Rad * Camera.main.fieldOfView*Camera.main.aspect/2));
-		var facing = trans.TransformDirection(obj.localFacing);
-		cameraEndPos += (facing * (horizontalMax/2 + Mathf.Max(distByHeight, distByWidth)));
-		cameraEndRot = Quaternion.LookRotation(trans.position - cameraEndPos);
-	} else { // e.g., if no collider or size
-		cameraEndPos += Vector3.up; // A slight overview, and not, e.g,, in the ground
-		camerEndRot = Quaternion.LookRotation(Vector3.forward);
-	}
+	var horizontalMax = Vector3(size.x, size.z, 0).magnitude; // regardless of orientation 
+	var distByHeight = vertical / 
+		(2 * Mathf.Tan(Mathf.Deg2Rad * Camera.main.fieldOfView/2));
+	var distByWidth = horizontalMax /
+		(2 * Mathf.Tan(Mathf.Deg2Rad * Camera.main.fieldOfView*Camera.main.aspect/2));
+	var facing = trans.TransformDirection(obj.localFacing);
+	cameraEndPos += (facing * (horizontalMax/2 + Mathf.Max(distByHeight, distByWidth)));
+	cameraEndRot = Quaternion.LookRotation(trans.position - cameraEndPos);
 }
 
 // Setup avatar's start/end position/rotation so that after animation, the avatar

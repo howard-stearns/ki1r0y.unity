@@ -287,7 +287,7 @@ function StopDragging(hit:RaycastHit) {
 	//Debug.Log('reparenting:' + go + ' dragged scale:' + trans.localScale);
 	if (Vector3.Distance(firstDragPosition, lastDragPosition) > 0.2) 
 		(trans || go).SendMessage("saveScene", 'move', SendMessageOptions.DontRequireReceiver);
-	else if (!!trans) Camera.main.transform.parent.GetComponent(Goto).Goto(trans, true);
+	else if (!!trans) Camera.main.transform.parent.GetComponent.<Goto>().Goto(trans, true);
 }
 
 public var laserPrefab:Transform;
@@ -422,7 +422,7 @@ function Update () {
 	if (Input.GetAxis("Horizontal") || Input.GetAxis("Vertical")) {
 		StopGizmo();
 		UnSelection();
-		Obj.SceneSelect();
+		Obj.SceneSelect(false);
 		return;
 	}
 	if (gizmo) return;
@@ -436,8 +436,7 @@ function Update () {
 			(Input.GetMouseButtonDown(0) && (Input.GetAxis('Fire2') || Input.GetAxis('Fire3')))) {
 			var go = Obj.ColliderGameObject(hit.collider);
 			go.GetComponent.<Obj>().ExternalPropertyEdit('properties', true);
-			if (!Application.isWebPlayer) StartGizmo(go);
-			// else changing tab will call back to us to StartGizmo.
+			if (!Application.isWebPlayer) StartGizmo(go); // else changing tab will call back to us to StartGizmo.
 		} else if (Input.GetMouseButtonDown(0)) { 
 			StartDragging(hit);
 		} else if (Input.GetMouseButtonUp(0)) {

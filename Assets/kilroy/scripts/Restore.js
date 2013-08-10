@@ -9,7 +9,9 @@ function avatarActions(on:boolean) {
 }
 
 function Fetch(id:String, mode:String):WWW {
-	return new WWW('http://' + Save.host + '/' + mode + '/' + id);
+	var url = 'http://' + Save.host + '/' + mode + '/' + id;
+	Log('fetching ' + url);
+	return new WWW(url);
 	//return new WWW('file:///Users/howardstearns/Beyond-My-Wall/server/kilroy/db/immutable/' + id);
 }
 // Together, these two functions handle several permutations on how we might store objects:
@@ -29,15 +31,13 @@ function Parsed(www:WWW):Hashtable {
 // The actual hash will be set in data (which might not be the same as id for Groups).
 // (Of course, hash could not be in the serialized data, because that would affect the hash.)
 function CoFetchObjectData(holder:Hashtable[], id:String) {
-	var www = Fetch(id, 'thing');
-	Log('fetching ' + www.url);
+	var www = Fetch(id, 'thing');;
    	yield www;
 	var data:Hashtable = Parsed(www);
 	if (!data) { return; }
 	var hash:String = data['idvtag'];
 	if (hash) { // separately stored group and object info
 		www = Fetch(hash, 'thing');
-		Log('fetching group data ' + www.url);
 		yield www;
 		data = Parsed(www);
 		if (!data) { return; }
@@ -114,7 +114,7 @@ function CoInflate(existing:GameObject, id:String, hash:String, newChild:boolean
 	} else {
 		yield CoFill(existing, id, data);
 	}
-	StartCoroutine( CoFillVersions(existing, id, 'SceneReady', '') );
+	StartCoroutine( CoFillVersions(existing, id, 'SceneReady', '') ); // If this is a group, fill in versions so they don't get lost on save.
 	// Careful moving this. Timing of coroutines (and positioning of objs for Goto after restore) is subtle.
 	if (!--nRemainingObjects) SceneReady();  
 }
@@ -301,6 +301,13 @@ function RestoreScene(combo:String) {
 	destinationId = ((trio.length > 2) && trio[2]) || '';
 	Application.ExternalCall('notifyUser', 'RestoreScene id:' + id + ' version:' + version + ' destination:' + destinationId);
 	avatarActions(false);
+	var existing = gameObject.GetComponent.<Obj>();
+	existing.versions = null; // Clear out cache so that CoFillVersions doesn't optimize away the fetch.
+	// This is a bit of a pun. After resotoration, we will GoBackToObj, which will tell the browser to select through one of
+	// two paths. The path through Obj.SceneSelect will not act if Obj.selectedId is falsey. On startup, existing.id
+	// will indeed be falsey (which will suppress scene selection as desired), but if we go here while already in-scene,
+	// the existing.id will be truthy and we'll get a new scene selection as desired. (That's a lot of comment for one assignment!)
+	Obj.selectedId = existing.id;
 	StartCoroutine( CoFillVersions(gameObject, id, 'CoFillScene', version) );
 }
 

@@ -161,18 +161,15 @@ var state = GotoState.None; 	// This avatar's current state.
 // Goto the specified object, automating and animating the avatar/camera that we are attached to.
 // The current implementation goes to a fixed position/orientation based on where the assembly is
 // now, but in principle it could track moving assemblies.
-function Goto(trans:Transform, addToHistory:boolean) {
+function Goto(trans:Transform, addToHistory) {
 	var obj = trans.gameObject.GetComponent(Obj);
-	/*Application.ExternalCall('notifyUser', 
-		'Goto ' + trans + ' current=' + (currentSite || 'none')
-		+ (addToHistory ? " addToHistory" : " suppressHistory"));*/
-	obj.ExternalPropertyEdit('metadata', addToHistory && (trans != currentSite));
 	if (trans == currentSite) {
 		trans.parent.gameObject.SendMessage("Wrap", trans.gameObject, SendMessageOptions.DontRequireReceiver);
 		//trans.gameObject.GetComponent(PictureDrawing).Wrap(trans.parent.gameObject);
 		//Wrap(trans.gameObject, trans.parent.gameObject);
 		return;
 	}
+	obj.ExternalPropertyEdit('metadata', addToHistory);
 	currentSite = trans;
 	setupCameraAnimation(obj);
 	setupAvatarAnimation(trans.position);
@@ -194,11 +191,11 @@ function GoBackToObj(go:GameObject) {
 			transform.position = Vector3.Lerp(start, end, t);
 			yield;
 		}
-		Obj.SceneSelect(); // we used to force here (argument of true). necessary?
+		Obj.SceneSelect(null);
 		return;
 	}
 	currentSite = null; // e.g., user picks current from history. Don't interpret as wrap.
-	Goto(go.transform, false);
+	Goto(go.transform, null);
 }
 
 // The scene root could be called anything, which means we can't send a browser message

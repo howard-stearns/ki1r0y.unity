@@ -63,25 +63,6 @@ function FindNametag(t:String):Transform {
 	}
 	return null;
 }
-public static var selectedId = null;
-public static function SceneSelect() { SceneSelect(false); }
-public static function SceneSelect(force:boolean) {
-	if (force || (selectedId != null)) {
-		selectedId = null;
-		var root = GameObject.FindWithTag('SceneRoot');
-		var rootComponent = root.GetComponent.<Obj>();
-		Application.ExternalCall('select', null, rootComponent.nametag);
-		if (Application.isWebPlayer) {
-			Application.ExternalCall('props', '/');
-		}
-	}
-}
-function deleteObject() {
-	transform.parent = null;  // first unhook me without destroying, so that I can save.
-//	Application.ExternalCall('notifyUser', 'deleted:' + nametag);
-	saveScene('delete');
-	Destroy(gameObject);
-}
 
 public var mesh:GameObject;
 public var dims:Vector3; // public for debuggin only. Use size().
@@ -147,22 +128,35 @@ public static function ColliderGameObject(c:Collider):GameObject {
 	return c.transform.parent.gameObject;
 }
 
-public var deleteMe = false; // To delete in editor
-function Update() {
-	if (!deleteMe) return;
-	deleteMe = false;
-	deleteObject();
+/***************************************************************************************/
+function deleteObject() {
+	transform.parent = null;  // first unhook me without destroying, so that I can save.
+//	Application.ExternalCall('notifyUser', 'deleted:' + nametag);
+	saveScene('delete');
+	Destroy(gameObject);
 }
 
-// Tell external property editor about this object's editable properties.
-function ExternalPropertyEdit(tabName:String, addToHistory:boolean) {
+public static var selectedId = null; // global state for this user.
+// The addToHistory argument can be definitely true/false, or falsey (meaning the browser can decide):
+// true: click->Goto->ExternalProperyEdit, metaclick->ExternalPropertyEdit, tab->Goto->ExternalPropertyEdit
+// false: driving SceneSelect
+// null: (sceneReady | browser)->goBackTo->(SceneSelect | Goto->externalPropertyEdit)
+public static function SceneSelect(addToHistory) { // Tell browser to select whole scene.
+	if (addToHistory || (selectedId != null)) {
+		selectedId = null;
+		var root = GameObject.FindWithTag('SceneRoot');
+		var rootComponent = root.GetComponent.<Obj>();
+		Application.ExternalCall('select', rootComponent.id, rootComponent.nametag, addToHistory);
+		if (Application.isWebPlayer) {
+			Application.ExternalCall('props', '/');
+		}
+	}
+}
+// Tell external property editor about this object's editable properties, and select the object.
+function ExternalPropertyEdit(tabName:String, addToHistory) {
 	var path = GameObjectPath();
 	selectedId = id;
-	/*Application.ExternalCall('notifyUser', 
-		'browser select ' + id + ' ' + path + ' ' + tabName 
-		+ (addToHistory ? " addToHistory" : " suppressHistory"));*/
-	//Debug.Log('localScale ' + gameObject.transform.localScale.ToString() + ' globalScale: ' + gameObject.transform.lossyScale.ToString());
-	Application.ExternalCall('select', id, nametag, !addToHistory);
+	Application.ExternalCall('select', id, nametag, addToHistory);
 	//if (Application.isWebPlayer) {
 		Application.ExternalCall('tabSelect', tabName);
 		var pos = gameObject.transform.localPosition;
@@ -207,3 +201,11 @@ function setRotationZ(v:String) {var vec = transform.localEulerAngles; transform
 function setSizeX(v:String) {var vec = transform.localScale; transform.localScale = Vector3(parseFloat(v)/size().x, vec.y, vec.z); saveScene('width');}
 function setSizeY(v:String) {var vec = transform.localScale; transform.localScale = Vector3(vec.x, parseFloat(v)/size().y, vec.z); saveScene('height');}
 function setSizeZ(v:String) {var vec = transform.localScale; transform.localScale = Vector3(vec.x, vec.y, parseFloat(v)/size().z); saveScene('length');}
+
+/***************************************************************************************/
+public var deleteMe = false; // To delete in editor
+function Update() {
+	if (!deleteMe) return;
+	deleteMe = false;
+	deleteObject();
+}

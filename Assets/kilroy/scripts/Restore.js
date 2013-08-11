@@ -164,7 +164,7 @@ function CoFillVersions(x:GameObject, id:String, continuation:String, version:St
 	if (!obj.isGroup()) { return; }
 	if (obj.versions) {  
 		// No one else will be changing groups, so no need to refetch for latest data.
-		SendMessage(continuation, version);
+		if (!nRemainingObjects) SendMessage(continuation, version); // No -- because we didn't ++.
 		return;
 	}
 	nRemainingObjects++;

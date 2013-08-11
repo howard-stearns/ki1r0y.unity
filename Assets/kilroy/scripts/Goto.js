@@ -179,13 +179,12 @@ function Goto(trans:Transform, addToHistory) {
 	head.parent = avatar; // So that it doesn't move up or down with camera until AtObject.
 }
 function GoTo(id:String) { // From browser link.
-	GoBackToObj(id && GameObject.Find(id), true);
+	GoToObj(id && GameObject.Find(id), true);
 }
 function GoBackTo(id:String) { // From browser back button.
-	GoBackToObj(id && GameObject.Find(id), null);
+	GoToObj(id && GameObject.Find(id), null);
 }
-function GoBackToObj(go:GameObject) { GoBackToObj(go, null); }
-function GoBackToObj(go:GameObject, addToHistory) {
+function GoToObj(go:GameObject, addToHistory) {
 	Application.ExternalCall('notifyUser', 'GoBackTo ' + go);
 	if (!go) {  // initial scene re-entry, or somehow deleted
 		currentSite = null;

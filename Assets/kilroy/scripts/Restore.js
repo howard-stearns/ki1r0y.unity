@@ -287,14 +287,9 @@ function SceneReady() {
 		targetObj ? targetObj.GetComponent(Obj).nametag : '',
 		sceneComp.timestamp,
 		sceneComp.hash);
-	//if (target) { // even if not found  // FIXME: remove if this works out
-		var goto = Camera.main.transform.parent.GetComponent.<Goto>();
-		goto.GoBackToObj(targetObj ? targetObj : null);  // FIXME scene gameObject is probably not the right thing on undo!
-	//} else {
-	//	Obj.SceneSelect(true);
-	//}
+	var goto = Camera.main.transform.parent.GetComponent.<Goto>();
+	goto.GoToObj(targetObj ? targetObj : null, null); 
 }
-
 function RestoreScene(combo:String) {
 	var trio = Save.splitPath(combo);
 	var id = trio[0];
@@ -304,11 +299,19 @@ function RestoreScene(combo:String) {
 	avatarActions(false);
 	var existing = gameObject.GetComponent.<Obj>();
 	existing.versions = null; // Clear out cache so that CoFillVersions doesn't optimize away the fetch.
-	// This is a bit of a pun. After resotoration, we will GoBackToObj, which will tell the browser to select through one of
-	// two paths. The path through Obj.SceneSelect will not act if Obj.selectedId is falsey. On startup, existing.id
-	// will indeed be falsey (which will suppress scene selection as desired), but if we go here while already in-scene,
-	// the existing.id will be truthy and we'll get a new scene selection as desired. (That's a lot of comment for one assignment!)
-	Obj.selectedId = existing.id;
+	// The following is a bit of a multi-way pun. After resotoration, we will GoToObj, which will tell the browser to select IFF
+	//   a) we're going to a an object that is different than the current selected object, or
+	//   b) we're going to a scene with any selected object.
+	// We don't want to select on startup (because the browser has to have that info statically for search engines, and
+	// we don't want people to have to wait for scene-load to see the info). And indeed, on startup:
+	//   a) existing.id will be falsey buy destinationId will be set (above), and so Obj.SelectedId will match where we're going, and
+	//   b) existing.id and destinationId will both be falsey, so there won't be an Obj.SelectedId below.
+	// However, for any subsequent mid-session restores, existing.id will be the current scene, and so:
+	//   a) a jump to any destination object (in scene or not) will not match Obj.SelectedId, and
+	//   b) a jump to any scene will see a truthy Obj.SelectedId, 
+	// and in either case we'll select the new object-or-scene.
+	// (That's a lot of comment for one assignment!)
+	Obj.SelectedId = existing.id || destinationId;
 	StartCoroutine( CoFillVersions(gameObject, id, 'CoFillScene', version) );
 }
 

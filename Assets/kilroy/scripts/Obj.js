@@ -136,14 +136,14 @@ function deleteObject() {
 	Destroy(gameObject);
 }
 
-public static var selectedId = null; // global state for this user.
+public static var SelectedId = null; // global state for this user.
 // The addToHistory argument can be definitely true/false, or falsey (meaning the browser can decide):
 // true: click->Goto->ExternalProperyEdit, metaclick->ExternalPropertyEdit, tab->Goto->ExternalPropertyEdit
 // false: driving SceneSelect
 // null: (sceneReady | browser)->goBackTo->(SceneSelect | Goto->externalPropertyEdit)
 public static function SceneSelect(addToHistory) { // Tell browser to select whole scene.
-	if (addToHistory || selectedId) { // see comments in RestoreScene
-		selectedId = null;
+	if (addToHistory || SelectedId) { // see comments in RestoreScene
+		SelectedId = null;
 		var root = GameObject.FindWithTag('SceneRoot');
 		var rootComponent = root.GetComponent.<Obj>();
 		Application.ExternalCall('select', rootComponent.id, rootComponent.nametag, true);
@@ -155,9 +155,9 @@ public static function SceneSelect(addToHistory) { // Tell browser to select who
 // Tell external property editor about this object's editable properties, and select the object.
 function ExternalPropertyEdit(tabName:String, addToHistory) {
 	var path = GameObjectPath();
-	selectedId = id;
-	Application.ExternalCall('select', id, nametag, addToHistory);
-	//if (Application.isWebPlayer) {
+	if (addToHistory || Obj.SelectedId != id) {
+		SelectedId = id;
+		Application.ExternalCall('select', id, nametag, true);
 		Application.ExternalCall('tabSelect', tabName);
 		var pos = gameObject.transform.localPosition;
 		var rot = gameObject.transform.localEulerAngles; //Not what we persist, but easier for users.
@@ -166,7 +166,7 @@ function ExternalPropertyEdit(tabName:String, addToHistory) {
 		Application.ExternalCall('updateRotation', rot.x, rot.y, rot.z);
 		Application.ExternalCall('updateSize', size.x, size.y, size.z);
 		Application.ExternalCall('props', path, true);
-	//}
+	}
 }
 
 public var saver:Save; // Save script, if available.

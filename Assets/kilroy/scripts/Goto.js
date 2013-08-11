@@ -178,10 +178,14 @@ function Goto(trans:Transform, addToHistory) {
 	overlayControls.lockMouseMotionOff();
 	head.parent = avatar; // So that it doesn't move up or down with camera until AtObject.
 }
-function GoBackTo(id:String) { // From browser back button.
-	GoBackToObj(id && GameObject.Find(id));
+function GoTo(id:String) { // From browser link.
+	GoBackToObj(id && GameObject.Find(id), true);
 }
-function GoBackToObj(go:GameObject) {
+function GoBackTo(id:String) { // From browser back button.
+	GoBackToObj(id && GameObject.Find(id), null);
+}
+function GoBackToObj(go:GameObject) { GoBackToObj(go, null); }
+function GoBackToObj(go:GameObject, addToHistory) {
 	Application.ExternalCall('notifyUser', 'GoBackTo ' + go);
 	if (!go) {  // initial scene re-entry, or somehow deleted
 		currentSite = null;
@@ -191,11 +195,11 @@ function GoBackToObj(go:GameObject) {
 			transform.position = Vector3.Lerp(start, end, t);
 			yield;
 		}
-		Obj.SceneSelect(null);
+		Obj.SceneSelect(addToHistory);
 		return;
 	}
 	currentSite = null; // e.g., user picks current from history. Don't interpret as wrap.
-	Goto(go.transform, null);
+	Goto(go.transform, addToHistory);
 }
 
 // The scene root could be called anything, which means we can't send a browser message

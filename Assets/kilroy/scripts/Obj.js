@@ -142,11 +142,11 @@ public static var selectedId = null; // global state for this user.
 // false: driving SceneSelect
 // null: (sceneReady | browser)->goBackTo->(SceneSelect | Goto->externalPropertyEdit)
 public static function SceneSelect(addToHistory) { // Tell browser to select whole scene.
-	if (addToHistory || (selectedId != null)) {
+	if (addToHistory || selectedId) { // see comments in RestoreScene
 		selectedId = null;
 		var root = GameObject.FindWithTag('SceneRoot');
 		var rootComponent = root.GetComponent.<Obj>();
-		Application.ExternalCall('select', rootComponent.id, rootComponent.nametag, addToHistory);
+		Application.ExternalCall('select', rootComponent.id, rootComponent.nametag, true);
 		if (Application.isWebPlayer) {
 			Application.ExternalCall('props', '/');
 		}
@@ -180,7 +180,7 @@ function saveScene(action) { // Save whatever needs to be saved from the whole s
 	if (saver == null || !saver.enabled) return;
 	//	debugging: Application.ExternalCall('notifyUser', 'now '+ transform.position.ToString() + ' ' + transform.eulerAngles.ToString() + ' ' + transform.lossyScale.ToString());	
 	var tstamp = saver.PersistScene(); // for value and for the side-effect on id.
-	Application.ExternalCall('saved', id, nametag, tstamp, action);
+	Application.ExternalCall('saved', id, nametag, tstamp, action, hash);
 	gameObject.GetComponent.<PictureCapture>().Thumbnail(id, saver.GetComponent.<Obj>().hash);
 }
 

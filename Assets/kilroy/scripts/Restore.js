@@ -285,7 +285,8 @@ function SceneReady() {
 	var sceneComp = gameObject.GetComponent.<Obj>();
 	Application.ExternalCall('sceneReady', sceneComp.nametag,
 		targetObj ? targetObj.GetComponent(Obj).nametag : '',
-		sceneComp.timestamp);
+		sceneComp.timestamp,
+		sceneComp.hash);
 	//if (target) { // even if not found  // FIXME: remove if this works out
 		var goto = Camera.main.transform.parent.GetComponent.<Goto>();
 		goto.GoBackToObj(targetObj ? targetObj : null);  // FIXME scene gameObject is probably not the right thing on undo!

@@ -182,7 +182,7 @@ function GoTo(id:String) { // From browser link.
 	GoToObj(id && GameObject.Find(id), true);
 }
 function GoBackTo(id:String) { // From browser back button.
-	GoToObj(id && GameObject.Find(id), null);
+	GoToObj(id && GameObject.Find(id), false);
 }
 function GoToObj(go:GameObject, addToHistory) {
 	Application.ExternalCall('notifyUser', 'GoBackTo ' + go);

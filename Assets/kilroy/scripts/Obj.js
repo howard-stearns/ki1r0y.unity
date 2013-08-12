@@ -137,36 +137,40 @@ function deleteObject() {
 }
 
 public static var SelectedId = null; // global state for this user.
-// The addToHistory argument can be definitely true/false, or falsey (meaning the browser can decide):
-// true: click->Goto->ExternalProperyEdit, metaclick->ExternalPropertyEdit, tab->Goto->ExternalPropertyEdit
-// false: driving SceneSelect
-// null: (sceneReady | browser)->goBackTo->(SceneSelect | Goto->externalPropertyEdit)
+
+// SceneSelect and ExternalPropertyEdit may both send browser 'select', with a true/false addToHistory argument.
+// However, the functions here can also take a null addToHistory argument:
+// false: from driving->SceneSelect or browser->goBackTo: send select(...false)
+// true: from click/metaclick/tab -> ExternalPropertyEdit: send select(...true)
+// null: from RestoreScene: send nothing at all if SelectedId is wrong (see RestoreScene comments), otherwise send select(...true)
 public static function SceneSelect(addToHistory) { // Tell browser to select whole scene.
-	if (addToHistory || SelectedId) { // see comments in RestoreScene
-		SelectedId = null;
-		var root = GameObject.FindWithTag('SceneRoot');
-		var rootComponent = root.GetComponent.<Obj>();
-		Application.ExternalCall('select', rootComponent.id, rootComponent.nametag, true);
-		if (Application.isWebPlayer) {
-			Application.ExternalCall('props', '/');
-		}
+	if (addToHistory == null) {
+		if (!SelectedId) return;
+		else addToHistory = true;
 	}
+	SelectedId = null;
+	var root = GameObject.FindWithTag('SceneRoot');
+	var rootComponent = root.GetComponent.<Obj>();
+	Application.ExternalCall('select', rootComponent.id, rootComponent.nametag, addToHistory);
+	Application.ExternalCall('props', '/');
 }
 // Tell external property editor about this object's editable properties, and select the object.
 function ExternalPropertyEdit(tabName:String, addToHistory) {
-	var path = GameObjectPath();
-	if (addToHistory || Obj.SelectedId != id) {
-		SelectedId = id;
-		Application.ExternalCall('select', id, nametag, true);
-		Application.ExternalCall('tabSelect', tabName);
-		var pos = gameObject.transform.localPosition;
-		var rot = gameObject.transform.localEulerAngles; //Not what we persist, but easier for users.
-		var size = size();
-		Application.ExternalCall('updatePosition', pos.x, pos.y, pos.z);
-		Application.ExternalCall('updateRotation', rot.x, rot.y, rot.z);
-		Application.ExternalCall('updateSize', size.x, size.y, size.z);
-		Application.ExternalCall('props', path, true);
+	if (addToHistory == null) {
+		if (Obj.SelectedId == id) return;
+		else addToHistory = true;
 	}
+	var path = GameObjectPath();
+	SelectedId = id;
+	Application.ExternalCall('select', id, nametag, addToHistory);
+	Application.ExternalCall('tabSelect', tabName);
+	var pos = gameObject.transform.localPosition;
+	var rot = gameObject.transform.localEulerAngles; //Not what we persist, but easier for users.
+	var size = size();
+	Application.ExternalCall('updatePosition', pos.x, pos.y, pos.z);
+	Application.ExternalCall('updateRotation', rot.x, rot.y, rot.z);
+	Application.ExternalCall('updateSize', size.x, size.y, size.z);
+	Application.ExternalCall('props', path, true);
 }
 
 public var saver:Save; // Save script, if available.

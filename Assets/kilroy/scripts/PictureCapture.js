@@ -35,7 +35,7 @@ function Thumbnail (id:String, secondaryId:String) {
     // Encode texture into PNG
     var bytes = tex.EncodeToPNG();
     Destroy( tex );
- 	upload(bytes, id);
+ 	yield upload(bytes, id);
  	if (!String.IsNullOrEmpty(secondaryId)) upload(bytes, secondaryId);
 }
 

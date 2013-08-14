@@ -184,8 +184,8 @@ function saveScene(action) { // Save whatever needs to be saved from the whole s
 	if (saver == null || !saver.enabled) return;
 	//	debugging: Application.ExternalCall('notifyUser', 'now '+ transform.position.ToString() + ' ' + transform.eulerAngles.ToString() + ' ' + transform.lossyScale.ToString());	
 	var tstamp = saver.PersistScene(); // for value and for the side-effect on id.
+	yield gameObject.GetComponent.<PictureCapture>().Thumbnail(id, saver.GetComponent.<Obj>().hash);
 	Application.ExternalCall('saved', id, nametag, tstamp, action, hash);
-	gameObject.GetComponent.<PictureCapture>().Thumbnail(id, saver.GetComponent.<Obj>().hash);
 }
 
 /*****************************************************************************************/

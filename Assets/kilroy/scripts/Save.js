@@ -107,14 +107,6 @@ function AddComponent(p:Hashtable, component:Transform) {
 	if (children.length != 0)
 		AddProperty(p, 'children', children);
 }
-/* old. FIXME remove function AddComponent(p:Hashtable, component:MeshFilter) {
-	var type = component.sharedMesh.name;
-	// When a prefab gets frobbed, the name changes from 'Foo' to 'Foo instance'.
-	// We don't want that. (IWBNI we tracked that down.)
-	var index = type.IndexOf(' Instance');
-	if (index >= 0) type = type.Remove(index);
-	AddProperty(p, 'type', type);
-}*/
 function AddComponent(p:Hashtable, component:Light) {
 	//AddProperty(p, 'type', component.type.ToString());
 	AddProperty(p, 'intensity', component.intensity);
@@ -196,28 +188,10 @@ function Persist(x:GameObject, isScene:boolean):Hashtable {
 	} else {
 		refs[obj.id] = true; // accumulate one each of all the refs as we trace.
 	}
- //real code FIXME restore in place of below
 	if (x.transform.localPosition != Vector3.zero) 
 		AddProperty(instance, 'position', x.transform.localPosition);
-	// Temporary code to make things not fly apart
-	/*var m: Matrix4x4; var tran = x.transform.parent;
-	if (!!tran) {
-    	m.SetTRS(tran.position, tran.rotation, Vector3.one);
-   	 	var p = m.MultiplyPoint3x4(x.transform.position);
-		if (p != Vector3.zero) AddProperty(instance, 'position', p);
-	}*/
-	/*if (x.transform.localPosition != Vector3.zero) {
-		var v = x.transform.localPosition;
-		if (x.transform.parent) v.Scale(x.transform.parent.lossyScale);
-		AddProperty(instance, 'position', v);
-	}*/
-
 	if (x.transform.localRotation != Quaternion.identity)
 		AddProperty(instance, 'rotation', x.transform.localRotation);
-	/* old fixme remove if (x.transform.localScale != Vector3.one)
-		AddProperty(instance, 'scale', x.transform.localScale);*/
-	/*if (x.transform.lossyScale != Vector3.one)
-		AddProperty(instance, 'size', x.transform.lossyScale);*/
 	var size = obj.size();
 	if (size != Vector3.one) AddProperty(instance, 'size', size);
 	return instance;

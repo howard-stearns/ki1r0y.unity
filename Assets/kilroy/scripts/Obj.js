@@ -8,8 +8,7 @@ public var author = '';
 // Usually the same as id, but cand be different for groups (such as scenes).
 // Used to determine if there's been a change.
 public var hash = ''; 
-// only used for groups
-public var versions:Object; 
+public var versions:Object; // Only used for groups
 public var timestamp:String;
 
 // hashtable.Keys doesn't specify order. Here we have latest last.
@@ -132,8 +131,7 @@ public static function ColliderGameObject(c:Collider):GameObject {
 function deleteObject() {
 	transform.parent = null;  // first unhook me without destroying, so that I can save.
 //	Application.ExternalCall('notifyUser', 'deleted:' + nametag);
-	saveScene('delete');
-	Destroy(gameObject);
+	saveScene('delete'); // will do the destroying on the callback.
 }
 
 public static var SelectedId = null; // global state for this user.
@@ -180,12 +178,15 @@ function Awake() { // Initialize saver, if available.
 		if (root != null) saver = root.GetComponent.<Save>();
 	}
 }
-function saveScene(action) { // Save whatever needs to be saved from the whole scene (or silently skip if not set up to save).
+function saveScene(action:String) { // Save whatever needs to be saved from the whole scene (or silently skip if not set up to save).
 	if (saver == null || !saver.enabled) return;
 	//	debugging: Application.ExternalCall('notifyUser', 'now '+ transform.position.ToString() + ' ' + transform.eulerAngles.ToString() + ' ' + transform.lossyScale.ToString());	
-	var tstamp = saver.PersistScene(); // for value and for the side-effect on id.
-	yield gameObject.GetComponent.<PictureCapture>().Thumbnail(id, saver.GetComponent.<Obj>().hash);
-	Application.ExternalCall('saved', id, nametag, tstamp, action, hash);
+	timestamp = saver.PersistScene(this, action); // for value and for the side-effect on id.
+}
+function savedScene(action:String, changes:Array):IEnumerator { // Callback from saveScene.
+	yield gameObject.GetComponent.<PictureCapture>().Thumbnail(changes);
+	Application.ExternalCall('saved', id, nametag, timestamp, action, hash);
+	if (transform.parent == null) { Destroy(gameObject); } // if deleted, can only safely be destroyed now.
 }
 
 /*****************************************************************************************/

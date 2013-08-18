@@ -17,12 +17,17 @@ function ContactInfo(combo:String) {
 }
 
 // It is much easier for us to debug code, and for users to match things up, when all
-// of the timestamps from a save are the same. This instance var is set w
-public var thisTimestamp = '';
+// of the timestamps from a save are the same. This instance var is set by PersistScene
+public var thisTimestamp = '';  // FIXME: should pass this around (rather than global) in case of overlapping saves.
+public var lastSaveObj:Obj; var lastSaveAction = '';
 public var refs = {}; // A set of all the objects referenced by this scene.
+public var changes = new Array(); // The idvtags of everything that changed, so that we can set a thumbnail.
+var outstanding = 0;
 function uploadData(id:String, hash:String, serialized:String, mode:String) {
 	// Must be separate void function to be yieldable.
- 	Log(id + ': ' + serialized); // simulated upload
+	var logId = id + ':' + mode + ': ';
+ 	Log(logId + serialized); 
+ 	outstanding++;
  	var form = new WWWForm();
 	form.AddField('data', serialized);
 	// For groups, the hash is not the same as id, and saves on uploads later if we do persist the hash.
@@ -34,7 +39,12 @@ function uploadData(id:String, hash:String, serialized:String, mode:String) {
 	yield www;
 	// FIXME: Unity post error messages are stupid.
 	if (!String.IsNullOrEmpty(www.error)) Application.ExternalCall('errorMessage', 'Save ' + id + ' failed:' + www.error);
-	else Log(id + ' uploaded ' + www.text);
+	else Log(logId + ' uploaded ' + www.text);
+	if (!--outstanding) { 
+		refs = {};
+		StartCoroutine( lastSaveObj.savedScene(lastSaveAction, changes) );
+		changes = new Array();
+	}
 }
 
 function asData(x:GameObject):Hashtable {
@@ -127,6 +137,7 @@ function PersistGroup(x:GameObject):String {
 	if (!forceUpload && (hash == obj.hash)) return obj.hash; // No need to upload.
 	// Upload the data needed to rebuild this version of the object.
 	StartCoroutine( uploadData(hash, hash, serialized, "thing") );
+	changes.Push(hash); // the versioned (hash) id gets noted for a thumbnail upload.
 
 	// Update the local and persisted group info.
 	if (!obj.versions) obj.versions = {};
@@ -177,6 +188,7 @@ function Persist(x:GameObject, isScene:boolean):Hashtable {
 		if (forceUpload || (id != obj.id)) {
 			StartCoroutine( uploadData(id, id, serialized, 'thing') );
 			obj.id = id;
+			changes.Push(obj.id);
 		}
 		AddProperty(instance, 'idtag', id);
 	}
@@ -201,12 +213,18 @@ static function JSTime() { // return the same value of new Date().getTime() woul
 	return System.Math.Round((System.DateTime.UtcNow - new System.DateTime(1970,1,1)).TotalMilliseconds);
 }
 // Persist (only) everything we need to in the attached scene, answering the timestamp.
-// Note that this function is synchronous: the actual uploads are coroutines, but the data computation
-// answers directly.
-// Also, media (e.g., textures) are uploaded at import time, and don't have any impact on this save.
-function PersistScene() { 
+// Media (e.g., textures) are uploaded at import time, and don't have any impact on this save.
+// We are given the obj that has changed, so we could bubble up if we were sure nothing else has changed.
+// For now, though, we persist from our gameObject down -- we are attached to the scene -- to make sure we catch everything.
+// This function is synchronous (answering timestamp), but we also send obj.SavedScene(action) when we are sure
+// that everything is asynchronously uploaded. (That way, the browser can be sure that thumbnails are available.)
+// If there are multiple overlapping attempts to save, each saving obj will be told the correct timestamp synchronously, 
+// and all the uploads (including thumbnails) will happen, but obj.SavedScene will only be sent once when everything is ready.
+// (The refs dictionary could have extra stuff if there is a deletion during a save, but that's ok. We'll eliminate it next time.)
+function PersistScene(obj:Obj, action:String) { 
 	thisTimestamp = JSTime().ToString();
-	ref = {};
+	lastSaveObj = obj;
+	lastSaveAction = action;
 	Persist(gameObject, true);
 	return thisTimestamp;
 }

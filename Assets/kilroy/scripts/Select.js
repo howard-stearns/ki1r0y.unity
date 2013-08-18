@@ -84,7 +84,8 @@ function importImage(url:String) {  // Here, rather than Restore or Obj, because
     var mat = Material(pict.renderer.sharedMaterial);
     mat.mainTexture = inputData.texture;
     pict.renderer.material = mat;
-    pict.GetComponent(Obj).nametag = currentDropFilename;
+    var obj = pict.GetComponent.<Obj>();
+    obj.nametag = currentDropFilename;
     
     var form = new WWWForm();
    	var bytes = inputData.texture.EncodeToPNG(); // Our upload is always image/png, regardless of drop.
@@ -102,6 +103,7 @@ function importImage(url:String) {  // Here, rather than Restore or Obj, because
 	var result = upload.error ? 'failed upload of ' : 'saved ';
 	result += currentDropFilename + ': ' + (upload.error || upload.text);
 	StatusMessageUpdate(msg, result, 1.0);
+	if (!upload.error) obj.saveScene('import');
 }
 
 /*function Start() {  // For debugging

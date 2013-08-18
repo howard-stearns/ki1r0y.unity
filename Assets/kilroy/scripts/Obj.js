@@ -142,33 +142,36 @@ public static var SelectedId = null; // global state for this user.
 // true: from click/metaclick/tab -> ExternalPropertyEdit: send select(...true)
 // null: from RestoreScene: send nothing at all if SelectedId is wrong (see RestoreScene comments), otherwise send select(...true)
 public static function SceneSelect(addToHistory) { // Tell browser to select whole scene.
+	var root = GameObject.FindWithTag('SceneRoot');
+	var rootComponent = root.GetComponent.<Obj>();
+	var tag = rootComponent.nametag;
+	Application.ExternalCall('props', '/', tag); // regardless of addToHistory, etc.
 	if (addToHistory == null) {
 		if (!SelectedId) return;
 		else addToHistory = true;
 	}
 	SelectedId = null;
-	var root = GameObject.FindWithTag('SceneRoot');
-	var rootComponent = root.GetComponent.<Obj>();
-	Application.ExternalCall('select', rootComponent.id, rootComponent.nametag, addToHistory);
-	Application.ExternalCall('props', '/');
+	Application.ExternalCall('select', rootComponent.id, tag, addToHistory);
 }
 // Tell external property editor about this object's editable properties, and select the object.
 function ExternalPropertyEdit(tabName:String, addToHistory) {
-	if (addToHistory == null) {
-		if (Obj.SelectedId == id) return;
-		else addToHistory = true;
-	}
+	// Update properties regardless of whether we 'select' down below.
 	var path = GameObjectPath();
-	SelectedId = id;
-	Application.ExternalCall('select', id, nametag, addToHistory);
-	Application.ExternalCall('tabSelect', tabName);
 	var pos = gameObject.transform.localPosition;
 	var rot = gameObject.transform.localEulerAngles; //Not what we persist, but easier for users.
 	var size = size();
 	Application.ExternalCall('updatePosition', pos.x, pos.y, pos.z);
 	Application.ExternalCall('updateRotation', rot.x, rot.y, rot.z);
 	Application.ExternalCall('updateSize', size.x, size.y, size.z);
-	Application.ExternalCall('props', path, true);
+	Application.ExternalCall('props', path, nametag, true);
+
+	if (addToHistory == null) {
+		if (Obj.SelectedId == id) return;
+		else addToHistory = true;
+	}
+	SelectedId = id;
+	Application.ExternalCall('select', id, nametag, addToHistory);
+	Application.ExternalCall('tabSelect', tabName);
 }
 
 public var saver:Save; // Save script, if available.

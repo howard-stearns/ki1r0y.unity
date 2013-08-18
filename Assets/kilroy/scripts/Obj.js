@@ -139,9 +139,10 @@ public static var SelectedId = null; // global state for this user.
 // SceneSelect and ExternalPropertyEdit may both send browser 'select', with a true/false addToHistory argument.
 // However, the functions here can also take a null addToHistory argument:
 // false: from driving->SceneSelect or browser->goBackTo: send select(...false)
-// true: from click/metaclick/tab -> ExternalPropertyEdit: send select(...true)
+// true: from click|metaclick|tab -> ExternalPropertyEdit: send select(...true)
 // null: from RestoreScene: send nothing at all if SelectedId is wrong (see RestoreScene comments), otherwise send select(...true)
 public static function SceneSelect(addToHistory) { // Tell browser to select whole scene.
+	if ((addToHistory == false /*explicitly*/) && !SelectedId) return; //unecessary calls don't hurt anything, but they can be confusing for logging.
 	var root = GameObject.FindWithTag('SceneRoot');
 	var rootComponent = root.GetComponent.<Obj>();
 	var tag = rootComponent.nametag;

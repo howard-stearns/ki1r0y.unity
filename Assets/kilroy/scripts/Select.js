@@ -258,7 +258,7 @@ function SetAssemblyLayer(go:GameObject, layer:int) {
 
 // Shuts down any dragging going on. Safely does nothing if no drag in progress.
 function StopDragging() {
-	if (!dragged) return;
+	if (!dragged) return false;
 	// Reset drag state.
 	cursorOffsetToSurface = Vector3.zero;
 	// Restore dragged object
@@ -276,12 +276,13 @@ function StopDragging() {
 	Screen.showCursor = true;
 	Destroy(laser);
 	dragged = null;
+	return true;
 }
 
 // 	
 function StopDragging(hit:RaycastHit) {
 	var trans = dragged;
-	StopDragging();
+	if (!StopDragging()) return false;
 	// Make the dragged object a child of the hit.
 	// After things stabilize, this could be combined with the reparenting above.
 	var go:GameObject = Obj.ColliderGameObject(hit.collider);
@@ -290,6 +291,7 @@ function StopDragging(hit:RaycastHit) {
 	if (Vector3.Distance(firstDragPosition, lastDragPosition) > 0.2) 
 		(trans || go).SendMessage("saveScene", 'move', SendMessageOptions.DontRequireReceiver);
 	else if (!!trans) Camera.main.transform.parent.GetComponent.<Goto>().Goto(trans, true);
+	return true;
 }
 
 public var laserPrefab:Transform;

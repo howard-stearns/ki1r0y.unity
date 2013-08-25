@@ -290,15 +290,16 @@ function SceneReady() {
 	var goto = Camera.main.transform.parent.GetComponent.<Goto>();
 	goto.GoToObj(targetObj ? targetObj : null, null); 
 }
-function RestoreScene(combo:String) {
+function RestoreScene(combo:String, checkHistory:boolean) {
 	var trio = Save.splitPath(combo);
 	var id = trio[0];
 	var version = ((trio.length > 1) && trio[1]) || '';
 	destinationId = ((trio.length > 2) && trio[2]) || '';
-	Application.ExternalCall('notifyUser', 'RestoreScene id:' + id + ' version:' + version + ' destination:' + destinationId);
 	avatarActions(false);
 	var existing = gameObject.GetComponent.<Obj>();
 	existing.versions = null; // Clear out cache so that CoFillVersions doesn't optimize away the fetch.
+	Application.ExternalCall('notifyUser', 'RestoreScene id:' + id + ' version:' + version + ' destination:' + destinationId, 
+		' checkHistory:' + checkHistory + ' existing idv:' + existing.hash);
 	// The following is a bit of a multi-way pun. After resotoration, we will GoToObj, which will tell the browser to select IFF
 	//   a) we're going to a an object that is different than the current selected object, or
 	//   b) we're going to a scene with any selected object.
@@ -311,9 +312,10 @@ function RestoreScene(combo:String) {
 	//   b) a jump to any scene will see a truthy Obj.SelectedId, 
 	// and in either case we'll select the new object-or-scene.
 	// (That's a lot of comment for one assignment!)
-	Obj.SelectedId = existing.id || destinationId;
+	Obj.SelectedId = (checkHistory ? existing.id : '') || destinationId;
 	StartCoroutine( CoFillVersions(gameObject, id, 'CoFillScene', version) );
 }
+
 
 public var sceneId = 'G1'; // for use in editor
 public var undoId = ''; // To undo to an earlier hash in editor; e.g. 
@@ -325,13 +327,13 @@ function Update() {
 	if (!undoId) return;
 	var id = undoId;
 	undoId = ''; 
-	RestoreScene(id);
+	RestoreScene(id, true);
 }
 
 function Awake () {
 	if (!enabled) { return; }
 	if (Application.isEditor) {
-		RestoreScene(sceneId);
+		RestoreScene(sceneId, true);
 	}
 }
 function Start () {

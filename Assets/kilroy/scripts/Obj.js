@@ -167,6 +167,7 @@ function ExternalPropertyEdit(tabName:String, addToHistory) {
 	Application.ExternalCall('props', path, nametag, true);
 
 	if (addToHistory == null) {
+		Application.ExternalCall('notifyUser', 'ExternalPropertyEdit(' + tabName + ', null), id=' + id + ', Obj.SelectedId=', Obj.SelectedId);
 		if (Obj.SelectedId == id) return;
 		else addToHistory = true;
 	}

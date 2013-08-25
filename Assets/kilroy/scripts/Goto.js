@@ -205,7 +205,10 @@ function GoToObj(go:GameObject, addToHistory) {
 // to it (as we don't know it's scene-graph path). That's ok, though because we can figure 
 // that out from here (in Unity).
 function RestoreScene(spec:String) {
-	scene.gameObject.GetComponent(Restore).RestoreScene(spec);
+	scene.gameObject.GetComponent(Restore).RestoreScene(spec, true);
+}
+function RestoreSceneBack(spec:String) {
+	scene.gameObject.GetComponent(Restore).RestoreScene(spec, false);
 }
 
 

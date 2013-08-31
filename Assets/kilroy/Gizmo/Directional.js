@@ -30,7 +30,14 @@ function Start() {
 	axis = transform.parent;
 	if (highlightColor == Color.clear) {
 		// A pun: axis.right is 1,0,0 for x axis, and so is red. Similarly for y/green and z/blue.
-		var colorVector:Vector4 = axis.parent.InverseTransformDirection(axis.right);
+		var rgb = axis.parent.InverseTransformDirection(axis.right);
+		
+		// We can modify this to fit our pallet:
+		if (Vector3.Dot(rgb, Vector3.right) > 0.5) rgb = Vector3(0.596, 0.227, 0.349); // red triad of FB blue
+		else if (Vector3.Dot(rgb, Vector3.up) > 0.5) rgb = Vector3(0.349, 0.596, 0.227); // green trial of FB blue
+		else rgb = Vector3(0.231, 0.349, 0.596); // FB blue.
+		
+		var colorVector:Vector4 = rgb;
 		colorVector.w = targetAlpha;
 		highlightColor = colorVector;
 	}

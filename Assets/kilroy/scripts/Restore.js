@@ -298,8 +298,8 @@ function RestoreScene(combo:String, checkHistory:boolean) {
 	avatarActions(false);
 	var existing = gameObject.GetComponent.<Obj>();
 	existing.versions = null; // Clear out cache so that CoFillVersions doesn't optimize away the fetch.
-	Application.ExternalCall('notifyUser', 'RestoreScene id:' + id + ' version:' + version + ' destination:' + destinationId, 
-		' checkHistory:' + checkHistory + ' existing idv:' + existing.hash);
+	Application.ExternalCall('notifyUser', 'RestoreScene id:' + id + ' version:' + version + ' destination:' + destinationId
+		+ ' checkHistory:' + checkHistory + ' existing idv:' + existing.hash + ' existing SelectedId:' + (Obj.SelectedId ? Obj.SelectedId : 'null'));
 	// The following is a bit of a multi-way pun. After resotoration, we will GoToObj, which will tell the browser to select IFF
 	//   a) we're going to a an object that is different than the current selected object, or
 	//   b) we're going to a scene with any selected object.
@@ -312,7 +312,9 @@ function RestoreScene(combo:String, checkHistory:boolean) {
 	//   b) a jump to any scene will see a truthy Obj.SelectedId, 
 	// and in either case we'll select the new object-or-scene.
 	// (That's a lot of comment for one assignment!)
-	Obj.SelectedId = (checkHistory ? existing.id : '') || destinationId;
+	if (Obj.SelectedId != Obj.NoShortCircuit) {
+		Obj.SelectedId = (checkHistory ? existing.id : '') || destinationId;
+	}
 	StartCoroutine( CoFillVersions(gameObject, id, 'CoFillScene', version) );
 }
 
@@ -327,7 +329,9 @@ function Update() {
 	if (!undoId) return;
 	var id = undoId;
 	undoId = ''; 
-	RestoreScene(id, true);
+	Camera.main.transform.parent.GetComponent.<Goto>().RestoreSceneBack(id);
+	/*Obj.SelectedId = Obj.NoShortCircuit;
+	RestoreScene(id, false);*/
 }
 
 function Awake () {

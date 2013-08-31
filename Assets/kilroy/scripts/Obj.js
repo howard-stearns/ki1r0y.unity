@@ -138,9 +138,10 @@ public static var SelectedId = null; // global state for this user.
 
 // SceneSelect and ExternalPropertyEdit may both send browser 'select', with a true/false addToHistory argument.
 // However, the functions here can also take a null addToHistory argument:
-// false: from driving->SceneSelect or browser->goBackTo: send select(...false)
+// false: from driving->SceneSelect or browser->goBackTo|RestoreBackTo: send select(...false)
 // true: from click|metaclick|tab -> ExternalPropertyEdit: send select(...true)
-// null: from RestoreScene: send nothing at all if SelectedId is wrong (see RestoreScene comments), otherwise send select(...true)
+// null: from SceneRestore=>GoToObj send nothing at all if SelectedId is wrong (see RestoreScene comments), otherwise send select(...true)
+public static var NoShortCircuit = 'NonNullUnique'; // not an objectId or empty
 public static function SceneSelect(addToHistory) { // Tell browser to select whole scene.
 	if ((addToHistory == false /*explicitly*/) && !SelectedId) return; //unecessary calls don't hurt anything, but they can be confusing for logging.
 	var root = GameObject.FindWithTag('SceneRoot');
@@ -149,7 +150,7 @@ public static function SceneSelect(addToHistory) { // Tell browser to select who
 	Application.ExternalCall('props', '/', tag); // regardless of addToHistory, etc.
 	if (addToHistory == null) {
 		if (!SelectedId) return;
-		else addToHistory = true;
+		else addToHistory = (SelectedId != NoShortCircuit);
 	}
 	SelectedId = null;
 	Application.ExternalCall('select', rootComponent.id, tag, addToHistory);
@@ -169,7 +170,7 @@ function ExternalPropertyEdit(tabName:String, addToHistory) {
 	if (addToHistory == null) {
 		Application.ExternalCall('notifyUser', 'ExternalPropertyEdit(' + tabName + ', null), id=' + id + ', Obj.SelectedId=', Obj.SelectedId);
 		if (Obj.SelectedId == id) return;
-		else addToHistory = true;
+		else addToHistory = (SelectedId != NoShortCircuit);
 	}
 	SelectedId = id;
 	Application.ExternalCall('select', id, nametag, addToHistory);

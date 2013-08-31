@@ -182,6 +182,7 @@ function GoTo(id:String) { // From browser link.
 	GoToObj(id && GameObject.Find(id), true);
 }
 function GoBackTo(id:String) { // From browser back button.
+	Obj.SelectedId = Obj.NoShortCircuit;
 	GoToObj(id && GameObject.Find(id), false);
 }
 function GoToObj(go:GameObject, addToHistory) {
@@ -208,6 +209,7 @@ function RestoreScene(spec:String) {
 	scene.gameObject.GetComponent(Restore).RestoreScene(spec, true);
 }
 function RestoreSceneBack(spec:String) {
+	Obj.SelectedId = Obj.NoShortCircuit;
 	scene.gameObject.GetComponent(Restore).RestoreScene(spec, false);
 }
 

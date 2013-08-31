@@ -53,7 +53,7 @@ function setImportTarget(coordinates:String) {
     var pointerRay:Ray = cam.ScreenPointToRay(Vector3(x, y, 0));
 	if (Physics.Raycast(pointerRay, dropTarget)) {
 		NotifyUser('got object ' + dropTarget.transform.gameObject + ' at ' + x + 'x' + y);
-	} else Debug.LogError('no drop target found at ' + x + 'x' + y);
+	} else NotifyUser('no drop target found at ' + x + 'x' + y);
 	dropObject = null;
 }
 public var currentDropFilename:String;
@@ -265,8 +265,8 @@ function StopDragging() {
 	SetAssemblyLayer(dragged.gameObject, savedLayer);
 	var pivot = dragged.parent;
 	dragged.parent = pivot.parent;
-	if (pivot.parent) Debug.LogError('*** onStop Non-null pivot parent ' + pivot.parent);
-	if (pivot.localScale != Vector3(1, 1, 1)) Debug.LogError('*** onstop Non-unity pivot scale ' + pivot.localScale);
+	if (pivot.parent) NotifyUser('*** onStop Non-null pivot parent ' + pivot.parent);
+	if (pivot.localScale != Vector3(1, 1, 1)) NotifyUser('*** onstop Non-unity pivot scale ' + pivot.localScale);
 	
 	//Debug.Log('removal: pivot parent:' + pivot.parent + ' dragged scale:' + dragged.localScale + ' was:' + FIXMEoldScale);
 	// Destroy merely schedules destruction. We don't want pivot in the hierarchy (e.g., during saving).
@@ -279,7 +279,7 @@ function StopDragging() {
 	return true;
 }
 
-// 	
+var originalCopied:GameObject;	
 function StopDragging(hit:RaycastHit) {
 	var trans = dragged;
 	if (!StopDragging()) return false;
@@ -288,9 +288,18 @@ function StopDragging(hit:RaycastHit) {
 	var go:GameObject = Obj.ColliderGameObject(hit.collider);
 	if (!!trans) trans.parent = go.transform;
 	//Debug.Log('reparenting:' + go + ' dragged scale:' + trans.localScale);
+	
+	// Test for movement must be here rather than DoDragging, because we might not receive any DoDragging events.
 	if (Vector3.Distance(firstDragPosition, lastDragPosition) > 0.2) 
 		(trans || go).SendMessage("saveScene", 'move', SendMessageOptions.DontRequireReceiver);
-	else if (!!trans) Camera.main.transform.parent.GetComponent.<Goto>().Goto(trans, true);
+	else if (!!trans) {  // just a click, no drag
+		if (originalCopied) {
+			Destroy(trans.gameObject); // the copy
+			originalCopied.GetComponent.<Obj>().deleteObject();
+			originalCopied = null;
+		} else 
+			Camera.main.transform.parent.GetComponent.<Goto>().Goto(trans, true);
+	}
 	return true;
 }
 
@@ -303,18 +312,22 @@ private var firstDragPosition:Vector3; // For debouncing click vs drag;
 private var rt1:Vector3;
 private var fwd1:Vector3;
 
-function StartDragging(hit:RaycastHit) {
+function StartDragging(hit:RaycastHit, copy:boolean) {
 	var go:GameObject = Obj.ColliderGameObject(hit.collider);
+	if (selection != go) { 
+		NotifyUser('FIXME selection does not match hit.collider');
+		StopDragging(hit);
+		return;
+	}
+	if (copy) {
+		originalCopied = go;
+		go = Instantiate(go);
+	}
 	savedLayer = go.layer;
 	dragged = go.transform;
 	var obj = go.GetComponent(Obj);
 	var mountingDirection = obj ? dragged.TransformDirection(obj.localMounting) : -dragged.up;
 //	var debugStart = dragged.position;
-	if (selection != go) { 
-		Debug.Error('FIXME selection does not match hit.collider');
-		StopDragging(hit);
-		return;
-	}
 	
 	// Two Tests:
 		
@@ -349,7 +362,7 @@ function StartDragging(hit:RaycastHit) {
        	//Debug.Log('hit:' + surfaceHit.point + ' reverse:' + reverseHit.point + ' offset:' + offset);
 		dragged.position += offset;
 	} else { 
-		Debug.LogError('** No reverse hit! ** hit:' + surfaceHit.point + ' mounting:' + mountingDirection + ' embedded:' + embeddedPoint);
+		NotifyUser('** No reverse hit! ** hit:' + surfaceHit.point + ' mounting:' + mountingDirection + ' embedded:' + embeddedPoint);
 	}
 	if (isMeshCollider) col.convex = oldConvex;
 	// Set drag state
@@ -367,8 +380,8 @@ function StartDragging(hit:RaycastHit) {
 	laser.transform.parent = transform; // avatar (or whatever script is attached to)
 	// Setup up pivot.
 	var pivot = Instantiate(pivotPrefab, lastDragPosition, dragged.rotation);  
-	if (pivot.parent) Debug.LogError('*** FIXME Select:StartDragging Non-null pivot parent ' + pivot.parent);
-	if (pivot.localScale != Vector3(1, 1, 1)) Debug.LogError('*** FIXME Selec t:StartDragging Non-unity pivot scale ' + pivot.localScale);
+	if (pivot.parent) NotifyUser('*** FIXME Select:StartDragging Non-null pivot parent ' + pivot.parent);
+	if (pivot.localScale != Vector3(1, 1, 1)) NotifyUser('*** FIXME Select:StartDragging Non-unity pivot scale ' + pivot.localScale);
 	pivot.parent = transform.parent;   // FIXME should it be null in case avatar riding a vehicle?  (... i.e avatar parent, not the dragged parent (as that plays havoc with scale).
 	dragged.parent = pivot;
 }
@@ -435,14 +448,15 @@ function Update () {
     // We don't use OnMouseDown and friends, because that doesn't tell us the precise hit.point.
     // As long as we're going to need to Raycast, we might as well do that to start.
     // We cast only against the Default layer (0). E.g., we don't want this to catch the gizmo on the HUD layer (8).
+    var click = Input.GetMouseButtonDown(0);
 	if (Physics.Raycast(pointerRay, hit, Mathf.Infinity, (1<<0))) {
-		if (Input.GetMouseButtonDown(1) || 
-			(Input.GetMouseButtonDown(0) && (Input.GetAxis('Fire2') || Input.GetAxis('Fire3')))) {
+		if (Input.GetMouseButtonDown(1) ||   		// second mouse button
+			(click && Input.GetAxis('Fire3'))) {    // cmd-click
 			var go = Obj.ColliderGameObject(hit.collider);
 			go.GetComponent.<Obj>().ExternalPropertyEdit('properties', true);
 			if (!Application.isWebPlayer) StartGizmo(go); // else changing tab will call back to us to StartGizmo.
-		} else if (Input.GetMouseButtonDown(0)) { 
-			StartDragging(hit);
+		} else if (click) { 
+			StartDragging(hit, !!Input.GetAxis('Fire2')); // alt/option key
 		} else if (Input.GetMouseButtonUp(0)) {
 			StopDragging(hit);
 		} else if (dragged) {

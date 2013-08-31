@@ -111,8 +111,7 @@ function AddComponent(p:Hashtable, component:Transform) {
 	var children:Array = [];
 	for (var child:Transform in component) {
 		var persisted:Hashtable = Persist(child.gameObject);
-		if (persisted.Count != 0)
-			children.Push(persisted);
+		if (persisted.Count != 0) children.Push(persisted);
 	}
 	if (children.length != 0)
 		AddProperty(p, 'children', children);
@@ -176,7 +175,7 @@ function Persist(x:GameObject):Hashtable { return Persist(x, false); }
 function Persist(x:GameObject, isScene:boolean):Hashtable {
 	var instance = new Hashtable(); 
 	var obj:Obj = x.GetComponent.<Obj>();
-	if (!enabled || obj == null) return new Hashtable();  // for debugging/experiments
+	if (!enabled || obj == null || !obj.enabled) return new Hashtable();  // for debugging, experiments, and deleted objects
 	if (obj.isGroup()) {
 		var hash = PersistGroup(x);
 		AddProperty(instance, 'idvtag', hash); // Restore must grab the hash data, not the latest.

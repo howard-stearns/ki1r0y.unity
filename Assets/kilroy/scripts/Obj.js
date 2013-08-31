@@ -128,8 +128,8 @@ public static function ColliderGameObject(c:Collider):GameObject {
 }
 
 /***************************************************************************************/
-function deleteObject() {
-	transform.parent = null;  // first unhook me without destroying, so that I can save.
+public function deleteObject() {
+	enabled = false;  // first unhook me without destroying, so that I can save. Toplevel object have null parents, so null parent can't be used to tell.
 //	Application.ExternalCall('notifyUser', 'deleted:' + nametag);
 	saveScene('delete'); // will do the destroying on the callback.
 }
@@ -192,7 +192,7 @@ function saveScene(action:String) { // Save whatever needs to be saved from the 
 function savedScene(action:String, changes:Array):IEnumerator { // Callback from saveScene.
 	yield gameObject.GetComponent.<PictureCapture>().Thumbnail(changes);
 	Application.ExternalCall('saved', id, nametag, timestamp, action, hash);
-	if (transform.parent == null) { Destroy(gameObject); } // if deleted, can only safely be destroyed now.
+	if (!enabled) { Destroy(gameObject); } // if deleted, can only safely be destroyed now.
 }
 
 /*****************************************************************************************/

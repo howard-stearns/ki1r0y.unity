@@ -18,7 +18,7 @@ public class ResourceLoader : MonoBehaviour {
 	private const int DEBUG = 7;
 	public int logging = WARN;
 	private void Log(int level, string activity, string msg) { 
-		if (logging >= level) Debug.Log("Loader: " + activity + " " + msg);
+		if (logging >= level) Debug.Log("(logging:" + logging + " level: " + level + ") " + "Loader: " + activity + " " + msg);
 	}
 	private List<string> errors = new List<string>();
 	private void Warn(string msg) {
@@ -53,7 +53,7 @@ public class ResourceLoader : MonoBehaviour {
 	public string defaultTexturePath;
 	// Blocking (synchronous) parse of .mtllib data into a dictionary of name->Material.
 	public Dictionary<string, Material> ParseInto(string basepath, string libtext, Dictionary<string, Material> materials) {
-		Debug.Log("ParseInto " + basepath + ((libtext == null) ? " empty " : " library ") + ((defaultTexturePath == null) ? "none" : defaultTexturePath));
+		//Debug.Log("ParseInto " + basepath + ((libtext == null) ? " empty " : " library ") + ((defaultTexturePath == null) ? "none" : defaultTexturePath));
 	
 		if(libtext != null) {
 			SetMaterialData(libtext);

@@ -80,7 +80,7 @@ public class ObjMesh : MonoBehaviour {
 				ms[i] = go;
 			}
 		}	
-		ResourceLoader.instance.logging = 6;
+		//ResourceLoader.instance.logging = 6;
 		ResourceLoader.instance.defaultTexturePath = defaultTexturePath;
 		Dictionary<string, Material> materials = ResourceLoader.instance.ParseInto(basepath, hasMaterials ? loader.text : null, new Dictionary<string, Material>());
 		string[][] names = new string[buffer.numObjects][];

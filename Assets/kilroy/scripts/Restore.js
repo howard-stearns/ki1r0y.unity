@@ -249,7 +249,7 @@ function CoFill(go:GameObject, id:String, data:Hashtable):IEnumerator {
 	// Destroy any children with Obj components that are obsolete (not legitimate).
 	for (var childTransform:Transform in go.transform) {
 		var comp = childTransform.gameObject.GetComponent.<Obj>();
-		if (comp && (child.transform.tag != 'SafetyNet') && !IsInArray(comp, legitimateChildren)) { // don't kill SafetyNet until the end.
+		if (comp && (childTransform.tag != 'SafetyNet') && !IsInArray(comp, legitimateChildren)) { // don't kill SafetyNet until the end.
 			// If we're about to kill the floor, set up the safetyNet again.
 			if (!safetyNet && (comp.nametag == 'floor')) {
 				Log('creating safetyNet');
@@ -258,7 +258,7 @@ function CoFill(go:GameObject, id:String, data:Hashtable):IEnumerator {
 				safetyNet = Instantiate(safetyNetPrototype.gameObject).transform;
 				safetyNet.parent = transform;
 			}
-			Log('destroying obsolete ' + childTransform);
+			Debug.LogWarning('destroying obsolete ' + childTransform);
 			childTransform.parent = null;
 			Destroy(childTransform.gameObject);
 		}

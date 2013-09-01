@@ -294,7 +294,7 @@ function StopDragging(hit:RaycastHit) {
 	
 	// Test for movement must be here rather than DoDragging, because we might not receive any DoDragging events.
 	if (Vector3.Distance(firstDragPosition, lastDragPosition) > 0.2) 
-		(trans || go).SendMessage("saveScene", 'move', SendMessageOptions.DontRequireReceiver);
+		(trans || go).SendMessage("saveScene",  !!original ? 'copy' : 'move', SendMessageOptions.DontRequireReceiver);
 	else if (!!trans) {  // just a click, no drag
 		if (!!original) {
 			Destroy(trans.gameObject); // the copy
@@ -321,6 +321,7 @@ function StartDragging(hit:RaycastHit, copy:boolean) {
 		StopDragging(hit);
 		return;
 	}
+	UnHighlight(); // as it will just confuse things, particularly on copy.
 	if (copy) {
 		originalCopied = go;
 		go = Instantiate(go);

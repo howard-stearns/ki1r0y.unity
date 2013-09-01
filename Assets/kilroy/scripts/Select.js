@@ -256,8 +256,11 @@ function SetAssemblyLayer(go:GameObject, layer:int) {
 	}
 }
 
+var originalCopied:GameObject;	
 // Shuts down any dragging going on. Safely does nothing if no drag in progress.
 function StopDragging() {
+	if (!!originalCopied) SetAssemblyLayer(originalCopied, savedLayer);
+	originalCopied = null;
 	if (!dragged) return false;
 	// Reset drag state.
 	cursorOffsetToSurface = Vector3.zero;
@@ -279,9 +282,9 @@ function StopDragging() {
 	return true;
 }
 
-var originalCopied:GameObject;	
 function StopDragging(hit:RaycastHit) {
 	var trans = dragged;
+	var original = originalCopied;
 	if (!StopDragging()) return false;
 	// Make the dragged object a child of the hit.
 	// After things stabilize, this could be combined with the reparenting above.
@@ -293,10 +296,9 @@ function StopDragging(hit:RaycastHit) {
 	if (Vector3.Distance(firstDragPosition, lastDragPosition) > 0.2) 
 		(trans || go).SendMessage("saveScene", 'move', SendMessageOptions.DontRequireReceiver);
 	else if (!!trans) {  // just a click, no drag
-		if (originalCopied) {
+		if (!!original) {
 			Destroy(trans.gameObject); // the copy
-			originalCopied.GetComponent.<Obj>().deleteObject();
-			originalCopied = null;
+			original.GetComponent.<Obj>().deleteObject();
 		} else 
 			Camera.main.transform.parent.GetComponent.<Goto>().Goto(trans, true);
 	}
@@ -322,6 +324,17 @@ function StartDragging(hit:RaycastHit, copy:boolean) {
 	if (copy) {
 		originalCopied = go;
 		go = Instantiate(go);
+		// If we're making a copy, the first dragging movement will always intersect the original object, and 
+		// we'll instantly jump out from that surface as we try to mount the copy onto the original. Even if 
+		// that's what the user ultimately wants, they still don't wan the jump. So, if we're working with a copy,
+		// don't count the original until the user has finished that first copying drag.
+		// I tried more complicated variants, such as ignoring the original only until we've 'cleared' away
+		// from it, but couldn't make them work.
+		SetAssemblyLayer(originalCopied, 2);
+		// Hopefully temporary disambiguator during development.
+		var goo = go.GetComponent.<Obj>();
+		goo.nametag = goo.nametag + '-copy';
+		goo.sharedMaterials(goo.sharedMaterials());
 	}
 	savedLayer = go.layer;
 	dragged = go.transform;
@@ -435,6 +448,7 @@ function UnSelection():boolean { // May or may not have been dragging. Answer tr
 	} 
 	return didSomething;
 }
+
 function Update () {
 	if (Input.GetAxis("Horizontal") || Input.GetAxis("Vertical")) {
 		StopGizmo();
@@ -444,12 +458,11 @@ function Update () {
 	}
 	if (gizmo) return;
     var hit:RaycastHit;
-    var pointerRay:Ray = cam.ScreenPointToRay(Input.mousePosition + cursorOffsetToSurface);
     // We don't use OnMouseDown and friends, because that doesn't tell us the precise hit.point.
     // As long as we're going to need to Raycast, we might as well do that to start.
     // We cast only against the Default layer (0). E.g., we don't want this to catch the gizmo on the HUD layer (8).
-    var click = Input.GetMouseButtonDown(0);
-	if (Physics.Raycast(pointerRay, hit, Mathf.Infinity, (1<<0))) {
+ 	if (Physics.Raycast(cam.ScreenPointToRay(Input.mousePosition + cursorOffsetToSurface), hit, Mathf.Infinity, (1<<0))) { 
+   		var click = Input.GetMouseButtonDown(0);
 		if (Input.GetMouseButtonDown(1) ||   		// second mouse button
 			(click && Input.GetAxis('Fire3'))) {    // cmd-click
 			var go = Obj.ColliderGameObject(hit.collider);

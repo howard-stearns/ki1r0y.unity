@@ -179,6 +179,11 @@ function CoFillVersions(x:GameObject, id:String, continuation:String, version:St
 		obj.timestamp = GetComponent.<Save>().JSTime().ToString();
 		obj.versions = {obj.timestamp: obj.hash};
 	}
+	// This is the only place that knows if we're fetching a new set of versions (because we didn't return early, above).
+	// However, this function is used on all places, not just scenes.
+	if (continuation == 'CoFillScene') { // This is a scene
+		Application.ExternalCall('historyData', JSON.Stringify(obj.versions as Hashtable));
+	}
 	if (!--nRemainingObjects) SendMessage(continuation, version);
 }
 

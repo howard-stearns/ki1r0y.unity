@@ -249,9 +249,9 @@ function CoFill(go:GameObject, id:String, data:Hashtable):IEnumerator {
 	// Destroy any children with Obj components that are obsolete (not legitimate).
 	for (var childTransform:Transform in go.transform) {
 		var comp = childTransform.gameObject.GetComponent.<Obj>();
-		if (comp && (child.transform.tag == 'SafetyNet') && !IsInArray(comp, legitimateChildren)) {
+		if (comp && (child.transform.tag != 'SafetyNet') && !IsInArray(comp, legitimateChildren)) { // don't kill SafetyNet until the end.
 			// If we're about to kill the floor, set up the safetyNet again.
-			if (safetyNet && (comp.nametag == 'floor')) {
+			if (!safetyNet && (comp.nametag == 'floor')) {
 				Log('creating safetyNet');
 				var avatars = GameObject.FindGameObjectsWithTag('Player');
 				for (var avatar in avatars) { avatar.transform.position.y = 1; }
@@ -323,6 +323,7 @@ public var sceneId = 'G1'; // for use in editor
 public var undoId = ''; // To undo to an earlier hash in editor; e.g. 
 // (When cut/pasting, be sure not get extra whitespace.)
 // G1//r4ATbSDF2oS2gXlJ3lrV3TU3Wv4
+// G1/1374972649204/5rXz_cOuxcDk2te0pW90YPyE1Rc - original block
 // G1/1368993636720/r4ATbSDF2oS2gXlJ3lrV3TU3Wv4  - penultimate
 // G1/1368993677170/r4ATbSDF2oS2gXlJ3lrV3TU3Wv4  - latest
 function Update() {

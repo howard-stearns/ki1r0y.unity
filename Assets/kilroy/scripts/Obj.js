@@ -135,8 +135,8 @@ public function deleteObject() {
 
 public static var SelectedId = null; // global state for this user.
 
-// SceneSelect and ExternalPropertyEdit may both send browser 'select', with a true/false addToHistory argument.
-// However, the functions here can also take a null addToHistory argument:
+// SceneSelect and ExternalPropertyEdit may both send browser 'select' with an optional idvtag to add to history.
+// However, the functions here can also take a true/false/null addToHistory argument:
 // false: from driving->SceneSelect or browser->goBackTo|RestoreBackTo: send select(...false)
 // true: from click|metaclick|tab -> ExternalPropertyEdit: send select(...true)
 // null: from SceneRestore=>GoToObj send nothing at all if SelectedId is wrong (see RestoreScene comments), otherwise send select(...true)
@@ -152,7 +152,7 @@ public static function SceneSelect(addToHistory) { // Tell browser to select who
 		else addToHistory = (SelectedId != NoShortCircuit);
 	}
 	SelectedId = null;
-	Application.ExternalCall('select', rootComponent.id, tag, addToHistory);
+	Application.ExternalCall('select', rootComponent.id, tag, addToHistory ? rootComponent.hash : '');
 }
 // Tell external property editor about this object's editable properties, and select the object.
 function ExternalPropertyEdit(tabName:String, addToHistory) {
@@ -172,7 +172,7 @@ function ExternalPropertyEdit(tabName:String, addToHistory) {
 		else addToHistory = (SelectedId != NoShortCircuit);
 	}
 	SelectedId = id;
-	Application.ExternalCall('select', id, nametag, addToHistory);
+	Application.ExternalCall('select', id, nametag, addToHistory ? hash : '');
 	Application.ExternalCall('tabSelect', tabName);
 }
 

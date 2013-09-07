@@ -18,13 +18,12 @@ function Fetch(id:String, mode:String):WWW {
 // {name:val0, key1:val1, ...}
 // {hash:xxx} in one file, and {name:val0, key1:val1, ...} in file xxx.
 function Parsed(www:WWW):Hashtable {
-	var serialization = www.text;
 	// Alas, www.error is empty on 404s!
 	if (!String.IsNullOrEmpty(www.error) || (www.text[0] != '{'[0])) {
-		Application.ExternalCall('errorMessage', www.error || www.text);
-		return null;
+		Application.ExternalCall('errorMessage', www.url + ': ' + (www.error || www.text));
+		return new Hashtable();
 	}
-	var data = JSON.Parse(serialization);
+	var data = JSON.Parse(www.text);
 	return data;
 }
 // Coroutine to fetch id into holder[0], which may require two GETs.
@@ -63,7 +62,7 @@ var nRemainingObjects = 0;  // The number we have started to fetch, but which ha
 // (because the parent has that info). When the data arrives, it will replace the cube.
 function RestoreChild(id:String, hash:String, parent:Transform) {
 	hash = hash || id;
-	var child = parent.Find(id);
+	var child = parent.Find(id); // FIXME: what do we want to do about multiple instance of the same object id?
 	var newChild = !child;
 	if (newChild) {
 		child = GameObject.CreatePrimitive(PrimitiveType.Cube).transform;

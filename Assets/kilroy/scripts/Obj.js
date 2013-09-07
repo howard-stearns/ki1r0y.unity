@@ -1,4 +1,3 @@
-// Standard behavior for each kilroy object in the scene graph. 
 // (Attach to each such object. id and hash are set by Save/Restore scripts.)
 public var id = ''; // The Kilroy persistence id.
 public var localMounting = Vector3(0, -1, 0);

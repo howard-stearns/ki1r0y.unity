@@ -141,8 +141,12 @@ function PersistGroup(x:GameObject):String {
 	// Update the local and persisted group info.
 	if (!obj.versions) obj.versions = {};
 	obj.timestamp = thisTimestamp;
+	obj.hash = hash;
 	obj.versions[obj.timestamp] = hash;  // adds current version
-
+	UpdatePlace(obj);
+	return obj.hash;
+}
+function UpdatePlace(obj:Obj) {
 	// Trim older versions. We have to gracefully handle requests for expired versions
 	// that were captured from browser histories. Given that capability, there's
 	// no reason to worry here about whether removing a version that is "live"
@@ -162,14 +166,12 @@ function PersistGroup(x:GameObject):String {
 	
 	// Now upload the group container data, so that it can be referenced by id to get whatever the latest version is.
 	var groupSerialization = JSON.Stringify({
-		'idvtag': hash,
+		'idvtag': obj.hash,
 		'nametag': obj.nametag, // Including it here saves work when serving initial related results
 		'author': obj.author, // ditto
 		'versions': obj.versions
 		});
 	StartCoroutine( uploadData(obj.id, Utils.sha1(groupSerialization), groupSerialization, 'place') ); // FIXME we're not really using the sha1. Remove?
-	obj.hash = hash;
-	return obj.hash;
 }
 function Persist(x:GameObject):Hashtable { return Persist(x, false); }
 function Persist(x:GameObject, isScene:boolean):Hashtable {

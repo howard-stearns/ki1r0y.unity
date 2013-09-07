@@ -9,6 +9,7 @@ using System.Collections.Generic;
 public class ResourceLoader : MonoBehaviour {
 	public static ResourceLoader instance;
 	void Start () { 
+		logging = WARN;
 		if (instance != null) Debug.LogError("Private loaders do not currently default references from the first instance."); 
 		else instance = this;
 	}
@@ -16,7 +17,7 @@ public class ResourceLoader : MonoBehaviour {
 	private const int WARN = 4;
 	private const int INFO = 6;
 	private const int DEBUG = 7;
-	public int logging = WARN;
+	public int logging;
 	private void Log(int level, string activity, string msg) { 
 		if (logging >= level) Debug.Log("(logging:" + logging + " level: " + level + ") " + "Loader: " + activity + " " + msg);
 	}

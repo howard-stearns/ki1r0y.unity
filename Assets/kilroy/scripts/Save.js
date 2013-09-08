@@ -189,6 +189,7 @@ function Persist(x:GameObject, isScene:boolean):Hashtable {
 		if (forceUpload || (id != obj.id)) {
 			StartCoroutine( uploadData(id, id, serialized, 'thing') );
 			obj.id = id;
+			obj.hash = id;
 			changes.Push(obj.id);
 		}
 		AddProperty(instance, 'idtag', id);

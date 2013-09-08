@@ -100,8 +100,9 @@ function importImage(url:String) {  // Here, rather than Restore or Obj, because
     StatusMessageStart(msg);
 	var upload = WWW('http://' + Save.host + '/media/' + id, form);
 	yield upload;
-	var result = upload.error ? 'failed upload of ' : 'saved ';
-	result += currentDropFilename + ': ' + (upload.error || upload.text);
+	var result = upload.error
+		? ('Failed upload of ' + currentDropFilename  + ': ' + upload.error.replace('downloading', 'uploading')) //Unity error message is confusing
+		: 'Saved ' + currentDropFilename + ': ' + upload.text;
 	StatusMessageUpdate(msg, result, 1.0);
 	if (!upload.error) obj.saveScene('import');
 }

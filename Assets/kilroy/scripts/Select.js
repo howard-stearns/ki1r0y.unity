@@ -79,12 +79,17 @@ function importImage(url:String) {  // Here, rather than Restore or Obj, because
     var rot = Quaternion.LookRotation(-v);
     Debug.Log('camera:' + cam.transform.position + ' v:' + v + ' pos:' + pos);
     var pict = Instantiate(picturePrefab, pos, rot);
+    var obj = pict.GetComponent.<Obj>();
     pict.transform.Rotate(90, 0, 0);
     pict.transform.parent = GameObject.FindWithTag('SceneRoot').transform;
-    var mat = Material(pict.renderer.sharedMaterial);
+    var mats = obj.sharedMaterials();
+    var mat = Material(mats[0]);
+    //var mat = Material(obj.mesh.renderer.sharedMaterial);
     mat.mainTexture = inputData.texture;
-    pict.renderer.material = mat;
-    var obj = pict.GetComponent.<Obj>();
+    //obj.mesh.renderer.material = mat;
+    mats[0] = mat;
+    obj.sharedMaterials(mats);
+    obj.size(Vector3(0.6, 1, 0.6));
     obj.nametag = currentDropFilename;
     
     var form = new WWWForm();

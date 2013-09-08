@@ -64,6 +64,8 @@ function Wrap(picture:GameObject) {
 			Log(face + ' after scale: ' + scale + ' offset:' + offset + ' offsetScaled:' + offsetScaled); 
 			Log(face + ' texture scale: ' + face.renderer.material.mainTextureScale + ' offset:' + face.renderer.material.mainTextureOffset); 
 		} else Debug.LogError('Failed to find ' + targetMat + ' in sharedMaterials.');
+	} else if (h1 || h2) {
+		Application.ExternalCall('errorMessage', 'Texture wrapping is currently limited to when all four corners of the picture fit squarely on the target.');
 	}
 	return success;
 }

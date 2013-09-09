@@ -78,7 +78,7 @@ public function Next(isForward:boolean) {
 	//Debug.Log('closest=' + closest + ' among ' + objs);
 	if (isForward) {
 		if (++closest >= objs.length) closest = 0;
-		Application.ExternalCall('sayOnce', 'You can tab the other direction with shift-tab, and you can retrace your steps with the browser back button.', 'shiftTab');
+		Application.ExternalCall('sayOnce', 'You can tab the other direction with shift-tab.', 'shiftTab');
 	} else {
 		if (--closest < 0) closest = objs.length-1;
 		Application.ExternalCall('clearOnce', 'shiftTab');

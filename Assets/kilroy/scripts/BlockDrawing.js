@@ -42,7 +42,7 @@ function NotWrapping(picture:GameObject) {
 	var pictureObj = picture.GetComponent.<Obj>();
 	var thisObj = gameObject.GetComponent.<Obj>();
 	Application.ExternalCall('sayOnce', 
-		'When you are at a picture (as you are now at ' + pictureObj.nametag 
-		+ '), you can click the picture again to wrap the background surface with the picture (e.g., around ' + thisObj.nametag + ').',
+		'When you have clicked to a picture, you can click the picture again to wrap it around the background surface. (For example, right now you can tile '
+		 + thisObj.nametag + ' with the image from ' + pictureObj.nametag + ' by clicking again.)',
 		'wrap');
 }

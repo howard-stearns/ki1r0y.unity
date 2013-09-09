@@ -30,10 +30,19 @@ public function sharedMaterials(mats:Material[]):Material[] {
 // Wrap the given picture around the appropriate face.
 // (We just have it try to wrap each face, but only one of them will be oriented in a way that "takes".)
 function Wrap(picture:GameObject) {
+	Application.ExternalCall('clearOnce', 'wrap');
 	front.gameObject.GetComponent(PictureDrawing).Wrap(picture);	
 	left.gameObject.GetComponent(PictureDrawing).Wrap(picture);	
 	right.gameObject.GetComponent(PictureDrawing).Wrap(picture);	
 	top.gameObject.GetComponent(PictureDrawing).Wrap(picture);	
 	back.gameObject.GetComponent(PictureDrawing).Wrap(picture);	
 	bottom.gameObject.GetComponent(PictureDrawing).Wrap(picture);
+}
+function NotWrapping(picture:GameObject) {
+	var pictureObj = picture.GetComponent.<Obj>();
+	var thisObj = gameObject.GetComponent.<Obj>();
+	Application.ExternalCall('sayOnce', 
+		'When you are at a picture (as you are now at ' + pictureObj.nametag 
+		+ '), you can click the picture again to wrap the background surface with the picture (e.g., around ' + thisObj.nametag + ').',
+		'wrap');
 }

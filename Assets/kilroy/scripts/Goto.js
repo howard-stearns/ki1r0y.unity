@@ -171,6 +171,7 @@ function Goto(trans:Transform, addToHistory) {
 		//Wrap(trans.gameObject, trans.parent.gameObject);
 		return;
 	}
+	trans.parent.gameObject.SendMessage("NotWrapping", trans.gameObject, SendMessageOptions.DontRequireReceiver);
 	obj.ExternalPropertyEdit('metadata', addToHistory);
 	currentSite = trans;
 	setupCameraAnimation(obj);

@@ -23,12 +23,16 @@ public var lastSaveObj:Obj; var lastSaveAction = '';
 public var refs = {}; // A set of all the objects referenced by this scene.
 public var changes = new Array(); // The idvtags of everything that changed, so that we can set a thumbnail.
 var outstanding = 0;
-function uploadData(id:String, hash:String, serialized:String, mode:String) {
+function uploadData(id:String, hash:String, serialized:String, mode:String) { return uploadData(id, hash, serialized, mode, ''); }
+function uploadData(id:String, hash:String, serialized:String, mode:String, placeIdtag:String) {
 	// Must be separate void function to be yieldable.
 	var logId = id + ':' + mode + ': ';
  	Log(logId + serialized); 
  	outstanding++;
  	var form = new WWWForm();
+ 	// The server may do additional work, such as adding to an objectIdtag => nametag words map.
+ 	// When given a place version, there's no way for the server to know what the containing place objectIdtag is unless we tell it.
+ 	if (placeIdtag) { form.AddField('placeIdtag', placeIdtag); }
 	form.AddField('data', serialized);
 	// For groups, the hash is not the same as id, and saves on uploads later if we do persist the hash.
 	// That's just an optimization, and the server is not required to actually save the hash.
@@ -135,7 +139,7 @@ function PersistGroup(x:GameObject):String {
 	if (obj.id == 'G') obj.id = 'G' + System.Guid.NewGuid().ToString(); // New object => new id. 
 	if (!forceUpload && (hash == obj.hash)) return obj.hash; // No need to upload.
 	// Upload the data needed to rebuild this version of the object.
-	StartCoroutine( uploadData(hash, hash, serialized, "thing") );
+	StartCoroutine( uploadData(hash, hash, serialized, "thing", obj.id) );
 	changes.Push(hash); // the versioned (hash) id gets noted for a thumbnail upload.
 
 	// Update the local and persisted group info.

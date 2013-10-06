@@ -63,5 +63,8 @@ function doDragging(assembly:Transform, axis:Transform, plane:Transform, hit:Ray
 	v = assembly.localEulerAngles;
 	Application.ExternalCall('updateRotation', v.x, v.y, v.z);
 }
-
+function stopDragging(assy:Transform):Obj{
+	renderer.enabled = true; // In case of mouse up when the last doDragging() turned it off.
+	return super.stopDragging(assy);
+}
 }

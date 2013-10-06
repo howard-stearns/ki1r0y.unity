@@ -1,4 +1,12 @@
 class Directional extends MonoBehaviour {
+	// Subclass this and attach it to a shape to act as an affordance.
+	// The affordance GameObject should have:
+	// * a (e.g., Mesh) Renderer. (Probably don't need to cast or receive shadows.) The renderer can be in a child if setColor() is defined there.
+	// * a Collider that matches the shape (e.g., a Mesh collider rather than capsule collider for a cylinder mesh), because people will be mousing it.
+	// * a transparent/vertex-lit material. (Kilroy uses the Materials/translucent.)
+	// The affordance should be a child of an axis assembly (that has any number of affordances).
+	// The three axis assemblies are then assumed to be a child of the thing that is being moved around (which must have an Obj component to ApplyChanges).
+	// If the whole assembly is added to the HUD layer, the scene should have a HUD Camera attached to the Main Camera.
 public var highlightColor:Color;		// defaults to red/green/blue for x/y/z
 public var normalColor:Color;  	// defaults to a muted version of highlighColor
 public var assembly:Transform;  // The object to be transformed.
@@ -8,17 +16,21 @@ public var planeName = 'GridTarget';
 // at a time, so isActive guards against multiple scripts firing.
 private var isActive = false; // Hot, highlighted.
 private var isMoving = false; // In the processing of being dragged around.
-function OnMouseEnter () {
+
+// This is broadcast to gameObject and children. Thus children of affordances can change color if they define this message.
+public function setColor(color:Color) { if (renderer) { renderer.material.color = color; } }
+public function setAffordanceColor(color:Color) { BroadcastMessage('setColor', color, SendMessageOptions.DontRequireReceiver); }
+function OnMouseEnter () {	
 	//Debug.Log('enter');
 	if (assembly.parent && (assembly.parent.name == planeName)) return; // Already dragging by someone (not necessarilly this axis).
 	isActive = true;
-	if (!isMoving) renderer.material.color = highlightColor;
+	if (!isMoving) { setAffordanceColor(highlightColor); }
 }
 function OnMouseExit () {
 	//Debug.Log('leave');  
 	isActive = false;
 	if (isMoving) return;
-    renderer.material.color = normalColor;
+    setAffordanceColor(normalColor);
 }
 // The transform for this directional. E.g., there may be slide/stretch/spin gameObjects 
 // (that have a subclass of this script attached), which are all arranged into a composite
@@ -26,7 +38,9 @@ function OnMouseExit () {
 // is the 'axis'.
 public var axis:Transform; 
 public var targetAlpha:float = 0.9;
+public var affordanceCollider:Collider; // Subclasses can extend Start to let this be a child's collider.
 function Start() {
+	affordanceCollider = collider;
 	axis = transform.parent;
 	if (highlightColor == Color.clear) {
 		// A pun: axis.right is 1,0,0 for x axis, and so is red. Similarly for y/green and z/blue.
@@ -42,15 +56,20 @@ function Start() {
 		highlightColor = colorVector;
 	}
 	if (normalColor == Color.clear) normalColor = highlightColor / 1.33;
-	renderer.material.color = normalColor;
+	setAffordanceColor(normalColor);
 	//renderer.material.SetColor("_Emission", normalColor); // In case the scene is dark.
 	if (assembly == null) assembly = axis.parent.parent;
 }
+// Non-unit scales are terrible to work with in assemblies. (Descendant parts fly apart when we rotate them.)
+// So (extendible) stopDragging() does ApplyChanges, which sets Obj.size() and resets scale to 1.
 public static function ApplyChanges(assy:Transform):Obj {
 	var pobj = assy.GetComponent.<Obj>();
 	pobj.size(Vector3.Scale(pobj.size(), assy.localScale));
 	assy.localScale = Vector3.one;
 	return pobj;
+}
+function stopDragging(assy:Transform):Obj {
+	return ApplyChanges(assy);
 }
 
 // While moving, we insert a plane into the scene graph, just above the assembly.
@@ -62,21 +81,22 @@ private var dragCollider:Collider;
 function startDragging1(cameraRay:Ray, hit:RaycastHit) {
 	isMoving = true;
 	plane = GameObject.CreatePrimitive(PrimitiveType.Plane);
+	//plane.transform.localScale = Vector3(0.1, 0.1, 0.1); // when desired for debugging.
 	plane.renderer.enabled = showPlane;
 	plane.name = planeName;
 	dragCollider = startDragging(assembly, axis, plane.transform, cameraRay, hit);
 	plane.transform.parent = assembly.parent;
 	//assembly.parent = plane.transform;
 }
-function stopDragging() {
+function stopDragging1() {
 	if (!isMoving) return;
-	renderer.enabled = true; // In case of mouse up when the last doDragging() turned it off.
+	dragCollier = null;
+	isMoving = false;
 	//assembly.parent = plane.transform.parent;
 	plane.transform.parent = null;
 	Destroy(plane);
-	isMoving = false;
-	if (!isActive) renderer.material.color = normalColor;
-	ApplyChanges(assembly).saveScene('adjust');
+	if (!isActive) { setAffordanceColor(normalColor); }
+	stopDragging(assembly).saveScene('adjust');
 }
 function startDragging(assembly:Transform, axis:Transform, plane:Transform, cameraRay:Ray, hit:RaycastHit):Collider  {
 	throw "Subclass must define to set initial plane position and rotation.";
@@ -92,17 +112,17 @@ function Update() {
 	
 	if (isActive && Input.GetMouseButtonDown(0)) {
 		var cameraRay = Camera.main.ScreenPointToRay(Input.mousePosition);
-		if (!collider.Raycast(cameraRay, hit, Mathf.Infinity)) {
-			stopDragging(); return;
+		if (!affordanceCollider.Raycast(cameraRay, hit, Mathf.Infinity)) {
+			stopDragging1(); return;
 		}
 		startDragging1(cameraRay, hit);
 		return;
 	} 	
 	if (!isMoving 
 			|| Input.GetMouseButtonUp(0)
-			// Find hit.point such where the mouse intersects the plane.
+			// Find hit.point where the mouse intersects the plane.
 			|| !dragCollider.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), hit, Mathf.Infinity)) {
-		stopDragging(); return;
+		stopDragging1(); return;
 	}
 	doDragging(assembly, axis, plane.transform, hit);
 }

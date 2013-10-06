@@ -123,18 +123,20 @@ function CoInflate(existing:GameObject, id:String, hash:String, newChild:boolean
 function CoFillScene(timestamp:String) {
 	nRemainingObjects++;
 	var obj = gameObject.GetComponent.<Obj>();
-	if (!timestamp) {  // Use latest available
-		var stamps = obj.timestamps();
-		timestamp = stamps[stamps.Count - 1];
+	var stamps = obj.timestamps();
+	var latest = stamps[stamps.Count - 1];
+	if (!timestamp) { 
+		for (var i = 0; i < stamps.Count; i++) { if (obj.versions[stamps[i]] == obj.hash) { timestamp = stamps[i]; break; } }
+		if (!timestamp) { timestamp = latest; }
 	}
+	var previousTimestamp = obj.timestamp ? obj.timestamp : latest;
 	var idvtag = obj.versions[timestamp];
 	if (idvtag) { // the request was spot on
 		obj.timestamp = timestamp;
 	} else { // Find the version that was in place on that date...
-		var keys = obj.timestamps();
-		obj.timestamp = keys[0];  // ...or the oldest available;
-		for (var i = 0; i < keys.Count; i++) {
-			var key = keys[i];
+		obj.timestamp = stamps[0];  // ...or the oldest available;
+		for (i = 0; i < stamps.Count; i++) {
+			var key = stamps[i];
 			if (key.CompareTo(timestamp) > 0) {
 				break;
 			} else {
@@ -146,6 +148,7 @@ function CoFillScene(timestamp:String) {
 	var holder = new Hashtable[1];
 	yield CoFetchObjectData(holder, idvtag);
 	yield CoFill(gameObject, obj.id, holder[0]);
+	if (obj.timestamp != previousTimestamp) { gameObject.GetComponent.<Save>().UpdateSceneVersion(obj); }
 	if (!--nRemainingObjects) SceneReady();
 }	
 	
@@ -200,6 +203,7 @@ function CoFill(go:GameObject, id:String, data:Hashtable):IEnumerator {
 	obj.id = id;
 	obj.hash = data['idvtag'];
 	obj.nametag = data['nametag'];
+	obj.description = data['desc'] || '';
 	go.name = id;
 	obj.author = data['author'] || ''; 
 	// Now any type-specific initialization:

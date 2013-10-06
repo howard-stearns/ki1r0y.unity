@@ -82,6 +82,7 @@ function AddComponent(p:Hashtable, component:Obj) {
 	
 	AddProperty(p, 'type', component.kind);
 	AddProperty(p, 'nametag', component.nametag);
+	AddProperty(p, 'desc', component.description);
 	AddProperty(p, 'author', component.author);
 	// Save obj.sharedMaterials() here, rather than letting Renderer component do it on its own, 
 	// because Obj component may indirect sharedMaterials in different ways.
@@ -150,6 +151,11 @@ function PersistGroup(x:GameObject):String {
 	UpdatePlace(obj);
 	return obj.hash;
 }
+function UpdateSceneVersion(obj:Obj) {
+	lastSaveObj = obj;
+	lastSaveAction = 'undo';
+	UpdatePlace(obj);
+}
 function UpdatePlace(obj:Obj) {
 	// Trim older versions. We have to gracefully handle requests for expired versions
 	// that were captured from browser histories. Given that capability, there's
@@ -172,6 +178,7 @@ function UpdatePlace(obj:Obj) {
 	var groupSerialization = JSON.Stringify({
 		'idvtag': obj.hash,
 		'nametag': obj.nametag, // Including it here saves work when serving initial related results
+		'desc': obj.description,
 		'author': obj.author, // ditto
 		'versions': obj.versions
 		});

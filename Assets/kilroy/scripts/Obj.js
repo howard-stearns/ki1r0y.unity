@@ -3,6 +3,7 @@ public var id = ''; // The Kilroy persistence id.
 public var localMounting = Vector3(0, -1, 0);
 public var localFacing = Vector3(0, 0, -1);
 public var nametag = '';
+public var description = '';
 public var author = '';
 // Usually the same as id, but cand be different for groups (such as scenes).
 // Used to determine if there's been a change.
@@ -146,13 +147,21 @@ public static function SceneSelect(addToHistory) { // Tell browser to select who
 	var root = GameObject.FindWithTag('SceneRoot');
 	var rootComponent = root.GetComponent.<Obj>();
 	var tag = rootComponent.nametag;
-	Application.ExternalCall('props', '/', tag); // regardless of addToHistory, etc.
+	Application.ExternalCall('props', rootComponent.GameObjectPath(), tag, rootComponent.author, rootComponent.description); // regardless of addToHistory, etc.
 	if (addToHistory == null) {
 		if (!SelectedId) return;
 		else addToHistory = (SelectedId != NoShortCircuit);
 	}
 	SelectedId = null;
-	Application.ExternalCall('select', rootComponent.id, tag, addToHistory ? rootComponent.hash : '');
+	Application.ExternalCall('select', rootComponent.id, tag, addToHistory ? rootComponent.hash : '', rootComponent.author);
+}
+function structureInfo(trans:Transform):Hashtable { // Not used yet. To appear below.
+	var o = trans.gameObject.GetComponent.<Obj>(); 
+	var d = new Hashtable();
+	Debug.Log('info for ' + trans + ' ' + o);
+	Debug.Log('details ' + o.id + ' ' + o.nametag);
+	d[o.id] = o.nametag;
+	return d;
 }
 // Tell external property editor about this object's editable properties, and select the object.
 function ExternalPropertyEdit(tabName:String, addToHistory) {
@@ -164,7 +173,14 @@ function ExternalPropertyEdit(tabName:String, addToHistory) {
 	Application.ExternalCall('updatePosition', pos.x, pos.y, pos.z);
 	Application.ExternalCall('updateRotation', rot.x, rot.y, rot.z);
 	Application.ExternalCall('updateSize', size.x, size.y, size.z);
-	Application.ExternalCall('props', path, nametag, true);
+	Application.ExternalCall('props', path, nametag, author, description, true);
+	/*var structure = {'children': new Array()};
+	Debug.Log('parent:' + transform.parent);
+	if (transform.parent != null) { structure['parent'] = structureInfo(transform.parent);}
+	for (var child:Transform in transform) { 
+		structure['children'].Push(structureInfo(child));
+	}
+	Application.ExternalCall('structure', JSON.Stringify(structure));*/
 
 	if (addToHistory == null) {
 		Application.ExternalCall('notifyUser', 'ExternalPropertyEdit(' + tabName + ', null), id=' + id + ', Obj.SelectedId=', Obj.SelectedId);
@@ -212,6 +228,8 @@ function setSizeX(v:String) {var vec = transform.localScale; transform.localScal
 function setSizeY(v:String) {var vec = transform.localScale; transform.localScale = Vector3(vec.x, parseFloat(v)/size().y, vec.z); saveScene('height');}
 function setSizeZ(v:String) {var vec = transform.localScale; transform.localScale = Vector3(vec.x, vec.y, parseFloat(v)/size().z); saveScene('length');}
 
+function settag0(v:String) { nametag = v; saveScene('nametag'); }
+function setDesc(v:String) { description = v; saveScene('description'); }
 /***************************************************************************************/
 public var deleteMe = false; // To delete in editor
 function Update() {

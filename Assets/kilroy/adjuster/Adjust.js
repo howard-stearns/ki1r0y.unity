@@ -30,6 +30,7 @@ function Start() {
 	affordanceCollider = transform.Find('affordance').collider;
 }
 public var doRotate = false;
+public var doShift = false;
 public var lastRotationV:Vector3;
 public var rotationCenter:Vector3;
 // In world coordinates.
@@ -37,20 +38,33 @@ public var firstPoint:Vector3;
 public var startCorner:Vector3;      // The "corner" offset to a plane (parallel to the interaction plane) that runs through the middle of the assembly.
 public var oppositeCorner:Vector3;   // The opposite "corner" (on that same middle plane).
 public var orthogonalCorner:Vector3; // Not really a corner, it extends a half width past the startCorner in the middle. Length is the assembly dimension perpendicular to plane.
+function resetParameters(p:Vector3, force:boolean) {
+	var rotate = !!Input.GetAxis('Fire2');
+	var shift = Input.GetKey(KeyCode.LeftShift);
+	if (force || (rotate != doRotate) || (shift != doShift)) {
+		doRotate = rotate;
+		doShift = shift;
+		firstPoint = p;
+		startCorner = projectPointOnPlane(transform.position, axis.right, axis.position);
+		oppositeCorner = shift ? (axis.position - (startCorner - axis.position)) : assembly.position;
+		if (rotate) {
+			Debug.Log('doRotate:' + doRotate + ' shift:' + shift);
+			rotationCenter = shift ? projectPointOnPlane(oppositeCorner, axis.right, axis.position) : assembly.position;
+			lastRotationV = p - rotationCenter;
+		} else {
+			orthogonalCorner = Vector3.Project(assemblyObj.size(), assembly.InverseTransformDirection(axis.right));
+		}
+	}
+}
 
 function startDragging(assembly:Transform, axis:Transform, plane:Transform, cameraRay:Ray, hit:RaycastHit) {
-	doRotate = !!Input.GetAxis('Fire2');
 	plane.rotation = affordanceCollider.transform.rotation;
 	plane.position = transform.position;
-	firstPoint = hit.point;
-	startCorner = projectPointOnPlane(transform.position, axis.right, axis.position);
-	oppositeCorner = axis.position - (startCorner - axis.position);
-	orthogonalCorner = Vector3.Project(assemblyObj.size(), assembly.InverseTransformDirection(axis.right));
-	rotationCenter = projectPointOnPlane(oppositeCorner, axis.right, plane.position);
-	lastRotationV = firstPoint - rotationCenter;
+	resetParameters(hit.point, true);
 	return plane.collider;
 }
 function doDragging(assembly:Transform, axis:Transform, plane:Transform, hit:RaycastHit) {
+	resetParameters(hit.point, false);
 	if (doRotate) {
 		var v = hit.point - rotationCenter; 
 		var angle = Vector3.Angle(lastRotationV, v);
@@ -62,11 +76,15 @@ function doDragging(assembly:Transform, axis:Transform, plane:Transform, hit:Ray
 	} else {
 		var pointerDelta = hit.point - firstPoint;
 		var newCorner = startCorner + pointerDelta;
-		assembly.position = (newCorner + oppositeCorner) / 2;
-		assemblyObj.size(noFlip(assembly.InverseTransformDirection(newCorner - oppositeCorner) + orthogonalCorner));
+		var span = newCorner - oppositeCorner;
+		if (doShift) { 
+			assembly.position = (newCorner + oppositeCorner) / 2;
+		} else {
+			span *= 2;
+
+		}
+		assemblyObj.size(noFlip(assembly.InverseTransformDirection(span) + orthogonalCorner));
 	}
 	assembly.BroadcastMessage('updateAffordance', null, SendMessageOptions.DontRequireReceiver);
-//	v = Vector3.Scale(assembly.localScale, assembly.GetComponent.<Obj>().size());
-//	Application.ExternalCall('updateSize', v.x, v.y, v.z);
 }
 }

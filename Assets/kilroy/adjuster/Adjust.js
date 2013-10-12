@@ -1,11 +1,5 @@
 class Adjust extends Directional {
 
-// Not used. divide each component of n by d. If d component is zero, use defaultComponent. 
-static function div(n:Vector3, d:Vector3, defaultComponent:float) {
-	return Vector3(d.x ? n.x / d.x : defaultComponent,
-					d.y ? n.y / d.y : defaultComponent,
-					d.z ? n.z / d.z : defaultComponent);
-}
 static function projectPointOnPlane(point, planeNormal, planePoint) {
 	return point - (planeNormal * Vector3.Dot(planeNormal, point - planePoint));
 }
@@ -16,16 +10,17 @@ static function noFlip(scale:Vector3) { // Make sure that scale doesn't flip
 var assemblyObj:Obj;
 // These are in our coordinate system.
 public var cornerUnitPositionFromAxis:Vector3;
-public var flipX = false;
 function updateAffordance() { //As we resize assembly during movement, keep affordance at constant size in new corners.
-	var pos = Vector3.Scale(cornerUnitPositionFromAxis, axis.localRotation * assemblyObj.size());
-	// I don't know why this needs adjusting, but it does.
-	if (flipX) { pos.x = -pos.x; }
-	transform.localPosition = pos;
+	transform.localPosition = Vector3.Scale(cornerUnitPositionFromAxis, axis.localRotation * assemblyObj.size());
 }
 function Start() {
 	super.Start();
-	flipX = Vector3.Dot(axis.right, assembly.right) < 0.2;
+	// I don't know why this needs adjusting, but it does.
+	if (axis.name == 'Yneg') { cornerUnitPositionFromAxis.y *= -1; }
+	else if (axis.name == 'Zneg') { cornerUnitPositionFromAxis.z *= -1; }
+	else if ((axis.name == 'Y') || (axis.name == 'Z')) { cornerUnitPositionFromAxis.x *= -1; }
+	else if (axis.name == 'Xneg') { cornerUnitPositionFromAxis.x *= -1; cornerUnitPositionFromAxis.z *= -1; }
+	
 	assemblyObj = assembly.gameObject.GetComponent.<Obj>();
 	affordanceCollider = transform.Find('affordance').collider;
 }
@@ -39,7 +34,7 @@ public var startCorner:Vector3;      // The "corner" offset to a plane (parallel
 public var oppositeCorner:Vector3;   // The opposite "corner" (on that same middle plane).
 public var orthogonalCorner:Vector3; // Not really a corner, it extends a half width past the startCorner in the middle. Length is the assembly dimension perpendicular to plane.
 function resetParameters(p:Vector3, force:boolean) {
-	var rotate = !!Input.GetAxis('Fire2');
+	var rotate = !!Input.GetAxis('Fire2');  // alt/option key
 	var shift = Input.GetKey(KeyCode.LeftShift);
 	if (force || (rotate != doRotate) || (shift != doShift)) {
 		doRotate = rotate;
@@ -48,7 +43,6 @@ function resetParameters(p:Vector3, force:boolean) {
 		startCorner = projectPointOnPlane(transform.position, axis.right, axis.position);
 		oppositeCorner = shift ? (axis.position - (startCorner - axis.position)) : assembly.position;
 		if (rotate) {
-			Debug.Log('doRotate:' + doRotate + ' shift:' + shift);
 			rotationCenter = shift ? projectPointOnPlane(oppositeCorner, axis.right, axis.position) : assembly.position;
 			lastRotationV = p - rotationCenter;
 		} else {
@@ -81,7 +75,6 @@ function doDragging(assembly:Transform, axis:Transform, plane:Transform, hit:Ray
 			assembly.position = (newCorner + oppositeCorner) / 2;
 		} else {
 			span *= 2;
-
 		}
 		assemblyObj.size(noFlip(assembly.InverseTransformDirection(span) + orthogonalCorner));
 	}

@@ -8,7 +8,7 @@
 // 2. For cubes, when we project from affordance to mounting surface and back, we certainly won't miss an edge.
 
 // TODO:
-// delete/goto
+// goto
 // Do we really need a pivot? If so, check to make sure it is always removed (never left in place)
 // reverse hit for skinny meshes
 // unhighlight
@@ -123,7 +123,8 @@ function startDragging(assembly:Transform, cameraRay:Ray, hit:RaycastHit):Laser 
 }
 var lastSurface:Collider;  // Keep track of this during dragging so that we can reparent at end.
 function stopDragging(assembly:Transform) {	
-	if (!!originalCopied) SetAssemblyLayer(originalCopied, savedLayer);
+	var original = originalCopied;
+	if (!!original) SetAssemblyLayer(originalCopied, savedLayer);
 	originalCopied = null;
 		
 	var newParent = Obj.ColliderGameObject(lastSurface);
@@ -133,7 +134,14 @@ function stopDragging(assembly:Transform) {
 	pivot.parent = null; 
 	Destroy(pivot.gameObject);
 
-	assembly.gameObject.GetComponent(Obj).saveScene('adjust');
+	// Test for movement must be here rather than DoDragging, because we might not receive any DoDragging events.
+	if (Vector3.Distance(firstDragPosition, lastDragPosition) > 0.2) {   // real movement, not just a click
+		assembly.gameObject.GetComponent(Obj).saveScene(!!original ? 'copy' : 'move');
+	} else if (!!original) {
+		assembly.parent = null;
+		Destroy(assembly.gameObject); // the copy. us.
+		original.GetComponent.<Obj>().deleteObject(); // which does a save as well.
+	}
 }
 // We cast only against the Default layer (0). E.g., we don't want this to catch the gizmo on the HUD layer (8), nor assembly on IgnoreRaycast(2).
 function resetCast(hit:RaycastHit[]):boolean { // overridable method to get new hit.point during drag

@@ -133,6 +133,7 @@ public function deleteObject() {
 	enabled = false;  // first unhook me without destroying, so that I can save. Toplevel object have null parents, so null parent can't be used to tell.
 //	Application.ExternalCall('notifyUser', 'deleted:' + nametag);
 	saveScene('delete'); // will do the destroying on the callback.
+	if (!saveEnabled()) Destroy(gameObject); // we won't get a callback, so scheduled Destroy now.
 }
 
 public static var SelectedId = null; // global state for this user.
@@ -194,6 +195,7 @@ function ExternalPropertyEdit(tabName:String, addToHistory) {
 }
 
 public var saver:Save; // Save script, if available.
+function saveEnabled():boolean { return !!saver && saver.enabled; }
 function Awake() { // Initialize saver, if available.
 	if (saver == null) {
 		var root = GameObject.FindWithTag('SceneRoot'); // Tag, because it could be named anything.
@@ -201,7 +203,7 @@ function Awake() { // Initialize saver, if available.
 	}
 }
 function saveScene(action:String) { // Save whatever needs to be saved from the whole scene (or silently skip if not set up to save).
-	if (saver == null || !saver.enabled) return;
+	if (!saveEnabled()) { return; } 
 	//	debugging: Application.ExternalCall('notifyUser', 'now '+ transform.position.ToString() + ' ' + transform.eulerAngles.ToString() + ' ' + transform.lossyScale.ToString());	
 	timestamp = saver.PersistScene(this, action); // for value and for the side-effect on id.
 }

@@ -23,7 +23,7 @@ function Start() {
 // There are multiple affordances, but OnMouseEnter will only fire for one
 // at a time, so isActive guards against multiple scripts firing.
 public static var AnyActive = false;
-private var isActive = false;
+public var isActive = false;
 function OnMouseEnter () {
 	if (AnyActive) return; // Someone is already active (not necessarilly this axis). 
 	isActive = true;

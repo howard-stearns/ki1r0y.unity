@@ -1,4 +1,4 @@
-class Directional extends MonoBehaviour {
+class Directional extends Interactor {
 	// Subclass this and attach it to a shape to act as an affordance.
 	// The affordance GameObject should have:
 	// * a (e.g., Mesh) Renderer. (Probably don't need to cast or receive shadows.) The renderer can be in a child if setColor() is defined there.
@@ -15,12 +15,12 @@ public var planeName = 'GridTarget';
 // This is broadcast to gameObject and children. Thus children of affordances can change color if they define this message.
 public function setColor(color:Color) { if (renderer) { renderer.material.color = color; } }
 public function setAffordanceColor(color:Color) { BroadcastMessage('setColor', color, SendMessageOptions.DontRequireReceiver); }
-function OnMouseEnterXX () {	
-	//super.OnMouseEnter();
+function OnMouseEnter() {	
+	super.OnMouseEnter();
 	if (!isMoving) { setAffordanceColor(highlightColor); }
 }
-function OnMouseExitXX () {
-	//super.OnMouseExit();  
+function OnMouseExit() {
+	super.OnMouseExit();  
 	if (isMoving) return;
     setAffordanceColor(normalColor);
 }
@@ -31,9 +31,8 @@ function OnMouseExitXX () {
 // is the 'axis'.
 public var axis:Transform; 
 public var targetAlpha:float = 0.9;
-function StartXX() {
-	// super.Start(); 
-	//affordanceCollider = collider;
+function Start() {
+	super.Start(); 
 	axis = transform.parent;
 	assembly = axis.parent.parent;
 	if (highlightColor == Color.clear) {
@@ -61,9 +60,6 @@ public static function ApplyChanges(assy:Transform):Obj {
 	assy.localScale = Vector3.one;
 	return pobj;
 }
-function stopDragging(assy:Transform):Obj {
-	return ApplyChanges(assy);
-}
 
 // While moving, we insert a plane into the scene graph, just above the assembly.
 public var showPlane = false;
@@ -80,6 +76,13 @@ function doDragging(assembly:Transform, hit:RaycastHit) { doDragging(assembly, a
 function resetCast(hit:RaycastHit[]) {
 	return dragCollider.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), hit[0], Mathf.Infinity);
 }
+function stopDragging(assy:Transform) {
+	dragCollier = null;
+	plane.transform.parent = null;
+	Destroy(plane);
+	if (!isActive) { setAffordanceColor(normalColor); }
+	ApplyChanges(assy).saveScene('adjust');
+}
 
 private var dragCollider:Collider;  // Returned by startDragging. Usually the plane.collider, but OnEdge Spinners answer the collider we're attached to.
 function startDragging(assembly:Transform, cameraRay:Ray, hit:RaycastHit) {
@@ -88,60 +91,5 @@ function startDragging(assembly:Transform, cameraRay:Ray, hit:RaycastHit) {
 	plane.name = planeName;
 	dragCollider = startDragging(assembly, axis, plane.transform, cameraRay, hit);
 	plane.transform.parent = assembly.parent;
-}
-function stopDraggingXX() {
-	// super.stopDragging1();
-	dragCollier = null;
-	plane.transform.parent = null;
-	Destroy(plane);
-	if (!isActive) { setAffordanceColor(normalColor); }
-	stopDragging(assembly).saveScene('adjust');
-}
-
-private var isActive = false;
-function OnMouseEnter () {
-	if (Interactor.AnyActive) return; // Someone is already active (not necessarilly this axis). 
-	isActive = true;
-	Interactor.AnyActive = true;
-	OnMouseEnterXX();
-}
-function OnMouseExit () {
-	isActive = false;
-	Interactor.AnyActive = false;
-	OnMouseExitXX();
-}
-public var assembly:Transform;  // The object to be transformed.
-public var affordanceCollider:Collider; // We raycast against this to start things offs.
-function Start() {
-	affordanceCollider = transform.collider;
-	assembly = transform.parent.parent;
-	StartXX();
-}
-public var isMoving = false; // In the processing of being dragged around.
-function startDragging1(cameraRay:Ray, hit:RaycastHit) {
-	isMoving = true;
-	startDragging(assembly, cameraRay, hit);
-}
-function stopDragging1() {
-	if (!isMoving) return;
-	isMoving = false;	
-	stopDraggingXX();
-}
-function Update() {
-	var hit = new RaycastHit[1];
-	if (isActive && Input.GetMouseButtonDown(0)) {
-		var cameraRay = Camera.main.ScreenPointToRay(Input.mousePosition);
-		if (!affordanceCollider.Raycast(cameraRay, hit[0], Mathf.Infinity)) {
-			stopDragging1(); return;
-		}
-		startDragging1(cameraRay, hit[0]);
-		return;
-	} 	
-	if (!isMoving 
-			|| Input.GetMouseButtonUp(0)
-			|| !resetCast(hit)) { // side-effect is new hit.point for doDragging
-		stopDragging1(); return;
-	}
-	doDragging(assembly, hit[0]);
 }
 }

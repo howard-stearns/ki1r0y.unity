@@ -3,12 +3,12 @@
 class Interactor extends MonoBehaviour {
 	// The most basic interactive behavior for a Kilroy Obj:
 	// * Efficiently does nothing unless we've been made active with OnMouseEnter (and no OnMouseExit).
+	//   If ANY Interactor is active, no others will be.
 	// * Acts on an assembly (defaults to our grandparent during Start):
 	//   1. If active and mouse down, raycast against affordanceCollider (defaults to our collider during Start), and send StartDragging.
 	//   2. Send resetCast and doDragging zero or more times while mouse is moved.
 	//   3. Send stopDragging on mouse up.
 	//   During this, public var isMoving is true, otherwise false.
-	// FIXME: lock out all other Interactors while isMoving.
 
 
 public var assembly:Transform;  // The object to be transformed.
@@ -20,19 +20,22 @@ function Start() {
 }
 
 private var isActive = false;
+public static var AnyActive = false;
 function OnMouseEnter () {
-	if (assembly.parent && (assembly.parent.name == 'GridTarget')) return; // Already dragging by someone (not necessarilly this axis).  // FIXME!
+	if (AnyActive) return; // Someone is already active (not necessarilly this axis).
 	isActive = true;
+	AnyActive = true;
 }
 function OnMouseExit () {
 	isActive = false;
+	AnyActive = false;
 }
 
 function startDragging(assembly:Transform, cameraRay:Ray, hit:RaycastHit)  {
 	throw "Subclass must define to set initial plane position and rotation.";
 	// answers true IFF the drag can be handled (e.g., not aligned with camera)
 }
-function resetCast(hit:RaycastHit[]):boolean {
+function resetCast(hit:RaycastHit[]):boolean { // Unityscript cannot side-effect a RaycastHit, hence wrapped in an array of one.
 	throw "Subclass must define to update hit[0] and return true to indicate success (and continued dragging), else false.";
 }
 function doDragging(assembly:Transform, hit:RaycastHit) {

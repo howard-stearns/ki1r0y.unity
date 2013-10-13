@@ -23,13 +23,15 @@ public function setColor(color:Color) { if (renderer) { renderer.material.color 
 public function setAffordanceColor(color:Color) { BroadcastMessage('setColor', color, SendMessageOptions.DontRequireReceiver); }
 function OnMouseEnter () {	
 	//Debug.Log('enter');
-	if (assembly.parent && (assembly.parent.name == planeName)) return; // Already dragging by someone (not necessarilly this axis).
+	if (Interactor.AnyActive) return; // Already dragging by someone (not necessarilly this axis).
 	isActive = true;
+	Interactor.AnyActive = true;
 	if (!isMoving) { setAffordanceColor(highlightColor); }
 }
 function OnMouseExit () {
 	//Debug.Log('leave');  
 	isActive = false;
+	Interactor.AnyActive = false;
 	if (isMoving) return;
     setAffordanceColor(normalColor);
 }

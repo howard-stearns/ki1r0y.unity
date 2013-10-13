@@ -11,7 +11,6 @@
 
 // TODO:
 // copy/delete
-// bug: resize StrikeTarget!
 // generalize laser, so it can show up in adjust
 // Do we really need a pivot? If so, check to make sure it is always removed (never left in place)
 // reverse hit for skinny meshes
@@ -30,8 +29,17 @@ function between(verticalObject:GameObject, p1:Vector3, p2:Vector3, width:float)
 public var laserPrefab:Transform;
 public var shoulder:Transform;
 public var laser:GameObject;
-function Start() { super.Start(); 	shoulder = Camera.main.transform; }
 
+private var assemblyObj:Obj;
+function Start() {
+	super.Start();
+	shoulder = Camera.main.transform;  // between
+	assemblyObj = assembly.gameObject.GetComponent(Obj);
+}
+
+function updateAffordance() { //As other interactors resize assembly during movement, keep affordance at proper size.
+	transform.localScale = assemblyObj.size() * 0.98;
+}
 public var pivotPrefab:Transform;
 private var cursorOffsetToSurface:Vector3 = Vector3.zero;
 private var lastDragPosition:Vector3;

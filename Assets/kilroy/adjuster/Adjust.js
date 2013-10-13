@@ -60,7 +60,10 @@ function resetParameters(p:Vector3, force:boolean) {
 		}
 	}
 }
-
+function startDragging(assembly:Transform, cameraRay:Ray, hit:RaycastHit):Laser {
+	super.startDragging(assembly, cameraRay, hit); 
+	return Camera.main.transform.Find('shoulder').GetComponent.<Laser>();
+}
 function startDragging(assembly:Transform, axis:Transform, plane:Transform, cameraRay:Ray, hit:RaycastHit) {
 	plane.rotation = affordanceCollider.transform.rotation;
 	plane.position = transform.position;

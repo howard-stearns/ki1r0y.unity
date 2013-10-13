@@ -2,8 +2,6 @@
 
 // Provides the dragging behavior whereby the assembly is dragged around across all the other surfaces in the scene.
 //
-// This is NOT a subclass of Directional because all Directional subclasses work by interpreting drag along a 
-// single plane that does not change during the drag. However, terminology and requirements are as specified in Directional.
 // For example, the assembly's mesh/collider must be on the IgnoreRaycast = 2 layer.
 // The affordance that this script is attached to should be bit smaller than the assembly bounding box:
 // 1. This allows there to be no confusion as to whether a strike near the corner is hitting us or a corner affordance, as the corners lie outside our (shrunken) box.
@@ -11,7 +9,6 @@
 
 // TODO:
 // copy/delete
-// generalize laser, so it can show up in adjust
 // Do we really need a pivot? If so, check to make sure it is always removed (never left in place)
 // reverse hit for skinny meshes
 // unhighlight
@@ -19,21 +16,9 @@
 
 class Sticky extends Interactor {
 
-// FIXME: separate these out
-function between(verticalObject:GameObject, p1:Vector3, p2:Vector3, width:float) {
-	var offsetToCenter:Vector3 = (p1 - p2) / 2.0;
-	verticalObject.transform.position = p1 - offsetToCenter;
-	verticalObject.transform.up = p2 - p1;
-	verticalObject.transform.localScale = Vector3(width, offsetToCenter.magnitude, width);
-}
-public var laserPrefab:Transform;
-public var shoulder:Transform;
-public var laser:GameObject;
-
 private var assemblyObj:Obj;
 function Start() {
 	super.Start();
-	shoulder = Camera.main.transform;  // between
 	assemblyObj = assembly.gameObject.GetComponent(Obj);
 }
 
@@ -47,7 +32,7 @@ private var firstDragPosition:Vector3; // For debouncing click vs drag;
 private var rt1:Vector3;
 private var fwd1:Vector3;
 
-function startDragging(assembly:Transform, cameraRay:Ray, hit:RaycastHit) {
+function startDragging(assembly:Transform, cameraRay:Ray, hit:RaycastHit):Laser {
 	var go = assembly.gameObject;
 	// UnHighlight(); // as it will just confuse things, particularly on copy.
 	/*if (copy) {
@@ -117,17 +102,12 @@ function startDragging(assembly:Transform, cameraRay:Ray, hit:RaycastHit) {
 	if (pivot.localScale != Vector3(1, 1, 1)) Debug.LogError('*** FIXME Select:StartDragging Non-unity pivot scale ' + pivot.localScale);
 	pivot.parent = assembly.parent;  // No need to worry about scale screwing things up, because Obj assemblies always have unitary localScale.
 	assembly.parent = pivot;
-	
-	laser = Instantiate(laserPrefab.gameObject);
-	between(laser, shoulder.position + Vector3(0.5, -0.5, 0.5), surfaceHit.point, 0.05);
-	//Debug.Log(laser + ' betweeen ' + shoulder.position + ' and ' + surfaceHit.point);
-	laser.transform.parent = pivot.parent;
+	hit.point = surfaceHit.point; // so that Laser.StartInteraction() can do the right thing.
+	//Camera.main.transform.Find('shoulder').GetComponent.<Laser>().StartInteraction(hit.point, assembly);
+	return Camera.main.transform.Find('shoulder').GetComponent.<Laser>();
 }
-function stopDragging(assembly:Transform) {
-	var go = assembly.gameObject;
-	var obj = go.GetComponent(Obj);
-		
-	laser.transform.parent = null; Destroy(laser); // between
+function stopDragging(assembly:Transform) {	
+	//Camera.main.transform.Find('shoulder').GetComponent.<Laser>().EndInteraction();
 	
 	var pivot = assembly.parent;
 	assembly.parent = pivot.parent;	
@@ -135,7 +115,11 @@ function stopDragging(assembly:Transform) {
 	pivot.parent = null; 
 	Destroy(pivot.gameObject);
 
-	obj.saveScene('adjust');
+	assembly.gameObject.GetComponent(Obj).saveScene('adjust');
+}
+// We cast only against the Default layer (0). E.g., we don't want this to catch the gizmo on the HUD layer (8), nor assembly on IgnoreRaycast(2).
+function resetCast(hit:RaycastHit[]):boolean { // overridable method to get new hit.point during drag
+	return Physics.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition + cursorOffsetToSurface), hit[0], Mathf.Infinity, (1<<0));
 }
 function doDragging(assembly:Transform, hit:RaycastHit) {
 	var delta = hit.point - lastDragPosition;
@@ -147,13 +131,9 @@ function doDragging(assembly:Transform, hit:RaycastHit) {
 	var alignedX:boolean = Mathf.Abs(Vector3.Dot(rt1, norm)) > 0.9;
 	var fwd:Vector3 = alignedX ? fwd1 : Vector3.Cross(rt1, norm);
 	pivot.rotation = Quaternion.LookRotation(fwd, norm);
-	
-	between(laser, shoulder.position + Vector3(0.5, -0.5, 0.5), hit.point, 0.1);
+	//Camera.main.transform.Find('shoulder').GetComponent.<Laser>().UpdateInteraction(hit.point);
 }
-// We cast only against the Default layer (0). E.g., we don't want this to catch the gizmo on the HUD layer (8), nor assembly on IgnoreRaycast(2).
-function resetCast(hit:RaycastHit[]):boolean { // overridable method to get new hit.point during drag
-	return Physics.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition + cursorOffsetToSurface), hit[0], Mathf.Infinity, (1<<0));
-}
+
 
 function hitNormal(hit:RaycastHit) {
 	// Just in case, also make sure the collider also has a renderer material and texture 

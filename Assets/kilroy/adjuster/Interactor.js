@@ -19,10 +19,13 @@ function Start() {
 	assembly = transform.parent.parent;
 }
 
-private var isActive = false;
+// Update() checks on mouse down for ANY intersection with our collider.
+// There are multiple affordances, but OnMouseEnter will only fire for one
+// at a time, so isActive guards against multiple scripts firing.
 public static var AnyActive = false;
+private var isActive = false;
 function OnMouseEnter () {
-	if (AnyActive) return; // Someone is already active (not necessarilly this axis).
+	if (AnyActive) return; // Someone is already active (not necessarilly this axis). 
 	isActive = true;
 	AnyActive = true;
 }

@@ -10,40 +10,32 @@ class Directional extends MonoBehaviour {
 	// If the gizmo is added to the HUD layer, the scene should have a HUD Camera attached to the Main Camera.
 public var highlightColor:Color;		// defaults to red/green/blue for x/y/z
 public var normalColor:Color;  	// defaults to a muted version of highlighColor
-public var assembly:Transform;  // The object to be transformed.
 public var planeName = 'GridTarget';
-// Update() checks on mouse down for ANY intersection with our collider.
-// There are multiple affordances, but OnMouseEnter will only fire for one
-// at a time, so isActive guards against multiple scripts firing.
-private var isActive = false; // Hot, highlighted.
 
 // This is broadcast to gameObject and children. Thus children of affordances can change color if they define this message.
 public function setColor(color:Color) { if (renderer) { renderer.material.color = color; } }
 public function setAffordanceColor(color:Color) { BroadcastMessage('setColor', color, SendMessageOptions.DontRequireReceiver); }
-function OnMouseEnter () {	
-	//Debug.Log('enter');
-	if (Interactor.AnyActive) return; // Already dragging by someone (not necessarilly this axis).
-	isActive = true;
-	Interactor.AnyActive = true;
+function OnMouseEnterXX () {	
+	//super.OnMouseEnter();
 	if (!isMoving) { setAffordanceColor(highlightColor); }
 }
-function OnMouseExit () {
-	//Debug.Log('leave');  
-	isActive = false;
-	Interactor.AnyActive = false;
+function OnMouseExitXX () {
+	//super.OnMouseExit();  
 	if (isMoving) return;
     setAffordanceColor(normalColor);
 }
+
 // The transform for this directional. E.g., there may be slide/stretch/spin gameObjects 
 // (that have a subclass of this script attached), which are all arranged into a composite
 // gameObject associated with either the local x, y, or z axis of an object. That composite
 // is the 'axis'.
 public var axis:Transform; 
 public var targetAlpha:float = 0.9;
-public var affordanceCollider:Collider; // Subclasses can extend Start to let this be a child's collider.
-function Start() {
-	affordanceCollider = collider;
+function StartXX() {
+	// super.Start(); 
+	//affordanceCollider = collider;
 	axis = transform.parent;
+	assembly = axis.parent.parent;
 	if (highlightColor == Color.clear) {
 		// A pun: axis.right is 1,0,0 for x axis, and so is red. Similarly for y/green and z/blue.
 		var rgb = axis.parent.InverseTransformDirection(axis.right);
@@ -60,7 +52,6 @@ function Start() {
 	if (normalColor == Color.clear) normalColor = highlightColor / 1.33;
 	setAffordanceColor(normalColor);
 	//renderer.material.SetColor("_Emission", normalColor); // In case the scene is dark.
-	if (assembly == null) assembly = axis.parent.parent;
 }
 // Non-unit scales are terrible to work with in assemblies. (Descendant parts fly apart when we rotate them.)
 // So (extendible) stopDragging() does ApplyChanges, which sets Obj.size() and resets scale to 1.
@@ -91,26 +82,50 @@ function resetCast(hit:RaycastHit[]) {
 }
 
 private var dragCollider:Collider;  // Returned by startDragging. Usually the plane.collider, but OnEdge Spinners answer the collider we're attached to.
-
-public var isMoving = false; // In the processing of being dragged around.
-function startDragging1(cameraRay:Ray, hit:RaycastHit) {
-	isMoving = true;
-	//startDragging(assembly, cameraRay, hit);
+function startDragging(assembly:Transform, cameraRay:Ray, hit:RaycastHit) {
 	plane = GameObject.CreatePrimitive(PrimitiveType.Plane);
 	plane.renderer.enabled = showPlane;
 	plane.name = planeName;
 	dragCollider = startDragging(assembly, axis, plane.transform, cameraRay, hit);
 	plane.transform.parent = assembly.parent;
 }
-function stopDragging1() {
-	if (!isMoving) return;
-	isMoving = false;	
-	//stopDragging(assembly);
+function stopDraggingXX() {
+	// super.stopDragging1();
 	dragCollier = null;
 	plane.transform.parent = null;
 	Destroy(plane);
 	if (!isActive) { setAffordanceColor(normalColor); }
 	stopDragging(assembly).saveScene('adjust');
+}
+
+private var isActive = false;
+function OnMouseEnter () {
+	if (Interactor.AnyActive) return; // Someone is already active (not necessarilly this axis). 
+	isActive = true;
+	Interactor.AnyActive = true;
+	OnMouseEnterXX();
+}
+function OnMouseExit () {
+	isActive = false;
+	Interactor.AnyActive = false;
+	OnMouseExitXX();
+}
+public var assembly:Transform;  // The object to be transformed.
+public var affordanceCollider:Collider; // We raycast against this to start things offs.
+function Start() {
+	affordanceCollider = transform.collider;
+	assembly = transform.parent.parent;
+	StartXX();
+}
+public var isMoving = false; // In the processing of being dragged around.
+function startDragging1(cameraRay:Ray, hit:RaycastHit) {
+	isMoving = true;
+	startDragging(assembly, cameraRay, hit);
+}
+function stopDragging1() {
+	if (!isMoving) return;
+	isMoving = false;	
+	stopDraggingXX();
 }
 function Update() {
 	var hit = new RaycastHit[1];

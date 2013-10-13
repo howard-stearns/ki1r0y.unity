@@ -18,6 +18,10 @@ static function noFlip(scale:Vector3) { // Make sure that scale doesn't flip
 }
 
 var assemblyObj:Obj;
+function updateAssembly(assy:Transform) { 
+	super.updateAssembly(assy); 
+	assemblyObj = assembly.gameObject.GetComponent.<Obj>();
+}
 // These are in our coordinate system.
 public var cornerUnitPositionFromAxis:Vector3;
 function updateAffordance() { //As we resize assembly during movement, keep affordance at constant size in new corners.
@@ -31,7 +35,6 @@ function Start() {
 	else if ((axis.name == 'Y') || (axis.name == 'Z')) { cornerUnitPositionFromAxis.x *= -1; }
 	else if (axis.name == 'Xneg') { cornerUnitPositionFromAxis.x *= -1; cornerUnitPositionFromAxis.z *= -1; }
 	
-	assemblyObj = assembly.gameObject.GetComponent.<Obj>();
 	affordanceCollider = transform.Find('affordance').collider;
 }
 public var doRotate = false;

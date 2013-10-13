@@ -1,4 +1,4 @@
-﻿#pragma strict
+#pragma strict
 
 // Provides the dragging behavior whereby the assembly is dragged around across all the other surfaces in the scene.
 //
@@ -17,9 +17,9 @@
 class Sticky extends Interactor {
 
 private var assemblyObj:Obj;
-function Start() {
-	super.Start();
-	assemblyObj = assembly.gameObject.GetComponent(Obj);
+function updateAssembly(assy:Transform) { 
+	super.updateAssembly(assy); 
+	assemblyObj = assembly.gameObject.GetComponent.<Obj>();
 }
 
 function updateAffordance() { //As other interactors resize assembly during movement, keep affordance at proper size.
@@ -32,25 +32,42 @@ private var firstDragPosition:Vector3; // For debouncing click vs drag;
 private var rt1:Vector3;
 private var fwd1:Vector3;
 
+public static function SetAssemblyLayer(go:GameObject, layer:int) {
+	go.layer = layer;
+	for (var child:Transform in go.transform) {
+		if (child.tag != 'BlockFace')  // Don't change these. They start on Ignore Raycast and must remain so.
+			SetAssemblyLayer(child.gameObject, layer);
+	}
+}
+private var originalCopied:GameObject;
+private var savedLayer = 0;
 function startDragging(assembly:Transform, cameraRay:Ray, hit:RaycastHit):Laser {
-	var go = assembly.gameObject;
+	var go = assembly.gameObject; var obj = go.GetComponent.<Obj>();
 	// UnHighlight(); // as it will just confuse things, particularly on copy.
-	/*if (copy) {
+	if (!!Input.GetAxis('Fire2')) {  //  alt/option key
+		// Transfer gizmo to copy. Can't destroy it because it has state (including our own executing code).
+		var gizmo = assembly.Find('Adjuster');
+		gizmo.parent = null;
 		originalCopied = go;
 		go = Instantiate(go);
+		var goo = go.GetComponent.<Obj>();
+		assembly = go.transform;  
+		gizmo.parent = assembly;
+		assembly.parent = originalCopied.transform.parent;
+		assembly.BroadcastMessage('updateAssembly', assembly, SendMessageOptions.DontRequireReceiver);		
+		// assemblyObj is side-effected by updateAssembly.
+		assemblyObj.nametag = obj.nametag + '-copy';  // Hopefully temporary disambiguator during development.
+		assemblyObj.sharedMaterials(obj.sharedMaterials());
+		obj = assemblyObj;
 		// If we're making a copy, the first dragging movement will always intersect the original object, and 
 		// we'll instantly jump out from that surface as we try to mount the copy onto the original. Even if 
 		// that's what the user ultimately wants, they still don't wan the jump. So, if we're working with a copy,
 		// don't count the original until the user has finished that first copying drag.
 		// I tried more complicated variants, such as ignoring the original only until we've 'cleared' away
 		// from it, but couldn't make them work.
+		savedLayer = originalCopied.layer;
 		SetAssemblyLayer(originalCopied, 2);
-		// Hopefully temporary disambiguator during development.
-		var goo = go.GetComponent.<Obj>();
-		goo.nametag = goo.nametag + '-copy';
-		goo.sharedMaterials(goo.sharedMaterials());
-	}*/
-	var obj = go.GetComponent(Obj);
+	}
 	var mountingDirection = obj ? assembly.TransformDirection(obj.localMounting) : -assembly.up;
 	
 	// Two Tests:
@@ -103,12 +120,12 @@ function startDragging(assembly:Transform, cameraRay:Ray, hit:RaycastHit):Laser 
 	pivot.parent = assembly.parent;  // No need to worry about scale screwing things up, because Obj assemblies always have unitary localScale.
 	assembly.parent = pivot;
 	hit.point = surfaceHit.point; // so that Laser.StartInteraction() can do the right thing.
-	//Camera.main.transform.Find('shoulder').GetComponent.<Laser>().StartInteraction(hit.point, assembly);
 	return Camera.main.transform.Find('shoulder').GetComponent.<Laser>();
 }
 function stopDragging(assembly:Transform) {	
-	//Camera.main.transform.Find('shoulder').GetComponent.<Laser>().EndInteraction();
-	
+	if (!!originalCopied) SetAssemblyLayer(originalCopied, savedLayer);
+	originalCopied = null;
+		
 	var pivot = assembly.parent;
 	assembly.parent = pivot.parent;	
 	// Destroy merely schedules destruction. We don't want pivot in the hierarchy (e.g., during saving).

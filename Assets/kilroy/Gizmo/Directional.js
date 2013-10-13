@@ -38,7 +38,7 @@ public var targetAlpha:float = 0.9;
 function Start() {
 	super.Start(); 
 	axis = transform.parent;
-	assembly = axis.parent.parent;
+	updateAssembly(axis.parent.parent);
 	if (highlightColor == Color.clear) {
 		// A pun: axis.right is 1,0,0 for x axis, and so is red. Similarly for y/green and z/blue.
 		var rgb = axis.parent.InverseTransformDirection(axis.right);

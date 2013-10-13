@@ -16,11 +16,11 @@ class Interactor extends MonoBehaviour {
 
 
 public var assembly:Transform;  // The object to be transformed.
+function updateAssembly(assy:Transform) { assembly = assy; }   // In case of transfer to a copy.
 public var affordanceCollider:Collider; // We raycast against this to start things offs.
-
 function Start() {
 	affordanceCollider = transform.collider;
-	assembly = transform.parent.parent;
+	updateAssembly(transform.parent.parent);
 }
 
 // Update() checks on mouse down for ANY intersection with our collider.

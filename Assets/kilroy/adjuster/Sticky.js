@@ -8,11 +8,10 @@
 // 2. For cubes, when we project from affordance to mounting surface and back, we certainly won't miss an edge.
 
 // TODO:
-// copy/delete
+// delete/goto
 // Do we really need a pivot? If so, check to make sure it is always removed (never left in place)
 // reverse hit for skinny meshes
 // unhighlight
-// reparent to make assemblies
 
 class Sticky extends Interactor {
 
@@ -122,12 +121,14 @@ function startDragging(assembly:Transform, cameraRay:Ray, hit:RaycastHit):Laser 
 	hit.point = surfaceHit.point; // so that Laser.StartInteraction() can do the right thing.
 	return Camera.main.transform.Find('shoulder').GetComponent.<Laser>();
 }
+var lastSurface:Collider;  // Keep track of this during dragging so that we can reparent at end.
 function stopDragging(assembly:Transform) {	
 	if (!!originalCopied) SetAssemblyLayer(originalCopied, savedLayer);
 	originalCopied = null;
 		
+	var newParent = Obj.ColliderGameObject(lastSurface);
 	var pivot = assembly.parent;
-	assembly.parent = pivot.parent;	
+	assembly.parent = (newParent == null) ? pivot.parent : newParent.transform;
 	// Destroy merely schedules destruction. We don't want pivot in the hierarchy (e.g., during saving).
 	pivot.parent = null; 
 	Destroy(pivot.gameObject);
@@ -142,6 +143,7 @@ function doDragging(assembly:Transform, hit:RaycastHit) {
 	var delta = hit.point - lastDragPosition;
 	//Debug.Log('last10:' + (10 * lastDragPosition) + ' hit10:' + (10 * hit.point));
 	lastDragPosition = hit.point;
+	lastSurface = hit.collider;
 	var pivot:Transform = assembly.parent;
 	pivot.Translate(delta, Space.World);
 	var norm:Vector3 = hitNormal(hit);

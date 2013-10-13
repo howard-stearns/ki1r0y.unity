@@ -119,8 +119,9 @@ public function sharedMaterials(mats:Material[]):Material[] {
 	return mats;
 }
 
-// Answer the Kilroy GameObject of the given c, or null.
+// Answer the Kilroy GameObject of the given c, else c's non-avatar parent GameObject, else null.
 public static function ColliderGameObject(c:Collider):GameObject { 
+	if (c == null) { return null; }
 	if (c.gameObject.GetComponent.<Obj>()) return c.gameObject;
 	//Debug.Log('colliderGameObject(' + c.gameObject + ') parent:' + c.transform.parent.gameObject);
 	if (!c.transform.parent) return null;  // e.g., avatar

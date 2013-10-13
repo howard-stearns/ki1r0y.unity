@@ -9,43 +9,18 @@
 // 1. This allows there to be no confusion as to whether a strike near the corner is hitting us or a corner affordance, as the corners lie outside our (shrunken) box.
 // 2. For cubes, when we project from affordance to mounting surface and back, we certainly won't miss an edge.
 
-function hitNormal(hit:RaycastHit) {
-	// Just in case, also make sure the collider also has a renderer material and texture 
-   	var meshCollider = hit.collider as MeshCollider; 
-   	if (meshCollider == null || meshCollider.sharedMesh == null) {
-       	return hit.normal; 
-	}
-   	var mesh : Mesh = meshCollider.sharedMesh; 
-   	var normals = mesh.normals; 
-   	var triangles = mesh.triangles; 
+// TODO:
+// copy/delete
+// bug: resize StrikeTarget!
+// generalize laser, so it can show up in adjust
+// Do we really need a pivot? If so, check to make sure it is always removed (never left in place)
+// reverse hit for skinny meshes
+// unhighlight
+// reparent to make assemblies
 
-   	// Extract local space normals of the triangle we hit 
-   	var n0 = normals[triangles[hit.triangleIndex * 3 + 0]]; 
-   	var n1 = normals[triangles[hit.triangleIndex * 3 + 1]];    
-   	var n2 = normals[triangles[hit.triangleIndex * 3 + 2]];    
-    
-   	// interpolate using the barycentric coordinate of the hitpoint 
-   	var baryCenter = hit.barycentricCoordinate; 
+class Sticky extends Interactor {
 
-   	// Use barycentric coordinate to interpolate normal 
-   	var interpolatedNormal = n0 * baryCenter.x + n1 * baryCenter.y + n2 * baryCenter.z; 
-   	// normalize the interpolated normal 
-   	interpolatedNormal =  interpolatedNormal.normalized; 
-    
-   	// Transform local space normals to world space 
-   	var hitTransform : Transform = hit.collider.transform; 
-   	interpolatedNormal = hitTransform.TransformDirection(interpolatedNormal); 
-
-   	return interpolatedNormal;
-}
-
-public var pivotPrefab:Transform;
-private var cursorOffsetToSurface:Vector3 = Vector3.zero;
-private var lastDragPosition:Vector3;
-private var firstDragPosition:Vector3; // For debouncing click vs drag;
-private var rt1:Vector3;
-private var fwd1:Vector3;
-
+// FIXME: separate these out
 function between(verticalObject:GameObject, p1:Vector3, p2:Vector3, width:float) {
 	var offsetToCenter:Vector3 = (p1 - p2) / 2.0;
 	verticalObject.transform.position = p1 - offsetToCenter;
@@ -54,9 +29,17 @@ function between(verticalObject:GameObject, p1:Vector3, p2:Vector3, width:float)
 }
 public var laserPrefab:Transform;
 public var shoulder:Transform;
-private var laser:GameObject;
+public var laser:GameObject;
+function Start() { super.Start(); 	shoulder = Camera.main.transform; }
 
-function startDragging(assembly:Transform, axis:Transform, plane:Transform, cameraRay:Ray, hit:RaycastHit):Collider {
+public var pivotPrefab:Transform;
+private var cursorOffsetToSurface:Vector3 = Vector3.zero;
+private var lastDragPosition:Vector3;
+private var firstDragPosition:Vector3; // For debouncing click vs drag;
+private var rt1:Vector3;
+private var fwd1:Vector3;
+
+function startDragging(assembly:Transform, cameraRay:Ray, hit:RaycastHit) {
 	var go = assembly.gameObject;
 	// UnHighlight(); // as it will just confuse things, particularly on copy.
 	/*if (copy) {
@@ -129,14 +112,14 @@ function startDragging(assembly:Transform, axis:Transform, plane:Transform, came
 	
 	laser = Instantiate(laserPrefab.gameObject);
 	between(laser, shoulder.position + Vector3(0.5, -0.5, 0.5), surfaceHit.point, 0.05);
-	Debug.Log(laser + ' betweeen ' + shoulder.position + ' and ' + surfaceHit.point);
+	//Debug.Log(laser + ' betweeen ' + shoulder.position + ' and ' + surfaceHit.point);
 	laser.transform.parent = pivot.parent;
-	
-	return transform.collider;
 }
-function stopDragging(assembly:Transform):Obj {
+function stopDragging(assembly:Transform) {
 	var go = assembly.gameObject;
 	var obj = go.GetComponent(Obj);
+		
+	laser.transform.parent = null; Destroy(laser); // between
 	
 	var pivot = assembly.parent;
 	assembly.parent = pivot.parent;	
@@ -144,9 +127,9 @@ function stopDragging(assembly:Transform):Obj {
 	pivot.parent = null; 
 	Destroy(pivot.gameObject);
 
-	return obj;
+	obj.saveScene('adjust');
 }
-function doDragging(assembly:Transform, axis:Transform, plane:Transform, hit:RaycastHit) {
+function doDragging(assembly:Transform, hit:RaycastHit) {
 	var delta = hit.point - lastDragPosition;
 	//Debug.Log('last10:' + (10 * lastDragPosition) + ' hit10:' + (10 * hit.point));
 	lastDragPosition = hit.point;
@@ -159,56 +142,38 @@ function doDragging(assembly:Transform, axis:Transform, plane:Transform, hit:Ray
 	
 	between(laser, shoulder.position + Vector3(0.5, -0.5, 0.5), hit.point, 0.1);
 }
-
-private var isActive = false;
-function OnMouseEnter () {
-	if (assembly.parent && (assembly.parent.name == 'GridTarget')) return; // Already dragging by someone (not necessarilly this axis).
-	isActive = true;
-}
-function OnMouseExit () {
-	isActive = false;
+// We cast only against the Default layer (0). E.g., we don't want this to catch the gizmo on the HUD layer (8), nor assembly on IgnoreRaycast(2).
+function resetCast(hit:RaycastHit[]):boolean { // overridable method to get new hit.point during drag
+	return Physics.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition + cursorOffsetToSurface), hit[0], Mathf.Infinity, (1<<0));
 }
 
-private var isMoving = false; // In the processing of being dragged around.
-public var assembly:Transform;  // The object to be transformed.
-private var affordanceCollider:Collider;
-private var dragCollider:Collider; 
-function startDragging1(cameraRay:Ray, hit:RaycastHit) {
-	isMoving = true;
-	dragCollider = startDragging(assembly, null, null, cameraRay, hit);
-}
-function stopDragging1() {
-	if (!isMoving) return;
-	isMoving = false;
-	
-	laser.transform.parent = null; Destroy(laser); // between
-	
-	stopDragging(assembly).saveScene('adjust');
-}
-function Start() {
-	affordanceCollider = transform.collider;
-	assembly = transform.parent.parent;
-	shoulder = Camera.main.transform; // betweeen
-}
-function Update() {
-	var hit:RaycastHit;
-	if (isActive && Input.GetMouseButtonDown(0)) {
-		var cameraRay = Camera.main.ScreenPointToRay(Input.mousePosition);
-		if (!affordanceCollider.Raycast(cameraRay, hit, Mathf.Infinity)) {
-			Debug.Log('no real start');
-			stopDragging1(); return;
-		}
-		startDragging1(cameraRay, hit);
-		return;
-	} 	
-	if (!isMoving 
-			|| Input.GetMouseButtonUp(0)
-			// We cast only against the Default layer (0). E.g., we don't want this to catch the gizmo on the HUD layer (8), nor assembly on IgnoreRaycast(2).
-			) { // side-effect is new hit.point for doDragging
-		stopDragging1(); return;
+function hitNormal(hit:RaycastHit) {
+	// Just in case, also make sure the collider also has a renderer material and texture 
+   	var meshCollider = hit.collider as MeshCollider; 
+   	if (meshCollider == null || meshCollider.sharedMesh == null) {
+       	return hit.normal; 
 	}
-	if (!Physics.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition + cursorOffsetToSurface), hit, Mathf.Infinity, (1<<0))) {
-		Debug.Log('fell off');
-		stopDragging1(); return; }
-	doDragging(assembly, null, null, hit);
+   	var mesh : Mesh = meshCollider.sharedMesh; 
+   	var normals = mesh.normals; 
+   	var triangles = mesh.triangles; 
+
+   	// Extract local space normals of the triangle we hit 
+   	var n0 = normals[triangles[hit.triangleIndex * 3 + 0]]; 
+   	var n1 = normals[triangles[hit.triangleIndex * 3 + 1]];    
+   	var n2 = normals[triangles[hit.triangleIndex * 3 + 2]];    
+    
+   	// interpolate using the barycentric coordinate of the hitpoint 
+   	var baryCenter = hit.barycentricCoordinate; 
+
+   	// Use barycentric coordinate to interpolate normal 
+   	var interpolatedNormal = n0 * baryCenter.x + n1 * baryCenter.y + n2 * baryCenter.z; 
+   	// normalize the interpolated normal 
+   	interpolatedNormal =  interpolatedNormal.normalized; 
+    
+   	// Transform local space normals to world space 
+   	var hitTransform : Transform = hit.collider.transform; 
+   	interpolatedNormal = hitTransform.TransformDirection(interpolatedNormal); 
+
+   	return interpolatedNormal;
+}
 }

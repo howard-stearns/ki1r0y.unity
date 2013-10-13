@@ -106,25 +106,27 @@ function startDragging(assembly:Transform, axis:Transform, plane:Transform, came
 function doDragging(assembly:Transform, axis:Transform, plane:Transform, hit:RaycastHit) {
 	throw "Subclass must define to update plane position and rotation.";
 }
+
+function doDragging(assembly:Transform, hit:RaycastHit) { doDragging(assembly, axis, plane.transform, hit); }
 function Update() {
-	var hit:RaycastHit;
+	var hit = new RaycastHit[1];
 	// FIXME: If the plane would be parallel to the camera, we should disable gameObject.renderer,
 	// so that no one is tempted to try to use the affordance when it cannot possibly work.
 	
 	if (isActive && Input.GetMouseButtonDown(0)) {
 		var cameraRay = Camera.main.ScreenPointToRay(Input.mousePosition);
-		if (!affordanceCollider.Raycast(cameraRay, hit, Mathf.Infinity)) {
+		if (!affordanceCollider.Raycast(cameraRay, hit[0], Mathf.Infinity)) {
 			stopDragging1(); return;
 		}
-		startDragging1(cameraRay, hit);
+		startDragging1(cameraRay, hit[0]);
 		return;
 	} 	
 	if (!isMoving 
 			|| Input.GetMouseButtonUp(0)
 			// Find hit.point where the mouse intersects the plane.
-			|| !dragCollider.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), hit, Mathf.Infinity)) {
+			|| !dragCollider.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), hit[0], Mathf.Infinity)) {
 		stopDragging1(); return;
 	}
-	doDragging(assembly, axis, plane.transform, hit);
+	doDragging(assembly, hit[0]);
 }
 }

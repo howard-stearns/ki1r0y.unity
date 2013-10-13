@@ -16,7 +16,6 @@ public var planeName = 'GridTarget';
 // There are multiple affordances, but OnMouseEnter will only fire for one
 // at a time, so isActive guards against multiple scripts firing.
 private var isActive = false; // Hot, highlighted.
-private var isMoving = false; // In the processing of being dragged around.
 
 // This is broadcast to gameObject and children. Thus children of affordances can change color if they define this message.
 public function setColor(color:Color) { if (renderer) { renderer.material.color = color; } }
@@ -78,29 +77,6 @@ function stopDragging(assy:Transform):Obj {
 // While moving, we insert a plane into the scene graph, just above the assembly.
 public var showPlane = false;
 private var plane:GameObject;
-// Returned by startDragging. 
-// Usually the plane.collider, but OnEdge Spinners answer the collider we're attached to.
-private var dragCollider:Collider; 
-function startDragging1(cameraRay:Ray, hit:RaycastHit) {
-	isMoving = true;
-	plane = GameObject.CreatePrimitive(PrimitiveType.Plane);
-	//plane.transform.localScale = Vector3(0.1, 0.1, 0.1); // when desired for debugging.
-	plane.renderer.enabled = showPlane;
-	plane.name = planeName;
-	dragCollider = startDragging(assembly, axis, plane.transform, cameraRay, hit);
-	plane.transform.parent = assembly.parent;
-	//assembly.parent = plane.transform;
-}
-function stopDragging1() {
-	if (!isMoving) return;
-	dragCollier = null;
-	isMoving = false;
-	//assembly.parent = plane.transform.parent;
-	plane.transform.parent = null;
-	Destroy(plane);
-	if (!isActive) { setAffordanceColor(normalColor); }
-	stopDragging(assembly).saveScene('adjust');
-}
 function startDragging(assembly:Transform, axis:Transform, plane:Transform, cameraRay:Ray, hit:RaycastHit):Collider  {
 	throw "Subclass must define to set initial plane position and rotation.";
 	// answers true IFF the drag can be handled (e.g., not aligned with camera)
@@ -110,11 +86,34 @@ function doDragging(assembly:Transform, axis:Transform, plane:Transform, hit:Ray
 }
 
 function doDragging(assembly:Transform, hit:RaycastHit) { doDragging(assembly, axis, plane.transform, hit); }
+function resetCast(hit:RaycastHit[]) {
+	return dragCollider.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), hit[0], Mathf.Infinity);
+}
+
+private var dragCollider:Collider;  // Returned by startDragging. Usually the plane.collider, but OnEdge Spinners answer the collider we're attached to.
+
+public var isMoving = false; // In the processing of being dragged around.
+function startDragging1(cameraRay:Ray, hit:RaycastHit) {
+	isMoving = true;
+	//startDragging(assembly, cameraRay, hit);
+	plane = GameObject.CreatePrimitive(PrimitiveType.Plane);
+	plane.renderer.enabled = showPlane;
+	plane.name = planeName;
+	dragCollider = startDragging(assembly, axis, plane.transform, cameraRay, hit);
+	plane.transform.parent = assembly.parent;
+}
+function stopDragging1() {
+	if (!isMoving) return;
+	isMoving = false;	
+	//stopDragging(assembly);
+	dragCollier = null;
+	plane.transform.parent = null;
+	Destroy(plane);
+	if (!isActive) { setAffordanceColor(normalColor); }
+	stopDragging(assembly).saveScene('adjust');
+}
 function Update() {
 	var hit = new RaycastHit[1];
-	// FIXME: If the plane would be parallel to the camera, we should disable gameObject.renderer,
-	// so that no one is tempted to try to use the affordance when it cannot possibly work.
-	
 	if (isActive && Input.GetMouseButtonDown(0)) {
 		var cameraRay = Camera.main.ScreenPointToRay(Input.mousePosition);
 		if (!affordanceCollider.Raycast(cameraRay, hit[0], Mathf.Infinity)) {
@@ -125,8 +124,7 @@ function Update() {
 	} 	
 	if (!isMoving 
 			|| Input.GetMouseButtonUp(0)
-			// Find hit.point where the mouse intersects the plane.
-			|| !dragCollider.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), hit[0], Mathf.Infinity)) {
+			|| !resetCast(hit)) { // side-effect is new hit.point for doDragging
 		stopDragging1(); return;
 	}
 	doDragging(assembly, hit[0]);

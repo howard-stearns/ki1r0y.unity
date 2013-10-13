@@ -5,8 +5,9 @@ class Directional extends MonoBehaviour {
 	// * a Collider that matches the shape (e.g., a Mesh collider rather than capsule collider for a cylinder mesh), because people will be mousing it.
 	// * a transparent/vertex-lit material. (Kilroy uses the Materials/translucent.)
 	// The affordance should be a child of an axis assembly (that has any number of affordances).
-	// The three axis assemblies are then assumed to be a child of the thing that is being moved around (which must have an Obj component to ApplyChanges).
-	// If the whole assembly is added to the HUD layer, the scene should have a HUD Camera attached to the Main Camera.
+	// The (typicall three or six) axis assemblies are children of something -- let's call it a gizmo -- that is attached as a child of the assembly 
+	// that is being moved around (which must have an Obj component to ApplyChanges).
+	// If the gizmo is added to the HUD layer, the scene should have a HUD Camera attached to the Main Camera.
 public var highlightColor:Color;		// defaults to red/green/blue for x/y/z
 public var normalColor:Color;  	// defaults to a muted version of highlighColor
 public var assembly:Transform;  // The object to be transformed.

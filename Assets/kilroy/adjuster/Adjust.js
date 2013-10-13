@@ -1,4 +1,14 @@
 class Adjust extends Directional {
+	// Attach this objects placed in the corners of a cube, to provide sizing and rotation.
+	// Just as 2D desktop windows have little affordances in one or four corners that allow the window to be resized,
+	// one can place an affordance with this script in each of the four corners of all six faces.
+	// Click-drag (with nothing else held down) to resize (without changing the position of the assembly).
+	// Or option-drag (alt-drag) to rotate (without changing the position of the assembly).
+	// Additionally hold down shift to shift the center such that the opposite corner stays in place as you resize or rotate.
+	//
+	// See Directional comments for more about how the affordances are constructed. In our canonical implementation,
+	// this script is attached to point affordances in the very corners of the assembly cube, and the visible affordances
+	// are actually children of the corner-points, and use the TrampolineToParent script to forward messages.
 
 static function projectPointOnPlane(point, planeNormal, planePoint) {
 	return point - (planeNormal * Vector3.Dot(planeNormal, point - planePoint));

@@ -1,6 +1,11 @@
 #pragma strict
 
 // Provides the dragging behavior whereby the assembly is dragged around across all the other surfaces in the scene.
+// option-drag (alt-drag) copies before dragging.
+// option-click (alt-click) deletes
+// click tries goto (and removes gizomo).
+// It is expected that something is else is taking care of adding and removing the gizmo, and ensuring that nothing is
+// highlighted before we start (as that will just get confusing during copy).
 //
 // For example, the assembly's mesh/collider must be on the IgnoreRaycast = 2 layer.
 // The affordance that this script is attached to should be bit smaller than the assembly bounding box:
@@ -8,10 +13,7 @@
 // 2. For cubes, when we project from affordance to mounting surface and back, we certainly won't miss an edge.
 
 // TODO:
-// goto
-// Do we really need a pivot? If so, check to make sure it is always removed (never left in place)
 // reverse hit for skinny meshes
-// unhighlight
 
 class Sticky extends Interactor {
 
@@ -42,7 +44,6 @@ private var originalCopied:GameObject;
 private var savedLayer = 0;
 function startDragging(assembly:Transform, cameraRay:Ray, hit:RaycastHit):Laser {
 	var go = assembly.gameObject; var obj = go.GetComponent.<Obj>();
-	// UnHighlight(); // as it will just confuse things, particularly on copy.
 	if (!!Input.GetAxis('Fire2')) {  //  alt/option key
 		// Transfer gizmo to copy. Can't destroy it because it has state (including our own executing code).
 		var gizmo = assembly.Find('Adjuster');
@@ -141,6 +142,15 @@ function stopDragging(assembly:Transform) {
 		assembly.parent = null;
 		Destroy(assembly.gameObject); // the copy. us.
 		original.GetComponent.<Obj>().deleteObject(); // which does a save as well.
+	} else {
+		var avatar = Camera.main.transform.parent;
+		var goto = !avatar ? null : avatar.GetComponent(Goto);
+		if (!!goto) {
+			var gizmo = assembly.Find('Adjuster');
+			gizmo.parent = null;
+			Destroy(gizmo.gameObject);
+			goto.Goto(assembly, true);
+		}
 	}
 }
 // We cast only against the Default layer (0). E.g., we don't want this to catch the gizmo on the HUD layer (8), nor assembly on IgnoreRaycast(2).

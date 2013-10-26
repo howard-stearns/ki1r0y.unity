@@ -158,7 +158,6 @@ function startDragging(assembly:Transform, cameraRay:Ray, hit:RaycastHit):Laser 
 	if (pivot.localScale != Vector3(1, 1, 1)) Debug.LogError('*** FIXME Select:StartDragging Non-unity pivot scale ' + pivot.localScale);
 	pivot.parent = assembly.parent;  // No need to worry about scale screwing things up, because Obj assemblies always have unitary localScale.
 	assembly.parent = pivot;
-	Debug.Log('Sticky changing collider laer');
 	gameObject.layer = 8; // Get our StrikeTarget out of the way. Don't change children, nor make StrikeTarget stop getting OnMouseEnter/Exit at all.
 	// FIXME: animate laser movement from hit.point to surfaceHit.point.
 	hit.point = surfaceHit.point; // so that Laser.StartInteraction() can do the right thing.
@@ -166,7 +165,6 @@ function startDragging(assembly:Transform, cameraRay:Ray, hit:RaycastHit):Laser 
 }
 var lastSurface:Collider;  // Keep track of this during dragging so that we can reparent at end.
 function stopDragging(assembly:Transform) {	
-	Debug.Log('Sticky resetting collider layer');
 	gameObject.layer = 0; // restore our StrikeTarget to hardcoded value.
 	var original = originalCopied;
 	// pun: we're setting the WHOLE original obj, which will RESET it's Obj.mesh to behave normally, even if we've messed with it.
@@ -202,7 +200,7 @@ function resetCast(hit:RaycastHit[]):boolean { // overridable method to get new 
 }
 function doDragging(assembly:Transform, hit:RaycastHit) {
 	var delta = hit.point - lastDragPosition;
-	Debug.Log('collider:' + hit.collider + ' last10:' + (10 * lastDragPosition) + ' hit10:' + (10 * hit.point) + ' delta10:' + (10 * delta));
+	//Debug.Log('collider:' + hit.collider + ' last10:' + (10 * lastDragPosition) + ' hit10:' + (10 * hit.point) + ' delta10:' + (10 * delta));
 	lastDragPosition = hit.point;
 	lastSurface = hit.collider;
 	var pivot = assembly.parent;
@@ -259,8 +257,7 @@ function hitNormal(hit:RaycastHit) { // answer normal to the surface at hit.poin
 
 
 public static function AddAdjuster(assy:Transform, adjusterPrefab:Transform) { // Add adjusterPrefab as a child of assy.
-	Debug.Log('AddAdjuster:' + assy + ' AnyActive:' + AnyActive + ' ExistingGizmo:' + ExistingGizmo + ' gizmo parent:' + (!ExistingGizmo ? 'none' : ExistingGizmo.parent));
-	//if (AnyActive && (ExistingGizmo.parent == assy)) { return; }
+	if (AnyMoving) { return; } // Don't mess up an existing drag.
 	var gizmo = Instantiate(adjusterPrefab, assy.transform.position, assy.transform.rotation); 
 	gizmo.Find('StrikeTarget').GetComponent(Sticky).initAdjuster(assy, gizmo);
 }

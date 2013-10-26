@@ -64,7 +64,6 @@ public var isMoving = false; // In the processing of being dragged around.
 public static var AnyMoving = false;
 public var laser:Laser;
 function startDragging1(cameraRay:Ray, hit:RaycastHit) {
-	Debug.Log('start dragging ' + assembly);
 	isMoving = true;
 	AnyMoving = true;
 	laser = startDragging(assembly, cameraRay, hit);
@@ -72,7 +71,6 @@ function startDragging1(cameraRay:Ray, hit:RaycastHit) {
 }
 function stopDragging1() {
 	if (!isMoving) return;
-	Debug.Log('end dragging ' + assembly);
 	isMoving = false;	
 	AnyMoving = false;
 	stopDragging(assembly);

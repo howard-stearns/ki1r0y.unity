@@ -89,7 +89,7 @@ function importImage(url:String) {  // Here, rather than Restore or Obj, because
     //obj.mesh.renderer.material = mat;
     mats[0] = mat;
     obj.sharedMaterials(mats);
-    obj.size(Vector3(0.6, 1, 0.6));
+    //obj.size(Vector3(0.6, 1, 0.6));
     obj.nametag = currentDropFilename;
     
     var form = new WWWForm();
@@ -124,44 +124,6 @@ function importImage(url:String) {  // Here, rather than Restore or Obj, because
 	importImage(furl); 
 }*/
 
-///////////////////////////////////////////////////////////////////
-// Utility functions
-function between(verticalObject, p1, p2, width) {
-	var offsetToCenter:Vector3 = (p1 - p2) / 2.0;
-	verticalObject.transform.position = p1 - offsetToCenter;
-	verticalObject.transform.up = p2 - p1;
-	verticalObject.transform.localScale = Vector3(width, offsetToCenter.magnitude, width);
-}
-
-function hitNormal(hit:RaycastHit) {
-	// Just in case, also make sure the collider also has a renderer material and texture 
-   	var meshCollider = hit.collider as MeshCollider; 
-   	if (meshCollider == null || meshCollider.sharedMesh == null) {
-       	return hit.normal; 
-	}
-   	var mesh : Mesh = meshCollider.sharedMesh; 
-   	var normals = mesh.normals; 
-   	var triangles = mesh.triangles; 
-
-   	// Extract local space normals of the triangle we hit 
-   	var n0 = normals[triangles[hit.triangleIndex * 3 + 0]]; 
-   	var n1 = normals[triangles[hit.triangleIndex * 3 + 1]];    
-   	var n2 = normals[triangles[hit.triangleIndex * 3 + 2]];    
-    
-   	// interpolate using the barycentric coordinate of the hitpoint 
-   	var baryCenter = hit.barycentricCoordinate; 
-
-   	// Use barycentric coordinate to interpolate normal 
-   	var interpolatedNormal = n0 * baryCenter.x + n1 * baryCenter.y + n2 * baryCenter.z; 
-   	// normalize the interpolated normal 
-   	interpolatedNormal =  interpolatedNormal.normalized; 
-    
-   	// Transform local space normals to world space 
-   	var hitTransform : Transform = hit.collider.transform; 
-   	interpolatedNormal = hitTransform.TransformDirection(interpolatedNormal); 
-
-   	return interpolatedNormal;
-}
 
 /****************************************************************************************************/
 // To highlight an object (e.g., for mouseover), we install in object a copy of it's materials,
@@ -224,233 +186,40 @@ function StopGizmo() {
 	Directional.ApplyChanges(gizmo.parent);
 	Destroy(gizmo.gameObject);
 	gizmo = null;
+	if (overlayControls) overlayControls.trackMouseMotion(true);
 }
 function StartGizmo(go:GameObject) {
 	StopGizmo();
-	UnSelection();
+	//UnSelection();
 	var trans = go.transform;
 	gizmo = Instantiate(gizmoPrefab, trans.position, trans.rotation).transform;
 	gizmo.parent = trans;
+	gizmo.gameObject.BroadcastMessage('updateAssembly', trans, SendMessageOptions.DontRequireReceiver);
 	// trans.parent.localScale will mess us up:
 	//gizmoOldParent = trans.parent;
 	//trans.parent = transform; // e.g. avatar
-	overlayControls.lockMouseMotionOff();
+	if (overlayControls) overlayControls.lockMouseMotionOff();
 }
 function StartGizmo(id:String) {
 	if (!id) return;
 	StartGizmo(GameObject.Find(id));
 }
 
-/***************************************************************************/
-// Dragging state
-// When an object is being dragged, we keep track of it here. Otherwise null.
-// During dragging, we add an empty, unit-scaled pivot transform to the avatar 
-// (so that it is still in the scene graph, but with out any scaled ancestors), 
-// and then put the dragged transform under the pivot.
-public var dragged:Transform = null;  //public for debugging
-// During dragging, we also put the dragged onto the Ignore Raycast layer so that
-// we don't try drag the object onto itself.
-private var savedLayer:int;
-private var cursorOffsetToSurface:Vector3 = Vector3.zero;
-private var laser:GameObject;
-
-function SetAssemblyLayer(go:GameObject, layer:int) {
-	go.layer = layer;
-	for (var child:Transform in go.transform) {
-		if (child.tag != 'BlockFace')  // Don't change these. They start on Ignore Raycast and must remain so.
-			SetAssemblyLayer(child.gameObject, layer);
-	}
-}
-
-var originalCopied:GameObject;	
-// Shuts down any dragging going on. Safely does nothing if no drag in progress.
-function StopDragging() {
-	if (!!originalCopied) SetAssemblyLayer(originalCopied, savedLayer);
-	originalCopied = null;
-	if (!dragged) return false;
-	// Reset drag state.
-	cursorOffsetToSurface = Vector3.zero;
-	// Restore dragged object
-	SetAssemblyLayer(dragged.gameObject, savedLayer);
-	var pivot = dragged.parent;
-	dragged.parent = pivot.parent;
-	if (pivot.parent) NotifyUser('*** onStop Non-null pivot parent ' + pivot.parent);
-	if (pivot.localScale != Vector3(1, 1, 1)) NotifyUser('*** onstop Non-unity pivot scale ' + pivot.localScale);
-	
-	//Debug.Log('removal: pivot parent:' + pivot.parent + ' dragged scale:' + dragged.localScale + ' was:' + FIXMEoldScale);
-	// Destroy merely schedules destruction. We don't want pivot in the hierarchy (e.g., during saving).
-	pivot.parent = null; 
-	Destroy(pivot.gameObject);
-	// Restore cursor
-	Screen.showCursor = true;
-	Destroy(laser);
-	dragged = null;
-	return true;
-}
-
-function StopDragging(hit:RaycastHit) {
-	var trans = dragged;
-	var original = originalCopied;
-	if (!StopDragging()) return false;
-	// Make the dragged object a child of the hit.
-	// After things stabilize, this could be combined with the reparenting above.
-	var go:GameObject = Obj.ColliderGameObject(hit.collider);
-	if (!!trans) trans.parent = go.transform;
-	//Debug.Log('reparenting:' + go + ' dragged scale:' + trans.localScale);
-	
-	// Test for movement must be here rather than DoDragging, because we might not receive any DoDragging events.
-	if (Vector3.Distance(firstDragPosition, lastDragPosition) > 0.2) 
-		(trans || go).SendMessage("saveScene",  !!original ? 'copy' : 'move', SendMessageOptions.DontRequireReceiver);
-	else if (!!trans) {  // just a click, no drag
-		if (!!original) {
-			Destroy(trans.gameObject); // the copy
-			original.GetComponent.<Obj>().deleteObject();
-		} else 
-			Camera.main.transform.parent.GetComponent.<Goto>().Goto(trans, true);
-	}
-	return true;
-}
-
-public var laserPrefab:Transform;
-public var shoulder:Transform;
-public var pivotPrefab:Transform;
-
-private var lastDragPosition:Vector3;
-private var firstDragPosition:Vector3; // For debouncing click vs drag;
-private var rt1:Vector3;
-private var fwd1:Vector3;
-
-function StartDragging(hit:RaycastHit, copy:boolean) {
-	var go:GameObject = Obj.ColliderGameObject(hit.collider);
-	if (selection != go) { 
-		NotifyUser('FIXME selection does not match hit.collider');
-		StopDragging(hit);
-		return;
-	}
-	UnHighlight(); // as it will just confuse things, particularly on copy.
-	if (copy) {
-		originalCopied = go;
-		go = Instantiate(go);
-		// If we're making a copy, the first dragging movement will always intersect the original object, and 
-		// we'll instantly jump out from that surface as we try to mount the copy onto the original. Even if 
-		// that's what the user ultimately wants, they still don't wan the jump. So, if we're working with a copy,
-		// don't count the original until the user has finished that first copying drag.
-		// I tried more complicated variants, such as ignoring the original only until we've 'cleared' away
-		// from it, but couldn't make them work.
-		SetAssemblyLayer(originalCopied, 2);
-		// Hopefully temporary disambiguator during development.
-		var goo = go.GetComponent.<Obj>();
-		goo.nametag = goo.nametag + '-copy';
-		goo.sharedMaterials(goo.sharedMaterials());
-	}
-	savedLayer = go.layer;
-	dragged = go.transform;
-	var obj = go.GetComponent(Obj);
-	var mountingDirection = obj ? dragged.TransformDirection(obj.localMounting) : -dragged.up;
-//	var debugStart = dragged.position;
-	
-	// Two Tests:
-		
-	// We will project the hit.point along the mountingDirection until we hit
-	// a surface to slide along. No surface means we give up. 
-	var surfaceHit:RaycastHit; 
-	SetAssemblyLayer(go, 2); //Don't intersect with the object itself.
-	var selectedHit = hit.point;  // Start with where the user clicked on the go.
-	// Push the selectedHit a bit towards the go center, so that we don't miss the edge on reversal.
-	var bounds = obj.bounds();
-	selectedHit += (bounds.center - selectedHit).normalized * 0.1;
-	// Any object on any layer will do. (No layer mask.)
-	if (!Physics.Raycast(selectedHit, mountingDirection, surfaceHit)) { 
-		NotifyUser("Nothing under object to slide along.");
-		dragged = null;
-		SetAssemblyLayer(go, savedLayer);
-		return; 
-	}
-
-    // Now the reverse: the surfaceHit.point back to the object.
-    var reverseHit:RaycastHit; 
-    // But use a point "below" the hit.point (into surface, by depth of object) so we can catch embedded objects.
-    var embeddedPoint = surfaceHit.point + (mountingDirection * bounds.size.magnitude); //go.transform.localScale.magnitude);  
-    var reverseRay = Ray(embeddedPoint, -mountingDirection);
-    var offset = Vector3.zero;
-    var col = obj.objectCollider();
-    var isMeshCollider = col.GetType().Name == 'MeshCollider';
-    var oldConvex = isMeshCollider && col.convex;
-    if (isMeshCollider) col.convex = true;  // so raycast can hit back of plane
- 	if (col.Raycast(reverseRay, reverseHit, Mathf.Infinity)) { 
- 		offset = surfaceHit.point - reverseHit.point;
-       	//Debug.Log('hit:' + surfaceHit.point + ' reverse:' + reverseHit.point + ' offset:' + offset);
-		dragged.position += offset;
-	} else { 
-		NotifyUser('** No reverse hit! ** hit:' + surfaceHit.point + ' mounting:' + mountingDirection + ' embedded:' + embeddedPoint);
-	}
-	if (isMeshCollider) col.convex = oldConvex;
-	// Set drag state
-	firstDragPosition = surfaceHit.point;
-	lastDragPosition = firstDragPosition;
-	rt1 = dragged.right; 
-	fwd1 = dragged.forward;
-	var contact:Vector3 = cam.WorldToScreenPoint(lastDragPosition);
-	contact.z = 0;
-	cursorOffsetToSurface = contact - Input.mousePosition;
-	// Replace cursor with laser.
-	Screen.showCursor = false;
-	laser = Instantiate(laserPrefab.gameObject);
-	between(laser, shoulder.position, surfaceHit.point, 0.05);
-	laser.transform.parent = transform; // avatar (or whatever script is attached to)
-	// Setup up pivot.
-	var pivot = Instantiate(pivotPrefab, lastDragPosition, dragged.rotation);  
-	if (pivot.parent) NotifyUser('*** FIXME Select:StartDragging Non-null pivot parent ' + pivot.parent);
-	if (pivot.localScale != Vector3(1, 1, 1)) NotifyUser('*** FIXME Select:StartDragging Non-unity pivot scale ' + pivot.localScale);
-	pivot.parent = transform.parent;   // FIXME should it be null in case avatar riding a vehicle?  (... i.e avatar parent, not the dragged parent (as that plays havoc with scale).
-	dragged.parent = pivot;
-}
-
-function DoDragging(hit:RaycastHit) {
-	if (!dragged) return;
-	var delta = hit.point - lastDragPosition;
-	lastDragPosition = hit.point;
-	between(laser, shoulder.position, hit.point, 0.1);
-	var pivot:Transform = dragged.parent;
-	//if (delta.sqrMagnitude > 0.01) Debug.Log('delta:' + delta);
-	pivot.Translate(delta, Space.World);
-	var norm:Vector3 = hitNormal(hit);
-	var alignedX:boolean = Mathf.Abs(Vector3.Dot(rt1, norm)) > 0.9;
-	var alignedZ:boolean = !alignedX && Mathf.Abs(Vector3.Dot(fwd1, norm)) > 0.9;
-	var fwd:Vector3 = alignedX ? fwd1 : Vector3.Cross(rt1, norm);
-			/*(alignedZ ? Vector3.Cross(fwd1, rt1) : fwd1); 
-			var hit2:RaycastHit;
-			if (!Physics.Raycast(pointerRay.origin + (fwd*0.1), pointerRay.direction, hit2)) {Log("second hit failed"); return;}
-			fwd = hit2.point - hit.point;*/
-		if (alignedX) Log('aligned X');
-		if (alignedZ) Log('aligned Z');
-		Debug.DrawRay(hit.point, rt1, Color.red);
-		Debug.DrawRay(hit.point, norm, Color.green);
-		Debug.DrawRay(hit.point, fwd.normalized, Color.blue);
-	pivot.rotation = Quaternion.LookRotation(fwd, norm);
-	if (Application.isWebPlayer) {
-		// While local values (relative to parent) might make more sense to 
-		// experts, they will just be confusing to most users, so just use global.
-		var pos = pivot.position;
-		var rot = pivot.eulerAngles;
-		Application.ExternalCall('updatePosition', pos.x, pos.y, pos.z);
-		Application.ExternalCall('updateRotation', rot.x, rot.y, rot.z);
-	}
-}
-
 /************************************************************************************/
+public var adjusterPrefab:Transform;
 public var selection:GameObject;
 function Selection(col:GameObject) {
 	if (col == selection) return;
+	    if (!!selection) return; // experiment
+	    if (!col.GetComponent(Obj)) return; //experiment
 	UnSelection();
 	selection = col;
-	Highlight(selection);
+	Sticky.SetAssemblyLayer(col, 2); var g = Instantiate(adjusterPrefab, col.transform.position, col.transform.rotation); g.name = 'Adjuster'; g.transform.parent = col.transform; // Highlight(selection);
 }
 function UnSelection():boolean { // May or may not have been dragging. Answer true if we were.
-	var didSomething:boolean = !!dragged && !!selection;
-	StopDragging();  // before we unselect.
+	var didSomething:boolean = !!selection;
 	if (selection != null) {
-		UnHighlight(selection);
+		Sticky.RemoveAdjuster(selection.transform); Sticky.SetAssemblyLayer(selection, 0); //UnHighlight(selection);
 		selection = null;
 	} 
 	return didSomething;
@@ -459,39 +228,31 @@ function UnSelection():boolean { // May or may not have been dragging. Answer tr
 function Update () {
 	if (Input.GetAxis("Horizontal") || Input.GetAxis("Vertical")) {
 		StopGizmo();
-		UnSelection();
+		//UnSelection();
 		Obj.SceneSelect(false);
 		return;
 	}
 	if (gizmo) return;
-    var hit:RaycastHit;
+    /*var hit:RaycastHit;
     // We don't use OnMouseDown and friends, because that doesn't tell us the precise hit.point.
     // As long as we're going to need to Raycast, we might as well do that to start.
     // We cast only against the Default layer (0). E.g., we don't want this to catch the gizmo on the HUD layer (8).
- 	if (Physics.Raycast(cam.ScreenPointToRay(Input.mousePosition + cursorOffsetToSurface), hit, Mathf.Infinity, (1<<0))) { 
-   		var click = Input.GetMouseButtonDown(0);
-		if (Input.GetMouseButtonDown(1) ||   		// second mouse button
-			(click && Input.GetAxis('Fire3'))) {    // cmd-click
-			var go = Obj.ColliderGameObject(hit.collider);
-			go.GetComponent.<Obj>().ExternalPropertyEdit('properties', true);
-			if (!Application.isWebPlayer) StartGizmo(go); // else changing tab will call back to us to StartGizmo.
-		} else if (click) { 
-			StartDragging(hit, !!Input.GetAxis('Fire2')); // alt/option key
-		} else if (Input.GetMouseButtonUp(0)) {
-			StopDragging(hit);
-		} else if (dragged) {
-			if (!selection) { StopDragging(); return; }
-			DoDragging(hit);		
-		} else {
-			Selection(Obj.ColliderGameObject(hit.collider));
-		}
-	} else {
+ 	if (Physics.Raycast(cam.ScreenPointToRay(Input.mousePosition), hit, Mathf.Infinity, (1<<0))) { 
+ 		var obj = Obj.ColliderGameObject(hit.collider);
+   		//Selection(obj); 
+   		if (!!obj && !!obj.GetComponent(Obj)) Sticky.AddAdjuster(obj.transform, adjusterPrefab); 		
+ 	}*/ //else {
+ 	/*if (!!selection && !selection.GetComponent(Obj).objectCollider().Raycast(cam.ScreenPointToRay(Input.mousePosition), hit, Mathf.Infinity)) {	
+
 		if (UnSelection()) NotifyUser("You have reached the edge of all surfaces.");
-	}	
+	}*/
 }
 
 /************************************************************************************/
 function Awake() {
 	cam = Camera.main;
-	if (overlayControls == null) overlayControls = GameObject.Find('/PlayerOverlay').GetComponent(OverlayControls);
+	if (overlayControls == null) {
+		var overlay = GameObject.Find('/PlayerOverlay');
+		if (!!overlay) overlayControls = overlay.GetComponent(OverlayControls);
+	}
 }

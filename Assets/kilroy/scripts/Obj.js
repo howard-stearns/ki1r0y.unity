@@ -80,7 +80,7 @@ public function size(v:Vector3) {
 		dims = v; 
 		return v;
 	}
-	mesh.transform.localScale = (kind == 'Plane') ? Vector3.Scale(v, Vector3(1.0/6, 1, 1.0/6)) : v;   // real version
+	mesh.transform.localScale = (kind == 'Plane') ? Vector3.Scale(v, Vector3(1.0/10, 1, 1.0/10)) : v;   // real version
 //	gameObject.transform.localScale = v;  // transitional version
 	dims = v;
 	return v;

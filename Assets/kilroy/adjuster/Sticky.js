@@ -161,7 +161,7 @@ function startDragging(assembly:Transform, cameraRay:Ray, hit:RaycastHit):Laser 
 	gameObject.layer = 8; // Get our StrikeTarget out of the way. Don't change children, nor make StrikeTarget stop getting OnMouseEnter/Exit at all.
 	// FIXME: animate laser movement from hit.point to surfaceHit.point.
 	hit.point = surfaceHit.point; // so that Laser.StartInteraction() can do the right thing.
-	return Avatar().Find('shoulder').GetComponent.<Laser>();
+	return Avatar().Find('Shoulder').GetComponent.<Laser>();
 }
 var lastSurface:Collider;  // Keep track of this during dragging so that we can reparent at end.
 function stopDragging(assembly:Transform) {	
@@ -216,8 +216,8 @@ public static function SetAssemblyLayer(go:GameObject, layer:int):int {  // set 
 	//Debug.Log('set ' + go + ' layer from ' + go.layer + ' to ' + layer);
 	var old = go.layer;
 	go.layer = layer;
-	for (var child:Transform in go.transform) {
-		if (child.tag != 'BlockFace')  // Don't change these. They start on Ignore Raycast and must remain so.
+	for (var child:Transform in go.transform) { 
+		if (child.tag != 'FixedLayer') 
 			SetAssemblyLayer(child.gameObject, layer);
 	}
 	return old;

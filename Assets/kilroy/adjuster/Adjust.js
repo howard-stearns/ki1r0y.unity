@@ -67,7 +67,7 @@ function resetParameters(p:Vector3, force:boolean) {
 }
 function startDragging(assembly:Transform, cameraRay:Ray, hit:RaycastHit):Laser {
 	super.startDragging(assembly, cameraRay, hit); 
-	return Avatar().Find('shoulder').GetComponent.<Laser>();
+	return Avatar().Find('Shoulder').GetComponent.<Laser>();
 }
 function startDragging(assembly:Transform, axis:Transform, plane:Transform, cameraRay:Ray, hit:RaycastHit) {
 	plane.rotation = affordanceCollider.transform.rotation;

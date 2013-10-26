@@ -232,7 +232,7 @@ function Update () {
 		Obj.SceneSelect(false);
 		return;
 	}
-	if (gizmo) return;
+	//if (gizmo) return;
     /*var hit:RaycastHit;
     // We don't use OnMouseDown and friends, because that doesn't tell us the precise hit.point.
     // As long as we're going to need to Raycast, we might as well do that to start.

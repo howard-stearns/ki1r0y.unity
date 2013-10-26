@@ -80,8 +80,10 @@ public function size(v:Vector3) {
 		dims = v; 
 		return v;
 	}
-	mesh.transform.localScale = (kind == 'Plane') ? Vector3.Scale(v, Vector3(1.0/10, 1, 1.0/10)) : v;   // real version
-//	gameObject.transform.localScale = v;  // transitional version
+	var s = v;
+	// Unity planes are 10x10, and don't render at all unless there is a non-zero Y.
+	if (kind == 'Plane') { s *= 0.1; s.y = 0.001; }
+	mesh.transform.localScale = s;
 	dims = v;
 	return v;
 }

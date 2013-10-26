@@ -1,9 +1,6 @@
-class Directional extends Interactor {
+class Directional extends ColorInteractor {
 	// An Interactor for affordances that act in a single plane during the drag. 
 	// By default, the affordances on the axis associated with this direction/plane are color coded.
-	// The affordance GameObject should have:
-	// * a (e.g., Mesh) Renderer. (Probably don't need to cast or receive shadows.) The renderer can be in a child if setColor() is defined there.
-	// * a transparent/vertex-lit material. (Kilroy uses the Materials/translucent.)
 	// The affordance should be a child of an axis assembly (that has any number of affordances).
 	// The (typicall three or six) axis assemblies are children of something -- let's call it a gizmo -- that is attached as a child of the assembly 
 	// that is being moved around (which must have an Obj component to ApplyChanges).
@@ -15,30 +12,14 @@ function doDragging(assembly:Transform, axis:Transform, plane:Transform, hit:Ray
 	throw "Subclass must define to update assembly position and rotation.";
 }
 
-public var highlightColor:Color;	// defaults to red/green/blue for x/y/z
-public var normalColor:Color;  		// defaults to a muted version of highlighColor
-// This is broadcast to gameObject and children. Thus children of affordances can change color if they define this message.
-public function setColor(color:Color) { if (renderer) { renderer.material.color = color; } }
-public function setAffordanceColor(color:Color) { BroadcastMessage('setColor', color, SendMessageOptions.DontRequireReceiver); }
-function OnMouseEnter() {	
-	super.OnMouseEnter();
-	if (!isMoving) { setAffordanceColor(highlightColor); }
-}
-function OnMouseExit() {
-	super.OnMouseExit();  
-	if (!isMoving) { setAffordanceColor(normalColor); }
-}
-
 // The transform for this directional. E.g., there may be slide/stretch/spin gameObjects 
 // (that have a subclass of this script attached), which are all arranged into a composite
 // gameObject associated with either the local x, y, or z axis of an object. That composite
 // is the 'axis'.
 public var axis:Transform; 
-public var targetAlpha:float = 0.9;
-function Start() {
-	super.Start(); 
+function Awake() {
+	//Debug.Log('set ' + transform + ' axis to ' + transform.parent);
 	axis = transform.parent;
-	updateAssembly(axis.parent.parent);
 	if (highlightColor == Color.clear) {
 		// A pun: axis.right is 1,0,0 for x axis, and so is red. Similarly for y/green and z/blue.
 		var rgb = axis.parent.InverseTransformDirection(axis.right);
@@ -48,13 +29,10 @@ function Start() {
 		else if (Vector3.Dot(rgb, Vector3.up) > 0.5) rgb = Vector3(0.349, 0.596, 0.227); // green trial of FB blue
 		else rgb = Vector3(0.231, 0.349, 0.596); // FB blue.
 		
-		var colorVector:Vector4 = rgb;
-		colorVector.w = targetAlpha;
-		highlightColor = colorVector;
+		highlightColor = makeAlpha(rgb);
 	}
-	if (normalColor == Color.clear) normalColor = highlightColor / 1.33;
-	setAffordanceColor(normalColor);
-	//renderer.material.SetColor("_Emission", normalColor); // In case the scene is dark.
+	super.Awake(); 
+	updateAssembly(axis.parent.parent);
 }
 
 
@@ -77,7 +55,7 @@ function stopDragging(assy:Transform) {
 	dragCollier = null;
 	plane.transform.parent = null;
 	Destroy(plane);
-	if (!isActive) { setAffordanceColor(normalColor); }
+	if (!isActive) { setAffordanceColor(normalColor); } // do we need this? for safety?
 	ApplyChanges(assy).saveScene('adjust');
 }
 // Non-unit scales are terrible to work with in assemblies. (Descendant parts fly apart when we rotate them.)

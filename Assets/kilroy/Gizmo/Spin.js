@@ -10,8 +10,8 @@ private var isOutside:boolean;
 private var norm:Vector3;
 private var onEdge:boolean;
 
-function Start() {
-	super.Start();
+function Awake() {
+	super.Awake();
 	var zDot = Vector3.Dot(Vector3(0, 0, 1), axis.parent.InverseTransformDirection(axis.right));
 	if (zDot > 0.9) {
 		outsideAngle = 180;

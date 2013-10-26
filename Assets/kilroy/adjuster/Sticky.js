@@ -6,26 +6,63 @@
 // click tries goto (and removes gizomo).
 // It is expected that something is else is taking care of adding and removing the gizmo, and ensuring that nothing is
 // highlighted before we start (as that will just get confusing during copy).
-//
+
 // For example, the assembly's mesh/collider must be on the IgnoreRaycast = 2 layer.
 // The affordance that this script is attached to should be bit smaller than the assembly bounding box:
 // 1. This allows there to be no confusion as to whether a strike near the corner is hitting us or a corner affordance, as the corners lie outside our (shrunken) box.
 // 2. For cubes, when we project from affordance to mounting surface and back, we certainly won't miss an edge.
 
 // TODO:
-// reverse hit for skinny meshes
+// reverse hit for skinny meshes: 	
+// Push the selectedHit a bit towards the go center, so that we don't miss the edge on reversal.
+//	var bounds = obj.bounds();
+//	selectedHit += (bounds.center - selectedHit).normalized * 0.1;
 
-class Sticky extends Interactor {
 
+class Sticky extends ColorInteractor {
+
+// We are used with corner Adjust scripts, which brodcast 'updateAffordance' as they doDragging.
 private var assemblyObj:Obj;
-function updateAssembly(assy:Transform) { 
+function updateAffordance() { //As other interactors resize assembly during movement, keep affordance at proper size.
+	transform.localScale = assemblyObj.size() * 0.99;
+}
+function getGizmo() { return transform.parent; } // because that's what we set up.
+function unparentGizmo(assy:Transform):Transform {
+	var gizmo = getGizmo();
+	if (gizmo.parent != assy) { Debug.LogError('gizmo ' + gizmo + ' is not a child of assembly ' + assy); } // sanity check
+	gizmo.parent = null;
+	return gizmo;
+}
+public static var ExistingGizmo:Transform; // Allow just one, globally.
+
+private var originalAssemblyLayer = -1;
+function updateAssembly(assy:Transform) {
 	super.updateAssembly(assy); 
-	assemblyObj = assembly.gameObject.GetComponent.<Obj>();
+	if (!!assembly) {
+		assemblyObj = assembly.gameObject.GetComponent.<Obj>();
+		// We supply our own affordance that is just a bit smaller than the assembly bbox (so that we don't interfere with corner affordances).
+		// So here we turn of the assembly's own collider, and re-enable it OnDestroy.
+		if (originalAssemblyLayer == -1) { // Keep us idempotent
+			originalAssemblyLayer = SetAssemblyLayer(assemblyObj.mesh, 2);  // Alternatively, we could disable collider...
+			if (ExistingGizmo) { ExistingGizmo.parent = null; Destroy(ExistingGizmo.gameObject); }
+			ExistingGizmo = getGizmo();
+		}
+	}
+}
+function Awake() {
+	highlightColor = makeAlpha(Vector3(0.725, 0.761, 0.541)); // a shade of Facebook split-complement-1
+	super.Awake();
+}
+function OnDestroy() {
+	super.OnDestroy();
+	if (!!assemblyObj) { 
+		SetAssemblyLayer(assemblyObj.mesh, originalAssemblyLayer);
+		// No need to set originalAssemblyLayer = -1, as this script instance will be destroyed.
+	}
 }
 
-function updateAffordance() { //As other interactors resize assembly during movement, keep affordance at proper size.
-	transform.localScale = assemblyObj.size() * 0.98;
-}
+// The core activities of an Interactor: startDragging, resetCast/doDragging, stopDragging
+
 public var pivotPrefab:Transform;
 private var cursorOffsetToSurface:Vector3 = Vector3.zero;
 private var lastDragPosition:Vector3;
@@ -33,21 +70,13 @@ private var firstDragPosition:Vector3; // For debouncing click vs drag;
 private var rt1:Vector3;
 private var fwd1:Vector3;
 
-public static function SetAssemblyLayer(go:GameObject, layer:int) {
-	go.layer = layer;
-	for (var child:Transform in go.transform) {
-		if (child.tag != 'BlockFace')  // Don't change these. They start on Ignore Raycast and must remain so.
-			SetAssemblyLayer(child.gameObject, layer);
-	}
-}
-private var originalCopied:GameObject;
-private var savedLayer = 0;
+private var originalCopied:GameObject; // during a copy drag, this holds the original prototype of the copy.
+private var draggedOriginalLayer = 0;  // of the whole assembly, not just the Obj.mesh
 function startDragging(assembly:Transform, cameraRay:Ray, hit:RaycastHit):Laser {
 	var go = assembly.gameObject; var obj = go.GetComponent.<Obj>();
 	if (!!Input.GetAxis('Fire2')) {  //  alt/option key
 		// Transfer gizmo to copy. Can't destroy it because it has state (including our own executing code).
-		var gizmo = assembly.Find('Adjuster');
-		gizmo.parent = null;
+		var gizmo = unparentGizmo(assembly);
 		originalCopied = go;
 		go = Instantiate(go);
 		var goo = go.GetComponent.<Obj>();
@@ -65,8 +94,12 @@ function startDragging(assembly:Transform, cameraRay:Ray, hit:RaycastHit):Laser 
 		// don't count the original until the user has finished that first copying drag.
 		// I tried more complicated variants, such as ignoring the original only until we've 'cleared' away
 		// from it, but couldn't make them work.
-		savedLayer = originalCopied.layer;
-		SetAssemblyLayer(originalCopied, 2);
+		draggedOriginalLayer = SetAssemblyLayer(originalCopied, 2);
+	} else if (!!Input.GetAxis('Fire3')) { // cmd key
+		Destroy(unparentGizmo(assembly).gameObject);
+		var select = Avatar().gameObject.GetComponent(Select);
+		if (!!select) { select.StartGizmo(assembly.gameObject); }
+		return null;
 	}
 	var mountingDirection = obj ? assembly.TransformDirection(obj.localMounting) : -assembly.up;
 	
@@ -80,7 +113,12 @@ function startDragging(assembly:Transform, cameraRay:Ray, hit:RaycastHit):Laser 
 	var selectedHit = hit.point;  // Start with where the user clicked on the affordance.
 	// Any object on any (non-ignored) layer will do. (No layer mask.)
 	if (!Physics.Raycast(selectedHit, mountingDirection, surfaceHit)) { 
+		// Should we also check for being too far away?  I think we might always want to let the object fall to floor (no matter what height),
+		// but it does seem spooky to let an object slide to a wall across the room (e.g., if we're rotated to make the mountingDirection be sideways).
+		// For now, no distance test.
 		Debug.Log("Nothing under object to slide along.");
+		// FIXME: create some sort of animation that shows that there's nothing under the mounting direction.
+		Destroy(unparentGizmo(assembly).gameObject);
 		return; 
 	}
 
@@ -100,6 +138,7 @@ function startDragging(assembly:Transform, cameraRay:Ray, hit:RaycastHit):Laser 
        		+ ' surface10:' + (10 * surfaceHit.point) + '@' + surfaceHit.collider
        		+ ' reverse10:' + (10 * reverseHit.point) + '@' + reverseHit.collider
        		+ ' offset10:' + (10 * offset));*/
+       	// FIXME: For any non-trivial offset, this should be animated.
 		assembly.position += offset;
 	} else { 
 		Debug.LogError('** No reverse hit! ** hit:' + surfaceHit.point + ' mounting:' + mountingDirection + ' embedded:' + embeddedPoint);
@@ -119,13 +158,19 @@ function startDragging(assembly:Transform, cameraRay:Ray, hit:RaycastHit):Laser 
 	if (pivot.localScale != Vector3(1, 1, 1)) Debug.LogError('*** FIXME Select:StartDragging Non-unity pivot scale ' + pivot.localScale);
 	pivot.parent = assembly.parent;  // No need to worry about scale screwing things up, because Obj assemblies always have unitary localScale.
 	assembly.parent = pivot;
+	Debug.Log('Sticky changing collider laer');
+	gameObject.layer = 8; // Get our StrikeTarget out of the way. Don't change children, nor make StrikeTarget stop getting OnMouseEnter/Exit at all.
+	// FIXME: animate laser movement from hit.point to surfaceHit.point.
 	hit.point = surfaceHit.point; // so that Laser.StartInteraction() can do the right thing.
-	return Camera.main.transform.Find('shoulder').GetComponent.<Laser>();
+	return Avatar().Find('shoulder').GetComponent.<Laser>();
 }
 var lastSurface:Collider;  // Keep track of this during dragging so that we can reparent at end.
 function stopDragging(assembly:Transform) {	
+	Debug.Log('Sticky resetting collider layer');
+	gameObject.layer = 0; // restore our StrikeTarget to hardcoded value.
 	var original = originalCopied;
-	if (!!original) SetAssemblyLayer(originalCopied, savedLayer);
+	// pun: we're setting the WHOLE original obj, which will RESET it's Obj.mesh to behave normally, even if we've messed with it.
+	if (!!original) SetAssemblyLayer(original, draggedOriginalLayer);
 	originalCopied = null;
 		
 	var newParent = Obj.ColliderGameObject(lastSurface);
@@ -143,12 +188,10 @@ function stopDragging(assembly:Transform) {
 		Destroy(assembly.gameObject); // the copy. us.
 		original.GetComponent.<Obj>().deleteObject(); // which does a save as well.
 	} else {
-		var avatar = Camera.main.transform.parent;
+		var avatar = Avatar();
 		var goto = !avatar ? null : avatar.GetComponent(Goto);
 		if (!!goto) {
-			var gizmo = assembly.Find('Adjuster');
-			gizmo.parent = null;
-			Destroy(gizmo.gameObject);
+			Destroy(unparentGizmo(assembly).gameObject);
 			goto.Goto(assembly, true);
 		}
 	}
@@ -159,20 +202,29 @@ function resetCast(hit:RaycastHit[]):boolean { // overridable method to get new 
 }
 function doDragging(assembly:Transform, hit:RaycastHit) {
 	var delta = hit.point - lastDragPosition;
-	//Debug.Log('last10:' + (10 * lastDragPosition) + ' hit10:' + (10 * hit.point));
+	Debug.Log('collider:' + hit.collider + ' last10:' + (10 * lastDragPosition) + ' hit10:' + (10 * hit.point) + ' delta10:' + (10 * delta));
 	lastDragPosition = hit.point;
 	lastSurface = hit.collider;
-	var pivot:Transform = assembly.parent;
+	var pivot = assembly.parent;
 	pivot.Translate(delta, Space.World);
 	var norm:Vector3 = hitNormal(hit);
 	var alignedX:boolean = Mathf.Abs(Vector3.Dot(rt1, norm)) > 0.9;
 	var fwd:Vector3 = alignedX ? fwd1 : Vector3.Cross(rt1, norm);
 	pivot.rotation = Quaternion.LookRotation(fwd, norm);
-	//Camera.main.transform.Find('shoulder').GetComponent.<Laser>().UpdateInteraction(hit.point);
 }
 
-
-function hitNormal(hit:RaycastHit) {
+// Utilities
+public static function SetAssemblyLayer(go:GameObject, layer:int):int {  // set or restore IgnoreRaycast of an object with collider, returning old layer
+	//Debug.Log('set ' + go + ' layer from ' + go.layer + ' to ' + layer);
+	var old = go.layer;
+	go.layer = layer;
+	for (var child:Transform in go.transform) {
+		if (child.tag != 'BlockFace')  // Don't change these. They start on Ignore Raycast and must remain so.
+			SetAssemblyLayer(child.gameObject, layer);
+	}
+	return old;
+}
+function hitNormal(hit:RaycastHit) { // answer normal to the surface at hit.point, for meshes and primitives
 	// Just in case, also make sure the collider also has a renderer material and texture 
    	var meshCollider = hit.collider as MeshCollider; 
    	if (meshCollider == null || meshCollider.sharedMesh == null) {
@@ -201,4 +253,23 @@ function hitNormal(hit:RaycastHit) {
 
    	return interpolatedNormal;
 }
+
+// Management of the whole gizmo (e.g., six-axis corner affordances with Adjust scripts, too).
+// Doesn't have to be here, but conveniently, there is exactly one Stick script in each such gizmo.
+
+
+public static function AddAdjuster(assy:Transform, adjusterPrefab:Transform) { // Add adjusterPrefab as a child of assy.
+	Debug.Log('AddAdjuster:' + assy + ' AnyActive:' + AnyActive + ' ExistingGizmo:' + ExistingGizmo + ' gizmo parent:' + (!ExistingGizmo ? 'none' : ExistingGizmo.parent));
+	//if (AnyActive && (ExistingGizmo.parent == assy)) { return; }
+	var gizmo = Instantiate(adjusterPrefab, assy.transform.position, assy.transform.rotation); 
+	gizmo.Find('StrikeTarget').GetComponent(Sticky).initAdjuster(assy, gizmo);
+}
+function initAdjuster(assy:Transform, gizmo:Transform) {
+	//Debug.Log('init  ' + transform + ' Gizmo:' + Gizmo + ' assy:' + assy);
+	gizmo.name = 'Adjuster';   // I.e., not "Adjuster (clone)"
+	gizmo.parent = assy;
+	gizmo.gameObject.BroadcastMessage('updateAssembly', assy, SendMessageOptions.DontRequireReceiver);	
+	gizmo.gameObject.BroadcastMessage('updateAffordance', null, SendMessageOptions.DontRequireReceiver); // get the size right	
+}
+
 }

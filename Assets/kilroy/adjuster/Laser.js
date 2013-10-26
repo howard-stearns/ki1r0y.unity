@@ -21,6 +21,9 @@ function StartInteraction(point:Vector3, object:Transform) {
 }
 function EndInteraction() {
 	Screen.showCursor = true;
-	laser.transform.parent = null; 
-	Destroy(laser); 
+	if (!!laser) {
+		laser.transform.parent = null; 
+		Destroy(laser);
+		laser = null;
+	}
 }

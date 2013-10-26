@@ -10,33 +10,35 @@ class Adjust extends Directional {
 	// this script is attached to point affordances in the very corners of the assembly cube, and the visible affordances
 	// are actually children of the corner-points, and use the TrampolineToParent script to forward messages.
 
+// utilities
 static function projectPointOnPlane(point, planeNormal, planePoint) {
 	return point - (planeNormal * Vector3.Dot(planeNormal, point - planePoint));
 }
 static function noFlip(scale:Vector3) { // Make sure that scale doesn't flip
 	return Vector3(Mathf.Abs(scale.x), Mathf.Abs(scale.y), Mathf.Abs(scale.z));
 }
-
+// As we drag, we will broadcast 'updateAffordance' to everyone in the gizmo.
 var assemblyObj:Obj;
-function updateAssembly(assy:Transform) { 
-	super.updateAssembly(assy); 
-	assemblyObj = assembly.gameObject.GetComponent.<Obj>();
-}
-// These are in our coordinate system.
-public var cornerUnitPositionFromAxis:Vector3;
+public var cornerUnitPositionFromAxis:Vector3;  // in our coordinate system
 function updateAffordance() { //As we resize assembly during movement, keep affordance at constant size in new corners.
 	transform.localPosition = Vector3.Scale(cornerUnitPositionFromAxis, axis.localRotation * assemblyObj.size());
 }
-function Start() {
-	super.Start();
+
+function updateAssembly(assy:Transform) { 
+	super.updateAssembly(assy); 
+	if (!!assembly) { assemblyObj = assembly.gameObject.GetComponent.<Obj>(); }
+}
+function Awake() {
+	super.Awake();  // sets axis
+	affordanceCollider = transform.Find('affordance').collider;  // redefines from super
+
 	// I don't know why this needs adjusting, but it does.
 	if (axis.name == 'Yneg') { cornerUnitPositionFromAxis.y *= -1; }
 	else if (axis.name == 'Zneg') { cornerUnitPositionFromAxis.z *= -1; }
 	else if ((axis.name == 'Y') || (axis.name == 'Z')) { cornerUnitPositionFromAxis.x *= -1; }
 	else if (axis.name == 'Xneg') { cornerUnitPositionFromAxis.x *= -1; cornerUnitPositionFromAxis.z *= -1; }
-	
-	affordanceCollider = transform.Find('affordance').collider;
 }
+
 public var doRotate = false;
 public var doShift = false;
 public var lastRotationV:Vector3;
@@ -65,7 +67,7 @@ function resetParameters(p:Vector3, force:boolean) {
 }
 function startDragging(assembly:Transform, cameraRay:Ray, hit:RaycastHit):Laser {
 	super.startDragging(assembly, cameraRay, hit); 
-	return Camera.main.transform.Find('shoulder').GetComponent.<Laser>();
+	return Avatar().Find('shoulder').GetComponent.<Laser>();
 }
 function startDragging(assembly:Transform, axis:Transform, plane:Transform, cameraRay:Ray, hit:RaycastHit) {
 	plane.rotation = affordanceCollider.transform.rotation;

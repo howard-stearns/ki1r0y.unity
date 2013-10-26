@@ -105,11 +105,7 @@ function CoInflate(existing:GameObject, id:String, hash:String, newChild:boolean
 		go.transform.parent = existing.transform.parent; // First, before setting the following.
 		go.transform.position = existing.transform.position;
 		go.transform.rotation = existing.transform.rotation;
-		
-		var s = existing.GetComponent.<Obj>().size(); 
-		if (obj.kind == 'Plane') s.y = 0.0;
-		obj.size(s);
-		// FIXME obj.size(existing.GetComponent.<Obj>().size());
+		obj.size(existing.GetComponent.<Obj>().size());
 		existing.transform.parent = null;
 		Destroy(existing);
 		existing = go;

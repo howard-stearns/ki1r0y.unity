@@ -35,10 +35,10 @@ function Awake() {
 	super.Awake();
 }
 function OnDestroy() {
-	super.OnDestroy();
 	if (!!assemblyObj) { 
 		SetAssemblyLayer(assemblyObj.mesh, originalAssemblyLayer);
 	}
+	super.OnDestroy();
 }
 
 // Management of the whole gizmo (e.g., six-axis corner affordances with Adjust scripts, too).
@@ -57,13 +57,14 @@ function updateAssembly(assy:Transform) {
 	}
 }
 function unparentGizmo(assy:Transform):Transform {
-	var gizmo = StickyInstance.transform;
+	var gizmo = StickyInstance.transform.parent;
 	gizmo.parent = null;
 	return gizmo;
 }
 public static function AddAdjuster(assy:Transform, adjusterPrefab:Transform) { // Add adjusterPrefab as a child of assy.
 	if (AnyMoving) { return; } // Don't mess up an existing drag.
 	var gizmo:Transform;
+	//if (!!StickyInstance) { Destroy(StickyInstance.transform.parent.gameObject); StickyInstance = null; } // for debugging
 	if (!StickyInstance) {
 		gizmo = Instantiate(adjusterPrefab, assy.transform.position, assy.transform.rotation); 
 		StickyInstance = gizmo.Find('StrikeTarget').GetComponent.<Sticky>();
@@ -82,18 +83,12 @@ public static function AddAdjuster(assy:Transform, adjusterPrefab:Transform) { /
 	go.BroadcastMessage('updateAssembly', assy, SendMessageOptions.DontRequireReceiver);	
 	go.BroadcastMessage('updateAffordance', null, SendMessageOptions.DontRequireReceiver); // get the size right
 }
-function initAdjuster(assy:Transform, gizmo:Transform) {
-	//Debug.Log('init  ' + transform + ' Gizmo:' + Gizmo + ' assy:' + assy);
-	gizmo.parent = assy;
-	/*gizmo.gameObject.BroadcastMessage('updateAssembly', assy, SendMessageOptions.DontRequireReceiver);	
-	gizmo.gameObject.BroadcastMessage('updateAffordance', null, SendMessageOptions.DontRequireReceiver); // get the size right	
-	if (assy.gameObject.GetComponent.<Obj>().kind == 'Plane') {
+	/*	if (assy.gameObject.GetComponent.<Obj>().kind == 'Plane') {
 		Destroy(gizmo.Find('X').gameObject);  // We can probably do this more efficiently.
 		Destroy(gizmo.Find('Xneg').gameObject);
 		Destroy(gizmo.Find('Z').gameObject);
 		Destroy(gizmo.Find('Zneg').gameObject);
 	}*/
-}
 
 
 // The core activities of an Interactor: startDragging, resetCast/doDragging, stopDragging

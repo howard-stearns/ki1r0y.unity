@@ -274,6 +274,7 @@ function FixedUpdate() {
 			// around over the object, but still select if we move the mouse over different objects.
 			gameObject.GetComponent(Select).UnHighlight();
 			state = GotoState.AtObject;
+			Sticky.RemoveAdjuster();
 		}
 		break;
 	}

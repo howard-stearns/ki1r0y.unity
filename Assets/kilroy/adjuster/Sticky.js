@@ -64,7 +64,7 @@ function unparentGizmo(assy:Transform):Transform {
 public static function AddAdjuster(assy:Transform, adjusterPrefab:Transform) { // Add adjusterPrefab as a child of assy.
 	if (AnyMoving) { return; } // Don't mess up an existing drag.
 	var gizmo:Transform;
-	//if (!!StickyInstance) { Destroy(StickyInstance.transform.parent.gameObject); StickyInstance = null; } // for debugging
+	//if (!!StickyInstance) RemoveAdjuster(); // for debugging
 	if (!StickyInstance) {
 		gizmo = Instantiate(adjusterPrefab, assy.transform.position, assy.transform.rotation); 
 		StickyInstance = gizmo.Find('StrikeTarget').GetComponent.<Sticky>();
@@ -89,7 +89,11 @@ public static function AddAdjuster(assy:Transform, adjusterPrefab:Transform) { /
 		Destroy(gizmo.Find('Z').gameObject);
 		Destroy(gizmo.Find('Zneg').gameObject);
 	}*/
-
+public static function RemoveAdjuster() {
+	if (!StickyInstance) return;
+	Destroy(StickyInstance.transform.parent.gameObject);
+	StickyInstance = null;
+}
 
 // The core activities of an Interactor: startDragging, resetCast/doDragging, stopDragging
 
@@ -125,7 +129,6 @@ function startDragging(assembly:Transform, cameraRay:Ray, hit:RaycastHit):Laser 
 		// from it, but couldn't make them work.
 		draggedOriginalLayer = SetAssemblyLayer(originalCopied, 2);
 	} else if (!!Input.GetAxis('Fire3')) { // cmd key
-		Destroy(unparentGizmo(assembly).gameObject);
 		var select = Avatar().gameObject.GetComponent(Select);
 		if (!!select) { select.StartGizmo(assembly.gameObject); }
 		return null;
@@ -147,7 +150,7 @@ function startDragging(assembly:Transform, cameraRay:Ray, hit:RaycastHit):Laser 
 		// For now, no distance test.
 		Debug.Log("Nothing under object to slide along.");
 		// FIXME: create some sort of animation that shows that there's nothing under the mounting direction.
-		Destroy(unparentGizmo(assembly).gameObject);
+		RemoveAdjuster();
 		return; 
 	}
 
@@ -224,7 +227,6 @@ function stopDragging(assembly:Transform) {
 		var avatar = Avatar();
 		var goto = !avatar ? null : avatar.GetComponent(Goto);
 		if (!!goto) {
-			Destroy(unparentGizmo(assembly).gameObject);
 			goto.Goto(assembly, true);
 		}
 	}

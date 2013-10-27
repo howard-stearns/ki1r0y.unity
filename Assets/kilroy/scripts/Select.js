@@ -177,7 +177,7 @@ function UnHighlight(go:GameObject) {
 // The gizmo is the interactive in-scene object used to adjust position/orientation/scale of objects.
 public var gizmoPrefab:Transform;  // The prefab.
 public var gizmo:Transform;  // The currently active gizmo. Should we really instantiate/destroy each time?
-public var gizmoOldParent:Transform; // When gizmo is on, it's parent object is held by avatar.
+//public var gizmoOldParent:Transform; // When gizmo is on, it's parent object is held by avatar.
 public var overlayControls:OverlayControls; // A script that controls whether mouse motion is tracked.
 function StopGizmo() {
 	if (!gizmo) return;
@@ -195,6 +195,7 @@ function StartGizmo(go:GameObject) {
 	gizmo = Instantiate(gizmoPrefab, trans.position, trans.rotation).transform;
 	gizmo.parent = trans;
 	gizmo.gameObject.BroadcastMessage('updateAssembly', trans, SendMessageOptions.DontRequireReceiver);
+	Sticky.RemoveAdjuster();
 	// trans.parent.localScale will mess us up:
 	//gizmoOldParent = trans.parent;
 	//trans.parent = transform; // e.g. avatar
@@ -219,7 +220,7 @@ function Selection(col:GameObject) {
 function UnSelection():boolean { // May or may not have been dragging. Answer true if we were.
 	var didSomething:boolean = !!selection;
 	if (selection != null) {
-		Sticky.RemoveAdjuster(selection.transform); Sticky.SetAssemblyLayer(selection, 0); //UnHighlight(selection);
+		//Sticky.RemoveAdjuster(selection.transform); Sticky.SetAssemblyLayer(selection, 0); //UnHighlight(selection);
 		selection = null;
 	} 
 	return didSomething;

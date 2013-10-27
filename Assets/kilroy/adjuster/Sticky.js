@@ -40,9 +40,22 @@ function OnDestroy() {
 	}
 	super.OnDestroy();
 }
-
 // Management of the whole gizmo (e.g., six-axis corner affordances with Adjust scripts, too).
 public static var StickyInstance:Sticky; // Allow just one, globally
+private var isMaximal = true;
+function makeMaximal(max:boolean) {
+	if (max == isMaximal) return;
+	for (var axis:Transform in transform.parent) {
+		if ((axis == transform) || (axis.name == 'Y')) continue;
+		for (var aff:Transform in axis) {
+			var adj = aff.gameObject.GetComponent.<Adjust>();
+			var col = adj.affordanceCollider;
+			col.enabled = max;
+			col.renderer.enabled = max;
+		}
+	}
+	isMaximal = max;
+}
 private var originalAssemblyLayer = 0;
 function updateAssembly(assy:Transform) {
 	// We supply our own affordance that is just a bit smaller than the assembly bbox (so that we don't interfere with corner affordances).
@@ -54,6 +67,7 @@ function updateAssembly(assy:Transform) {
 	} else {
 		assemblyObj = assy.gameObject.GetComponent.<Obj>();
 		originalAssemblyLayer = SetAssemblyLayer(assemblyObj.mesh, 2);
+		makeMaximal(assemblyObj.kind != 'Plane');
 	}
 }
 function unparentGizmo(assy:Transform):Transform {

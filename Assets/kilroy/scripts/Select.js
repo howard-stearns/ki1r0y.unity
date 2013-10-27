@@ -180,13 +180,13 @@ public var gizmo:Transform;  // The currently active gizmo. Should we really ins
 //public var gizmoOldParent:Transform; // When gizmo is on, it's parent object is held by avatar.
 public var overlayControls:OverlayControls; // A script that controls whether mouse motion is tracked.
 function StopGizmo() {
+	if (overlayControls) overlayControls.trackMouseMotion(true);
 	if (!gizmo) return;
 	//gizmo.parent.parent = gizmoOldParent;
 	//gizmoOldParent = null;
 	Directional.ApplyChanges(gizmo.parent);
 	Destroy(gizmo.gameObject);
 	gizmo = null;
-	if (overlayControls) overlayControls.trackMouseMotion(true);
 }
 function StartGizmo(go:GameObject) {
 	StopGizmo();

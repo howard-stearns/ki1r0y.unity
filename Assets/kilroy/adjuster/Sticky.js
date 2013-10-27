@@ -31,7 +31,7 @@ function updateAffordance() { //As other interactors resize assembly during move
 	transform.localScale = assemblyObj.size() * 0.99;
 }
 function Awake() {
-	highlightColor = makeAlpha(Vector3(0.725, 0.761, 0.541)); // a shade of Facebook split-complement-1
+	highlightColor = makeAlpha(Vector3(0.902, 0.91, 0.847)); // a shade of Facebook split-complement-1
 	super.Awake();
 }
 function OnDestroy() {

@@ -271,6 +271,12 @@ function initAdjuster(assy:Transform, gizmo:Transform) {
 	gizmo.parent = assy;
 	gizmo.gameObject.BroadcastMessage('updateAssembly', assy, SendMessageOptions.DontRequireReceiver);	
 	gizmo.gameObject.BroadcastMessage('updateAffordance', null, SendMessageOptions.DontRequireReceiver); // get the size right	
+	if (assy.gameObject.GetComponent.<Obj>().kind == 'Plane') {
+		Destroy(gizmo.Find('X').gameObject);  // We can probably do this more efficiently.
+		Destroy(gizmo.Find('Xneg').gameObject);
+		Destroy(gizmo.Find('Z').gameObject);
+		Destroy(gizmo.Find('Zneg').gameObject);
+	}
 }
 
 }

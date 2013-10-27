@@ -158,6 +158,9 @@ function startDragging(assembly:Transform, cameraRay:Ray, hit:RaycastHit):Laser 
 	if (pivot.localScale != Vector3(1, 1, 1)) Debug.LogError('*** FIXME Select:StartDragging Non-unity pivot scale ' + pivot.localScale);
 	pivot.parent = assembly.parent;  // No need to worry about scale screwing things up, because Obj assemblies always have unitary localScale.
 	assembly.parent = pivot;
+	// During drag, we have to get the whole assembly out of the way, so that we don't intersect with child objects and bounce around.
+	// It's ok that originalAssemblyLayer might already be set for a copy -- the value would be the same anyway.
+	originalAssemblyLayer = SetAssemblyLayer(assembly.gameObject, 2);
 	gameObject.layer = 8; // Get our StrikeTarget out of the way. Don't change children, nor make StrikeTarget stop getting OnMouseEnter/Exit at all.
 	// FIXME: animate laser movement from hit.point to surfaceHit.point.
 	hit.point = surfaceHit.point; // so that Laser.StartInteraction() can do the right thing.
@@ -166,6 +169,7 @@ function startDragging(assembly:Transform, cameraRay:Ray, hit:RaycastHit):Laser 
 var lastSurface:Collider;  // Keep track of this during dragging so that we can reparent at end.
 function stopDragging(assembly:Transform) {	
 	gameObject.layer = 0; // restore our StrikeTarget to hardcoded value.
+	SetAssemblyLayer(assembly.gameObject, originalAssemblyLayer);
 	var original = originalCopied;
 	// pun: we're setting the WHOLE original obj, which will RESET it's Obj.mesh to behave normally, even if we've messed with it.
 	if (!!original) SetAssemblyLayer(original, draggedOriginalLayer);

@@ -44,6 +44,7 @@ function OnDestroy() {
 public static var StickyInstance:Sticky; // Allow just one, globally
 private var isMaximal = true;
 function makeMaximal(max:boolean) {
+	yield 1;
 	if (max == isMaximal) return;
 	for (var axis:Transform in transform.parent) {
 		if ((axis == transform) || (axis.name == 'Y')) continue;

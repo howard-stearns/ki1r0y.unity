@@ -24,30 +24,11 @@ class Sticky extends ColorInteractor {
 // We are used with corner Adjust scripts, which brodcast 'updateAffordance' as they doDragging.
 private var assemblyObj:Obj;
 function updateAffordance() { //As other interactors resize assembly during movement, keep affordance at proper size.
+	// WARNING: There is a bug in the Unity-provided CharacterMotor script, such that if it has movingPlatform.enabled,
+	// the following line can cause avatars to go flying around. The AddAdjuster code below is careful to
+	// try to reuse Adjusters, and thus if the floor is adjustable, CharacterMoter will see the "same" moving platform
+	// change radically and treat that as movenent.
 	transform.localScale = assemblyObj.size() * 0.99;
-}
-function getGizmo() { return transform.parent; } // because that's what we set up.
-function unparentGizmo(assy:Transform):Transform {
-	var gizmo = getGizmo();
-	if (gizmo.parent != assy) { Debug.LogError('gizmo ' + gizmo + ' is not a child of assembly ' + assy); } // sanity check
-	gizmo.parent = null;
-	return gizmo;
-}
-public static var ExistingGizmo:Transform; // Allow just one, globally.
-
-private var originalAssemblyLayer = -1;
-function updateAssembly(assy:Transform) {
-	super.updateAssembly(assy); 
-	if (!!assembly) {
-		assemblyObj = assembly.gameObject.GetComponent.<Obj>();
-		// We supply our own affordance that is just a bit smaller than the assembly bbox (so that we don't interfere with corner affordances).
-		// So here we turn of the assembly's own collider, and re-enable it OnDestroy.
-		if (originalAssemblyLayer == -1) { // Keep us idempotent
-			originalAssemblyLayer = SetAssemblyLayer(assemblyObj.mesh, 2);  // Alternatively, we could disable collider...
-			if (ExistingGizmo) { ExistingGizmo.parent = null; Destroy(ExistingGizmo.gameObject); }
-			ExistingGizmo = getGizmo();
-		}
-	}
 }
 function Awake() {
 	highlightColor = makeAlpha(Vector3(0.725, 0.761, 0.541)); // a shade of Facebook split-complement-1
@@ -57,9 +38,63 @@ function OnDestroy() {
 	super.OnDestroy();
 	if (!!assemblyObj) { 
 		SetAssemblyLayer(assemblyObj.mesh, originalAssemblyLayer);
-		// No need to set originalAssemblyLayer = -1, as this script instance will be destroyed.
 	}
 }
+
+// Management of the whole gizmo (e.g., six-axis corner affordances with Adjust scripts, too).
+public static var StickyInstance:Sticky; // Allow just one, globally
+private var originalAssemblyLayer = 0;
+function updateAssembly(assy:Transform) {
+	// We supply our own affordance that is just a bit smaller than the assembly bbox (so that we don't interfere with corner affordances).
+	// So here we turn of the assembly's own collider, and re-enable it OnDestroy and here.
+	if (!!assemblyObj) SetAssemblyLayer(assemblyObj.mesh, originalAssemblyLayer);
+	super.updateAssembly(assy);
+	if (!assy) {  // on instantiation without parent
+		assemblyObj = null;
+	} else {
+		assemblyObj = assy.gameObject.GetComponent.<Obj>();
+		originalAssemblyLayer = SetAssemblyLayer(assemblyObj.mesh, 2);
+	}
+}
+function unparentGizmo(assy:Transform):Transform {
+	var gizmo = StickyInstance.transform;
+	gizmo.parent = null;
+	return gizmo;
+}
+public static function AddAdjuster(assy:Transform, adjusterPrefab:Transform) { // Add adjusterPrefab as a child of assy.
+	if (AnyMoving) { return; } // Don't mess up an existing drag.
+	var gizmo:Transform;
+	if (!StickyInstance) {
+		gizmo = Instantiate(adjusterPrefab, assy.transform.position, assy.transform.rotation); 
+		StickyInstance = gizmo.Find('StrikeTarget').GetComponent.<Sticky>();
+		gizmo.name = 'Adjuster';   // I.e., not "Adjuster (clone)"
+		gizmo.parent = assy;
+	} else {
+		var striker = StickyInstance.transform;
+		striker.localScale = Vector3(0.01, 0.01, 0.01); // If a big gizmo gets reparented underneath us, we'll go flying.
+		gizmo = striker.parent;
+		gizmo.parent = assy;
+		// Reparenting maintains global position, so we need to reset these.
+		gizmo.localPosition = Vector3.zero;
+		gizmo.localRotation = Quaternion.identity;
+	}
+	var go = gizmo.gameObject;
+	go.BroadcastMessage('updateAssembly', assy, SendMessageOptions.DontRequireReceiver);	
+	go.BroadcastMessage('updateAffordance', null, SendMessageOptions.DontRequireReceiver); // get the size right
+}
+function initAdjuster(assy:Transform, gizmo:Transform) {
+	//Debug.Log('init  ' + transform + ' Gizmo:' + Gizmo + ' assy:' + assy);
+	gizmo.parent = assy;
+	/*gizmo.gameObject.BroadcastMessage('updateAssembly', assy, SendMessageOptions.DontRequireReceiver);	
+	gizmo.gameObject.BroadcastMessage('updateAffordance', null, SendMessageOptions.DontRequireReceiver); // get the size right	
+	if (assy.gameObject.GetComponent.<Obj>().kind == 'Plane') {
+		Destroy(gizmo.Find('X').gameObject);  // We can probably do this more efficiently.
+		Destroy(gizmo.Find('Xneg').gameObject);
+		Destroy(gizmo.Find('Z').gameObject);
+		Destroy(gizmo.Find('Zneg').gameObject);
+	}*/
+}
+
 
 // The core activities of an Interactor: startDragging, resetCast/doDragging, stopDragging
 
@@ -79,7 +114,6 @@ function startDragging(assembly:Transform, cameraRay:Ray, hit:RaycastHit):Laser 
 		var gizmo = unparentGizmo(assembly);
 		originalCopied = go;
 		go = Instantiate(go);
-		var goo = go.GetComponent.<Obj>();
 		assembly = go.transform;  
 		gizmo.parent = assembly;
 		assembly.parent = originalCopied.transform.parent;
@@ -168,7 +202,9 @@ function startDragging(assembly:Transform, cameraRay:Ray, hit:RaycastHit):Laser 
 }
 var lastSurface:Collider;  // Keep track of this during dragging so that we can reparent at end.
 function stopDragging(assembly:Transform) {	
-	gameObject.layer = 0; // restore our StrikeTarget to hardcoded value.
+	// StrikeTarget must normally be on the same layer as other objects (Default). Otherwise large but covered StrikeTargets would
+	// soak up DoAdjuster.OnMouseEnter events from the objects that cover it.
+	gameObject.layer = 0; // restore our StrikeTarget to Default layer.
 	SetAssemblyLayer(assembly.gameObject, originalAssemblyLayer);
 	var original = originalCopied;
 	// pun: we're setting the WHOLE original obj, which will RESET it's Obj.mesh to behave normally, even if we've messed with it.
@@ -255,28 +291,4 @@ function hitNormal(hit:RaycastHit) { // answer normal to the surface at hit.poin
 
    	return interpolatedNormal;
 }
-
-// Management of the whole gizmo (e.g., six-axis corner affordances with Adjust scripts, too).
-// Doesn't have to be here, but conveniently, there is exactly one Stick script in each such gizmo.
-
-
-public static function AddAdjuster(assy:Transform, adjusterPrefab:Transform) { // Add adjusterPrefab as a child of assy.
-	if (AnyMoving) { return; } // Don't mess up an existing drag.
-	var gizmo = Instantiate(adjusterPrefab, assy.transform.position, assy.transform.rotation); 
-	gizmo.Find('StrikeTarget').GetComponent(Sticky).initAdjuster(assy, gizmo);
-}
-function initAdjuster(assy:Transform, gizmo:Transform) {
-	//Debug.Log('init  ' + transform + ' Gizmo:' + Gizmo + ' assy:' + assy);
-	gizmo.name = 'Adjuster';   // I.e., not "Adjuster (clone)"
-	gizmo.parent = assy;
-	gizmo.gameObject.BroadcastMessage('updateAssembly', assy, SendMessageOptions.DontRequireReceiver);	
-	gizmo.gameObject.BroadcastMessage('updateAffordance', null, SendMessageOptions.DontRequireReceiver); // get the size right	
-	if (assy.gameObject.GetComponent.<Obj>().kind == 'Plane') {
-		Destroy(gizmo.Find('X').gameObject);  // We can probably do this more efficiently.
-		Destroy(gizmo.Find('Xneg').gameObject);
-		Destroy(gizmo.Find('Z').gameObject);
-		Destroy(gizmo.Find('Zneg').gameObject);
-	}
-}
-
 }

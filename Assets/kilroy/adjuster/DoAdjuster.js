@@ -6,7 +6,7 @@
 public var adjusterPrefab:Transform; // Prototype Adjuster, which uses the Sticky script.
 
 function OnMouseEnter () {
-	//Debug.Log('enter ' + gameObject);
+//	Debug.Log('enter ' + gameObject);
 	Sticky.AddAdjuster(transform.parent, adjusterPrefab); // Removes an previous.
 }
 

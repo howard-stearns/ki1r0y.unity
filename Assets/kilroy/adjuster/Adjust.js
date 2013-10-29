@@ -2,9 +2,9 @@ class Adjust extends Directional {
 	// Attach this objects placed in the corners of a cube, to provide sizing and rotation.
 	// Just as 2D desktop windows have little affordances in one or four corners that allow the window to be resized,
 	// one can place an affordance with this script in each of the four corners of all six faces.
-	// Click-drag (with nothing else held down) to resize (without changing the position of the assembly).
-	// Or option-drag (alt-drag) to rotate (without changing the position of the assembly).
-	// Additionally hold down shift to shift the center such that the opposite corner stays in place as you resize or rotate.
+	// Click-drag (with nothing else held down) to resize.
+	// Or option-drag (alt-drag) to rotate.
+	// Additionally hold down shift to shift the size/rotate around the center (instead of the opposite corner).
 	//
 	// See Directional comments for more about how the affordances are constructed. In our canonical implementation,
 	// this script is attached to point affordances in the very corners of the assembly cube, and the visible affordances
@@ -56,9 +56,9 @@ function resetParameters(p:Vector3, force:boolean) {
 		doShift = shift;
 		firstPoint = p;
 		startCorner = projectPointOnPlane(transform.position, axis.right, axis.position);
-		oppositeCorner = shift ? (axis.position - (startCorner - axis.position)) : assembly.position;
+		oppositeCorner = !doShift ? (axis.position - (startCorner - axis.position)) : assembly.position;
 		if (rotate) {
-			rotationCenter = shift ? projectPointOnPlane(oppositeCorner, axis.right, axis.position) : assembly.position;
+			rotationCenter = !doShift ? projectPointOnPlane(oppositeCorner, axis.right, axis.position) : assembly.position;
 			lastRotationV = p - rotationCenter;
 		} else {
 			orthogonalCorner = Vector3.Project(assemblyObj.size(), assembly.InverseTransformDirection(axis.right));
@@ -89,7 +89,7 @@ function doDragging(assembly:Transform, axis:Transform, plane:Transform, hit:Ray
 		var pointerDelta = hit.point - firstPoint;
 		var newCorner = startCorner + pointerDelta;
 		var span = newCorner - oppositeCorner;
-		if (doShift) { 
+		if (!doShift) { 
 			assembly.position = (newCorner + oppositeCorner) / 2;
 		} else {
 			span *= 2;

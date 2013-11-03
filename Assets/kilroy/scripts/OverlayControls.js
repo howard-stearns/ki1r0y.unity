@@ -17,7 +17,7 @@ private function trackMouseMotion(enabled:boolean) {
 	
 	var s = 'mouse look:' + enabled + ' lockCursor:' + Screen.lockCursor + ' crosshair:' + crosshair.enabled;
 	if ((Screen.lockCursor != enabled) || (crosshair.enabled != enabled)) Debug.LogError(s);
-	else Debug.LogWarning(s);
+	else Debug.Log(s);
 }
 
 function Start() { // set up expected state regardless of environment.

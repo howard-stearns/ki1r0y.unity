@@ -30,9 +30,11 @@ function updateAffordance() { //As other interactors resize assembly during move
 	// change radically and treat that as movenent.
 	transform.localScale = assemblyObj.size() * 0.99;
 }
+private var transparency:Renderer; // the display of the transparent box is toggleable.
 function Awake() {
 	highlightColor = makeAlpha(Vector3(0.902, 0.91, 0.847)); // a shade of Facebook split-complement-1
 	super.Awake();
+	transparency = transform.Find('display').renderer;
 }
 function OnDestroy() {
 	if (!!assemblyObj) { 
@@ -109,6 +111,12 @@ public static function RemoveAdjuster() {
 	Destroy(StickyInstance.transform.parent.gameObject);
 	StickyInstance = null;
 }
+private static var TransparencyOn = true;
+function Update() {
+	if (Input.GetKeyDown(KeyCode.T) && Input.GetKey(KeyCode.LeftControl)) { TransparencyOn = !TransparencyOn; }
+	transparency.enabled = TransparencyOn;
+	super.Update();
+}
 
 // The core activities of an Interactor: startDragging, resetCast/doDragging, stopDragging
 
@@ -165,32 +173,32 @@ function startDragging(assembly:Transform, cameraRay:Ray, hit:RaycastHit):Laser 
 		// For now, no distance test.
 		Debug.Log("Nothing under object to slide along.");
 		// FIXME: create some sort of animation that shows that there's nothing under the mounting direction.
-		RemoveAdjuster();
-		return; 
+		surfaceHit = hit;
+	} else {
+	
+	    // Now the reverse: the surfaceHit.point back to the assembly Obj's collider.
+	    var reverseHit:RaycastHit; 
+	    // But use a point "below" the hit.point (into surface, by depth of object) so we can catch embedded objects.
+	    var embeddedPoint = surfaceHit.point + (mountingDirection * obj.size().magnitude); 
+	    var reverseRay = Ray(embeddedPoint, -mountingDirection);
+	    var offset = Vector3.zero;
+	    var col = obj.objectCollider();
+	    var isMeshCollider = col.GetType().Name == 'MeshCollider';
+	    var oldConvex = isMeshCollider && (col as MeshCollider).convex;
+	    if (isMeshCollider) (col as MeshCollider).convex = true;  // so raycast can hit back of plane
+	 	if (col.Raycast(reverseRay, reverseHit, Mathf.Infinity)) { 
+	 		offset = surfaceHit.point - reverseHit.point;
+	       	/*Debug.Log('hit10:' + (10 * selectedHit) + '@' + hit.collider
+	       		+ ' surface10:' + (10 * surfaceHit.point) + '@' + surfaceHit.collider
+	       		+ ' reverse10:' + (10 * reverseHit.point) + '@' + reverseHit.collider
+	       		+ ' offset10:' + (10 * offset));*/
+	       	// FIXME: For any non-trivial offset, this should be animated.
+			assembly.position += offset;
+		} else { 
+			Debug.LogError('** No reverse hit! ** hit:' + surfaceHit.point + ' mounting:' + mountingDirection + ' embedded:' + embeddedPoint);
+		}
+		if (isMeshCollider) (col as MeshCollider).convex = oldConvex;
 	}
-
-    // Now the reverse: the surfaceHit.point back to the assembly Obj's collider.
-    var reverseHit:RaycastHit; 
-    // But use a point "below" the hit.point (into surface, by depth of object) so we can catch embedded objects.
-    var embeddedPoint = surfaceHit.point + (mountingDirection * obj.size().magnitude); 
-    var reverseRay = Ray(embeddedPoint, -mountingDirection);
-    var offset = Vector3.zero;
-    var col = obj.objectCollider();
-    var isMeshCollider = col.GetType().Name == 'MeshCollider';
-    var oldConvex = isMeshCollider && (col as MeshCollider).convex;
-    if (isMeshCollider) (col as MeshCollider).convex = true;  // so raycast can hit back of plane
- 	if (col.Raycast(reverseRay, reverseHit, Mathf.Infinity)) { 
- 		offset = surfaceHit.point - reverseHit.point;
-       	/*Debug.Log('hit10:' + (10 * selectedHit) + '@' + hit.collider
-       		+ ' surface10:' + (10 * surfaceHit.point) + '@' + surfaceHit.collider
-       		+ ' reverse10:' + (10 * reverseHit.point) + '@' + reverseHit.collider
-       		+ ' offset10:' + (10 * offset));*/
-       	// FIXME: For any non-trivial offset, this should be animated.
-		assembly.position += offset;
-	} else { 
-		Debug.LogError('** No reverse hit! ** hit:' + surfaceHit.point + ' mounting:' + mountingDirection + ' embedded:' + embeddedPoint);
-	}
-	if (isMeshCollider) (col as MeshCollider).convex = oldConvex;
 	// Set drag state
 	firstDragPosition = surfaceHit.point;
 	lastDragPosition = firstDragPosition;

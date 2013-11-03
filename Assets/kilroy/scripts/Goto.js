@@ -170,6 +170,7 @@ function Goto(trans:Transform, addToHistory) {
 		return;
 	}
 	trans.parent.gameObject.SendMessage("NotWrapping", trans.gameObject, SendMessageOptions.DontRequireReceiver);
+	OverlayControls.TrackMouseMotion(false);
 	obj.ExternalPropertyEdit('metadata', addToHistory);
 	currentSite = trans;
 	setupCameraAnimation(obj);
@@ -271,7 +272,6 @@ function FixedUpdate() {
 			gameObject.GetComponent(Select).UnHighlight();
 			state = GotoState.AtObject;
 			Sticky.RemoveAdjuster();
-			OverlayControls.TrackMouseMotion(false);
 		}
 		break;
 	}

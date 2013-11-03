@@ -178,9 +178,8 @@ function UnHighlight(go:GameObject) {
 public var gizmoPrefab:Transform;  // The prefab.
 public var gizmo:Transform;  // The currently active gizmo. Should we really instantiate/destroy each time?
 //public var gizmoOldParent:Transform; // When gizmo is on, it's parent object is held by avatar.
-public var overlayControls:OverlayControls; // A script that controls whether mouse motion is tracked.
 function StopGizmo() {
-	if (overlayControls) overlayControls.trackMouseMotion(true);
+	OverlayControls.TrackMouseMotion(true);
 	if (!gizmo) return;
 	//gizmo.parent.parent = gizmoOldParent;
 	//gizmoOldParent = null;
@@ -199,7 +198,6 @@ function StartGizmo(go:GameObject) {
 	// trans.parent.localScale will mess us up:
 	//gizmoOldParent = trans.parent;
 	//trans.parent = transform; // e.g. avatar
-	if (overlayControls) overlayControls.lockMouseMotionOff();
 }
 function StartGizmo(id:String) {
 	if (!id) return;
@@ -252,8 +250,4 @@ function Update () {
 /************************************************************************************/
 function Awake() {
 	cam = Camera.main;
-	if (overlayControls == null) {
-		var overlay = GameObject.Find('/PlayerOverlay');
-		if (!!overlay) overlayControls = overlay.GetComponent(OverlayControls);
-	}
 }

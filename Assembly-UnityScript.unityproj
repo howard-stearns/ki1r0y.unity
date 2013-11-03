@@ -64,9 +64,7 @@
      <Compile Include="Assets\kilroy\scripts\PictureDrawing.js" />
      <Compile Include="Assets\kilroy\scripts\Restore.js" />
      <Compile Include="Assets\kilroy\scripts\Save.js" />
-     <Compile Include="Assets\kilroy\scripts\Select.fat.js" />
      <Compile Include="Assets\kilroy\scripts\Select.js" />
-     <Compile Include="Assets\kilroy\scripts\Select.trimmed.js" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="Assembly-CSharp-firstpass.csproj">

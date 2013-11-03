@@ -11,13 +11,11 @@
 public var avatar:Transform;  	// The avatar to control.
 public var head:Transform;		// That avatar's head object. Follows mouse when mouse look is enabled.
 public var headHeight = 1.0; 	// Relative to avatar position
-public var overlayControls:OverlayControls;		// The script on the PlayerOverlay that controls mouse look.
 public var scene:Transform;	    // The head of that part of the scene graph that defines each Kilroy Obj we can goto.
 
 function Awake() { // Initialize the above.
 	if (avatar == null) avatar = Camera.main.transform.parent;
 	if (head == null) head = avatar.Find("Main Camera/Head");
-	if (overlayControls == null) overlayControls = GameObject.Find('/PlayerOverlay').GetComponent(OverlayControls);
 	if (scene == null) scene = GameObject.FindWithTag('SceneRoot').transform; // By tag, because it could be called anything.
 }
 
@@ -178,7 +176,6 @@ function Goto(trans:Transform, addToHistory) {
 	setupAvatarAnimation(trans.position);
 	animationEndTime = Time.time + pulseDuration;
 	state = GotoState.Transporting;	
-	overlayControls.lockMouseMotionOff();
 	head.parent = avatar; // So that it doesn't move up or down with camera until AtObject.
 }
 function GoTo(id:String) { // From browser link.
@@ -254,8 +251,7 @@ function Update() {
 			cameraStartPos = Camera.main.transform.localPosition ;
 			cameraEndPos = Vector3.up * headHeight;  
 			cameraStartRot = Quaternion.identity;
-			overlayControls.trackMouseMotion(true); 
-		} 
+		}
 		break;
 	// See LateUpdate for ResumedDriving.
 	}
@@ -275,6 +271,7 @@ function FixedUpdate() {
 			gameObject.GetComponent(Select).UnHighlight();
 			state = GotoState.AtObject;
 			Sticky.RemoveAdjuster();
+			OverlayControls.TrackMouseMotion(false);
 		}
 		break;
 	}

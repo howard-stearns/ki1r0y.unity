@@ -15,9 +15,10 @@ private function trackMouseMotion(enabled:boolean) {
 	Screen.lockCursor = enabled;
 	crosshair.enabled = enabled;
 	
-	var s = 'mouse look:' + enabled + ' lockCursor:' + Screen.lockCursor + ' crosshair:' + crosshair.enabled;
-	if ((Screen.lockCursor != enabled) || (crosshair.enabled != enabled)) Debug.LogError(s);
-	else Debug.Log(s);
+	var s = 'mouse look:' + enabled + ' lockCursor:' + Screen.lockCursor + ' crosshair:' + crosshair.enabled + ' @' + Time.time + ' fixed:' + Time.fixedTime;
+	/*if ((Screen.lockCursor != enabled) || (crosshair.enabled != enabled)) Debug.LogError(s);
+	else Debug.Log(s);*/
+	Application.ExternalCall('notifyUser', s);
 }
 
 function Start() { // set up expected state regardless of environment.

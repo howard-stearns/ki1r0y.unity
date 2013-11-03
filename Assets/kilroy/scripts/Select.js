@@ -179,7 +179,6 @@ public var gizmoPrefab:Transform;  // The prefab.
 public var gizmo:Transform;  // The currently active gizmo. Should we really instantiate/destroy each time?
 //public var gizmoOldParent:Transform; // When gizmo is on, it's parent object is held by avatar.
 function StopGizmo() {
-	OverlayControls.TrackMouseMotion(true);
 	if (!gizmo) return;
 	//gizmo.parent.parent = gizmoOldParent;
 	//gizmoOldParent = null;
@@ -226,6 +225,7 @@ function UnSelection():boolean { // May or may not have been dragging. Answer tr
 
 function Update () {
 	if (Input.GetAxis("Horizontal") || Input.GetAxis("Vertical")) {
+		OverlayControls.TrackMouseMotion(true);
 		StopGizmo();
 		//UnSelection();
 		Obj.SceneSelect(false);

@@ -141,7 +141,7 @@ function startDragging(assembly:Transform, cameraRay:Ray, hit:RaycastHit):Laser 
 		assembly.parent = originalCopied.transform.parent;
 		assembly.BroadcastMessage('updateAssembly', assembly, SendMessageOptions.DontRequireReceiver);		
 		// assemblyObj is side-effected by updateAssembly.
-		assemblyObj.nametag = obj.nametag + '-copy';  // Hopefully temporary disambiguator during development.
+		// fixme assemblyObj.nametag = obj.nametag + '-copy';  // Hopefully temporary disambiguator during development.
 		assemblyObj.sharedMaterials(obj.sharedMaterials());
 		obj = assemblyObj;
 		// If we're making a copy, the first dragging movement will always intersect the original object, and 

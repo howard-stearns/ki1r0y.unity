@@ -43,7 +43,7 @@ public var dropObject:Transform;
 // Browser input button file input sets an object, not a coordinate.
 function setImportObject(path:String) { 
 	if (path == '/') dropObject = GameObject.FindWithTag('SceneRoot').transform;
-	else dropObject = GameObject.Find(path).transform;
+	else dropObject = Obj.FindByPath(path).transform; 
 	NotifyUser('drop to ' + dropObject + ' @' + dropObject.position);
 }
 function setImportTarget(coordinates:String) {
@@ -198,9 +198,9 @@ function StartGizmo(go:GameObject) {
 	//gizmoOldParent = trans.parent;
 	//trans.parent = transform; // e.g. avatar
 }
-function StartGizmo(id:String) {
-	if (!id) return;
-	StartGizmo(GameObject.Find(id));
+function StartGizmo(path:String) {
+	if (!path) return;
+	StartGizmo(Obj.FindByPath(path));
 }
 
 /************************************************************************************/

@@ -60,14 +60,20 @@ var nRemainingObjects = 0;  // The number we have started to fetch, but which ha
 // fetching the real data. If id does not already name a child, then create a 
 // visible cube that will be used as a stand-in of the correct position/size/rotation
 // (because the parent has that info). When the data arrives, it will replace the cube.
-function RestoreChild(id:String, hash:String, parent:Transform) {
-	hash = hash || id;
-	var child = parent.Find(id); // FIXME: what do we want to do about multiple instance of the same object id?
+//var counter = 0;   //fixme remove bootstrap 
+function RestoreChild(data:Hashtable, parent:Transform) {
+	var id:String = data['idtag'];
+	var hash:String = data['idvtag'] || id;
+	var instance:String = data['instance'] || id; //(counter++).ToString(); //id;  // FIXME remve bootstrap
+	var child = parent.Find(instance); // FIXME id: what do we want to do about multiple instance of the same object id?
 	var newChild = !child;
 	if (newChild) {
-		child = GameObject.CreatePrimitive(PrimitiveType.Cube).transform;
-		child.gameObject.AddComponent(Obj);
+		var childGo = GameObject.CreatePrimitive(PrimitiveType.Cube);
+		child = childGo.transform;
+		var newObj = childGo.AddComponent(Obj);
+		childGo.name = instance;
 		child.parent = parent;
+		//Debug.Log('creating ' + id + ' ' + hash + ' ' + instance + ' ' + child.name);
 	} else {  // if hash is already right, we're done.
 		var obj = child.GetComponent.<Obj>();
 		if (obj && (obj.hash == hash)) return child.gameObject;
@@ -102,6 +108,7 @@ function CoInflate(existing:GameObject, id:String, hash:String, newChild:boolean
 		obj.kind = data['type'];
 		yield CoFill(go, id, data);
 		// Now replace the temp with our new go.
+		go.name = existing.name;
 		go.transform.parent = existing.transform.parent; // First, before setting the following.
 		go.transform.position = existing.transform.position;
 		go.transform.rotation = existing.transform.rotation;
@@ -204,7 +211,6 @@ function CoFill(go:GameObject, id:String, data:Hashtable):IEnumerator {
 	obj.hash = data['idvtag'];
 	obj.nametag = data['nametag'];
 	obj.description = data['desc'] || '';
-	go.name = id;
 	obj.author = data['author'] || ''; 
 	// Now any type-specific initialization:
 	switch (obj.kind) {
@@ -242,15 +248,15 @@ function CoFill(go:GameObject, id:String, data:Hashtable):IEnumerator {
 	var legitimateChildren = new Array(); // Keep track of the Objs we're now supposed to have.
 	for (var childData:Hashtable in data['children']) {
 		// Immediately defines a child, but also starts a coroutine to fetch that child's data.
-		child = RestoreChild(childData['idtag'], childData['idvtag'], go.transform);
+		child = RestoreChild(childData, go.transform);
 		var childObj = child.GetComponent.<Obj>();
 		legitimateChildren.Push(childObj);
 		var pos = childData['position'];
 		if (pos != null) child.transform.localPosition = makeVector3(pos);
 		var rot = childData['rotation'];
 		if (rot != null) child.transform.localRotation = makeQuaternion(rot);
-		var scale = childData['scale'];  // obsolete
-		if (scale != null) child.transform.localScale = makeVector3(scale);
+		//var scale = childData['scale'];  // obsolete. remove this eventually
+		//if (scale != null) child.transform.localScale = makeVector3(scale);
 		var size = childData['size'];
 		if (size != null) childObj.size(makeVector3(size));
 	}
@@ -278,7 +284,8 @@ function IsInArray(item, array:Array):boolean {
 }
 
 public var safetyNet:Transform;
-public var destinationId = '';
+public var destinationIdtag = '';
+public var destinationPath = '';
 function SceneReady() {
 	if (safetyNet && GameObject.FindWithTag('SceneRoot').GetComponent.<Obj>().FindNametag('floor')) {
 		Log('removing temporary floor');
@@ -287,26 +294,39 @@ function SceneReady() {
 		safetyNet = null; 
 	}
 	avatarActions(true);
-	var target = destinationId;
-	destinationId = '';
-	var targetObj:GameObject = target ? GameObject.Find(target) : null;
+	var targetObj = destinationPath ? Obj.FindByPath(destinationPath) : Obj.FindById(destinationIdtag);
+	//Debug.Log('SceneReady destinationIdtag:' + destinationIdtag + ' destinationPath:' + destinationPath + ' target:' + targetObj);
+	destinationIdtag = '';
+	destinationPath = '';
 	var sceneComp = gameObject.GetComponent.<Obj>();
 	Application.ExternalCall('sceneReady', sceneComp.nametag,
 		targetObj ? targetObj.GetComponent(Obj).nametag : '',
 		sceneComp.timestamp,
 		sceneComp.hash);
 	var goto = Camera.main.transform.parent.GetComponent.<Goto>();
-	goto.GoToObj(targetObj ? targetObj : null, null); 
+	goto.GoToObj(targetObj, null); 
 }
 function RestoreScene(combo:String, checkHistory:boolean) {
 	var trio = Save.splitPath(combo);
-	var id = trio[0];
-	var version = ((trio.length > 1) && trio[1]) || '';
-	destinationId = ((trio.length > 2) && trio[2]) || '';
+	var version = trio[0] || '';
+	var id = trio[1];
+	if (trio.length > 2) {
+		destinationIdtag = trio[2] || '';
+	} else { 
+		destinationPath = id;
+		// get id from path
+		var parts = Save.splitPath(id, '/');
+		//Debug.Log('id:' + id + ' parts[0]:' + (parts.length && parts[0]) + ' parts[1]:' + ((parts.length > 1) && parts[1]));
+		if (parts.length == 1) { // oops. really just a scene
+			destinationIdtag = destinationPath = '';
+		} else {
+			id = parts[1];
+		}
+	}
 	avatarActions(false);
 	var existing = gameObject.GetComponent.<Obj>();
 	existing.versions = null; // Clear out cache so that CoFillVersions doesn't optimize away the fetch.
-	Application.ExternalCall('notifyUser', 'RestoreScene id:' + id + ' version:' + version + ' destination:' + destinationId
+	Application.ExternalCall('notifyUser', 'RestoreScene id:' + id + ' version:' + version + ' destination:' + destinationIdtag
 		+ ' checkHistory:' + checkHistory + ' existing idv:' + existing.hash + ' existing SelectedId:' + (Obj.SelectedId ? Obj.SelectedId : 'null'));
 	// The following is a bit of a multi-way pun. After resotoration, we will GoToObj, which will tell the browser to select IFF
 	//   a) we're going to a an object that is different than the current selected object, or
@@ -321,8 +341,9 @@ function RestoreScene(combo:String, checkHistory:boolean) {
 	// and in either case we'll select the new object-or-scene.
 	// (That's a lot of comment for one assignment!)
 	if (Obj.SelectedId != Obj.NoShortCircuit) {
-		Obj.SelectedId = (checkHistory ? existing.id : '') || destinationId;
+		Obj.SelectedId = (checkHistory ? existing.id : '') || destinationIdtag;
 	}
+	gameObject.name = id;
 	StartCoroutine( CoFillVersions(gameObject, id, 'CoFillScene', version) );
 }
 
@@ -330,10 +351,10 @@ function RestoreScene(combo:String, checkHistory:boolean) {
 public var sceneId = 'G1'; // for use in editor
 public var undoId = ''; // To undo to an earlier hash in editor; e.g. 
 // (When cut/pasting, be sure not get extra whitespace.)
-// G1//r4ATbSDF2oS2gXlJ3lrV3TU3Wv4
-// G1/1374972649204/5rXz_cOuxcDk2te0pW90YPyE1Rc - original block
-// G1/1368993636720/r4ATbSDF2oS2gXlJ3lrV3TU3Wv4  - penultimate
-// G1/1368993677170/r4ATbSDF2oS2gXlJ3lrV3TU3Wv4  - latest
+// 1382831392297:G1
+// :G1:QvTKHv-OnNHoW3wdEkDEl6M0wx4
+// 1382831392297:G1:VOz9RMtzJWWmn8y0pSIiWLL_tPs
+// 1382831392297:/G1/G1floor/VOz9RMtzJWWmn8y0pSIiWLL_tPs
 function Update() {
 	if (!undoId) return;
 	var id = undoId;

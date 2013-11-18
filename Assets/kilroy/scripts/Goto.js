@@ -180,11 +180,11 @@ function Goto(trans:Transform, addToHistory) {
 	head.parent = avatar; // So that it doesn't move up or down with camera until AtObject.
 }
 function GoTo(id:String) { // From browser link.
-	GoToObj(id && GameObject.Find(id), true);
+	GoToObj(Obj.FindByPathOrId(id), true);
 }
 function GoBackTo(id:String) { // From browser back button.
 	Obj.SelectedId = Obj.NoShortCircuit;
-	GoToObj(id && GameObject.Find(id), false);
+	GoToObj(Obj.FindByPathOrId(id), false);
 }
 function GoToObj(go:GameObject, addToHistory) {
 	Application.ExternalCall('notifyUser', 'GoBackTo ' + go);

@@ -5,12 +5,12 @@ public static function splitPath(path:String, sep:String) {
 	var stupidNETcharArray:char[] = [sep[0]];
 	return path.Split(stupidNETcharArray);
 }
-public static function splitPath(path:String) { return splitPath(path, '/'); }
+public static function splitPath(path:String) { return splitPath(path, ':'); }
 
 public static var userId = '100004567501627';
 public static var host = 'localhost:3000';
 function ContactInfo(combo:String) {
-	var pair = splitPath(combo);
+	var pair = splitPath(combo, '/'); // can't use : as separator, because host might contain :port.
 	host = pair[0];
 	userId = pair[1];
 	Application.ExternalCall('notifyUser', 'ContactInfo host:' + host + ' userId:' + userId);
@@ -75,9 +75,7 @@ function AddProperty (p:Hashtable, key:String, q:Quaternion) {
 }
 
 function AddComponent(p:Hashtable, component:Obj) {
-	// FIXME: if obj.author doesn't match our userId, then create a new object.
-	
-	if (component.nametag == '') component.nametag = component.name; // Just for bootstrapping. FIXME remove.
+	// FIXME: if obj.author doesn't match our userId, then create a new object.	
 	if (component.author == '') component.author = userId;
 	
 	AddProperty(p, 'type', component.kind);
@@ -114,9 +112,14 @@ function AddComponent(p:Hashtable, component:Transform) {
 	// The only shared data for all instances is the child data.
 	// The instance-specific transform data (position/rotation/scale) is above.
 	var children:Array = [];
+	var previous:Obj;
 	for (var child:Transform in component) {
 		var persisted:Hashtable = Persist(child.gameObject);
-		if (persisted.Count != 0) children.Push(persisted);
+		previous = Obj.NameUniquely(child, previous);  // afterPersist, b/c we may now have a new id
+		if (persisted.Count != 0) { 
+			if (previous.name != previous.id) { persisted['instance'] = previous.name; }
+			children.Push(persisted);
+		}
 	}
 	if (children.length != 0)
 		AddProperty(p, 'children', children);
@@ -205,8 +208,7 @@ function Persist(x:GameObject, isScene:boolean):Hashtable {
 		}
 		AddProperty(instance, 'idtag', id);
 	}
-	// Make sure that the Unity name matches the (possibly new) obj.id, so that Find works.
-	x.name = obj.id;
+	// FIXME remove if (id != obj.name) { AddProperty(instance, 'instance', obj.name); }
 	if (isScene) {
 		// We could optimize the number of POSTs by adding a parameter to the scene data, but for now...
 		StartCoroutine( uploadData(obj.id, obj.hash, JSON.Stringify(new Array(refs.Keys)), 'refs') );

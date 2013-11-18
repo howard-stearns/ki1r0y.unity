@@ -41,19 +41,74 @@ function Start() {
 	if (kind == 'Plane') localFacing = Vector3(0, 1, 0);
 }
 
-// Answers the scene graph path to obj, suitable for use in Find().
-// The browser will receive this and use it as the first arg to SendMessage.
+// Answer a qualifer integer that, if non-zero and appended to idtag, will produce a name that is unique among the children of p.
+// ignored Transform will be ignored if it is among the children of p.
+// The current implementation simplifies debugging by answering zero when possible, but if that's too slow for bushy scene graphs,
+// we could change it to just increment a global counter and use the alternative code for FindById, below
+public static function ComputeQualifier(idtag:String, p:Transform, ignored:Transform) { // answer the number of children in p that have idtag
+	var count = 0;
+	for (var child:Transform in p) {
+		if (child == ignored) { continue; }
+		if (child.gameObject.GetComponent.<Obj>().id == idtag) { count++; }
+		else if (count) { break; } // optimization based on Unity's current practice of keeping children in alphabatical order
+	}
+	return count;
+}
+// Make sure that child has a unique name among its siblings. We rely on Unity keeping siblings in alphabetical order, and our
+// own scheme of using id for name unless the previous sibling has id, in which case we add a suffix that preserves order.
+public static function NameUniquely(child:Transform, previous:Obj):Obj {
+	var obj = child.gameObject.GetComponent.<Obj>();
+	if (!obj) return previous;  // There are meshes and adjusters in the scene graph, which do not effect our naming.
+	var id:String = obj.id;
+	if (!previous || (id != previous.id)) { child.name = id; return obj; }
+	// Otherwise calculate a new name for child that will not conflict with the previous instance name (not just it's id).
+	// concatenate the next digit. Cheaper than slicing and parsing.
+	child.name = previous.name + ((previous.name.length - id.length) % 10);
+	return obj;
+}
+// Answers one (of the possibly many) GameObjects with the given id, else null.
+// id is an objectIdtag and may be falsey.
+public static function FindById(idtag:String):GameObject {
+	// This works in current implementation of ComputeQualifier...
+	return !idtag ? null : GameObject.Find(idtag);
+	/* ... other wise use this:
+	return !idtag ? null : findById(GameObject.FindWithTag('SceneRoot'), idtag);
+}
+private static function findById(go:GameObject, idtag:String):GameObject {
+	var obj = go.GetComponent.<Obj>();
+	if (!obj) { return null; }
+	if (obj.id == idtag) return go;
+	for (var child:Transform in go.transform) {
+		var got = findById(child.gameObject, idtag);
+		if (got != null) return got;
+	}
+	return null;*/
+}
+// Answers the unique object in the scene identified by a string produced by GameObjectPath.
+public static function FindByPath(path:String):GameObject {
+	// The browser's setProp has three pieces of info -- path, property name, and value -- which is exactly
+	// what SendUnity can handle IFF path is a name or scene-graph of names. So really, FindByPath must work the same 
+	// as the plugin's first argument to SendMessage.
+	return GameObject.Find(path);
+}
+public static function FindByPathOrId(pathOrId:String):GameObject {
+	// In the current implementation, this works for both. Otherwise, check for '/' and pick the right one.
+	return GameObject.Find(pathOrId);
+}
+// Answers the scene graph path to obj, suitable for use in FindByPath, and by the browser's SendUnity.
 function GameObjectPath():String {
-	var path = id;
-    /*var path = "/" + name;
+	// If name was globally unique (e.g., if ComputeQualifier just used a per-scene counter), then we
+	// could just answer name (because GameObject.Find can work with partial paths). But if name is onl
+	// unique among siblings, we must answer a scene-graph path.
+	var path = "/" + name;
     var obj = transform;
     while (obj.parent != null) {
         obj = obj.parent;
         path = "/" + obj.name + path;
-    }*/
+    }
     return path;
 }
-function FindNametag(t:String):Transform {
+function FindNametag(t:String):Transform { // Find first t among our nametags. Currently depth-first.
 	if (nametag == t) return transform;
 	for (var child:Transform in transform) {
 		var childObj = child.GetComponent.<Obj>();
@@ -211,7 +266,7 @@ function saveScene(action:String) { // Save whatever needs to be saved from the 
 }
 function savedScene(action:String, changes:Array):IEnumerator { // Callback from saveScene.
 	yield gameObject.GetComponent.<PictureCapture>().Thumbnail(changes);
-	Application.ExternalCall('saved', id, nametag, timestamp, action, hash);
+	Application.ExternalCall('saved', id, nametag, timestamp, action, hash, GameObjectPath());
 	if (!enabled) { Destroy(gameObject); } // if deleted, can only safely be destroyed now.
 }
 

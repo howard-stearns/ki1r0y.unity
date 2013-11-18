@@ -32,6 +32,10 @@ function Start() { // set up expected state regardless of environment.
 // However, it won't call trackMouseMotion for us, so we have to track things independently and call it ourself.
 private var wasLocked = false;
 function Update () {
+	if (Input.GetKeyDown(KeyCode.F11) || (Input.GetKeyDown(KeyCode.F) && Input.GetKey(KeyCode.LeftCommand))) {
+		Debug.Log("toggle full screen from " + Screen.fullScreen);
+		Screen.fullScreen = !Screen.fullScreen;
+	}
 	// In standalone player we have to provide our own key input for unlocking the cursor
 	if (Input.GetKeyDown(KeyCode.Escape)) Screen.lockCursor = false;
 	if (!Screen.lockCursor && wasLocked) {

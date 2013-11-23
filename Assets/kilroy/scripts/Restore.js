@@ -65,7 +65,11 @@ function RestoreChild(data:Hashtable, parent:Transform) {
 	var id:String = data['idtag'];
 	var hash:String = data['idvtag'] || id;
 	var instance:String = data['instance'] || id; //(counter++).ToString(); //id;  // FIXME remve bootstrap
+	return RestoreChild(id, hash, instance, parent);
+}
+function RestoreChild(id:String, hash:String, instance:String, parent:Transform) {
 	var child = parent.Find(instance); // FIXME id: what do we want to do about multiple instance of the same object id?
+	Application.ExternalCall('notifyUser', 'RestoreChild(' + id + ', ' + hash + ', ' + instance + ', ' + parent + ') child:' + child);
 	var newChild = !child;
 	if (newChild) {
 		var childGo = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -228,12 +232,12 @@ function CoFill(go:GameObject, id:String, data:Hashtable):IEnumerator {
 		break;
 	}
 
-	var matData:Array = data['materials'];
-	if (matData != null) {
-		var nMats = matData.length;
+	obj.materialData = data['materials'];
+	if (obj.materialData != null) {
+		var nMats = obj.materialData.length;
 		var materials = new Material[nMats];
 		for (var i = 0; i < nMats; i++) {
-			var mData = matData[i];
+			var mData = obj.materialData[i];
 			var mat:Material = materialsTable[mData];
 			if (mat == null) {
 				// FIXME: decode other properties from mData (scale, offset)
@@ -286,7 +290,13 @@ function IsInArray(item, array:Array):boolean {
 public var safetyNet:Transform;
 public var destinationIdtag = '';
 public var destinationPath = '';
+public var savePath = '';
 function SceneReady() {
+	if (savePath) { 
+		transform.Find(savePath).GetComponent.<Obj>().saveScene('import');
+		savePath = ''; 
+		return;
+	} 
 	if (safetyNet && GameObject.FindWithTag('SceneRoot').GetComponent.<Obj>().FindNametag('floor')) {
 		Log('removing temporary floor');
 		safetyNet.parent = null;

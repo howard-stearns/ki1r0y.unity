@@ -65,7 +65,7 @@ function asString(x:GameObject):String {
 }
 
 function AddProperty (p:Hashtable, key:String, x) {
-	p[key] = x;
+	if (x) { p[key] = x; }
 }
 function AddProperty (p:Hashtable, key:String, v:Vector3) {
 	AddProperty(p, key, {'x':v.x, 'y':v.y, 'z':v.z});
@@ -88,7 +88,10 @@ function AddComponent(p:Hashtable, component:Obj) {
 	if (component.kind == 'Mesh') {
 		var path = splitPath(component.mesh.GetComponent.<ObjMesh>().objPath);
 		AddProperty(p, 'mesh', path[path.length - 1]);  // Specifies materials within data at objPath.
-	} else {
+	} else if (component.materialData) {
+		mats = component.materialData;
+		any = true;
+	} else {  // If not already cached. We could make a rule that it has to be, but that doesn't feel safe.
 		for (var mat in component.sharedMaterials()) {
 			var txt = mat.mainTexture;
 			if (txt == null) {

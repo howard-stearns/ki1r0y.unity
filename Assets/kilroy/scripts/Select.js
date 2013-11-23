@@ -40,6 +40,13 @@ private var cam:Camera;  // The camera in which screen coordinates are defined.
 public var picturePrefab:Transform;
 public var dropTarget:RaycastHit;
 public var dropObject:Transform;
+function setPlacement(pos:Vector3[], rot:Quaternion[]) {
+	var pt = (dropObject == null) ? dropTarget.point : dropObject.position;
+	var v = pt - cam.transform.position;
+    if (v.magnitude < 1) v = v.normalized;
+    pos[0] = cam.transform.position + (v / 2);
+    rot[0] = Quaternion.LookRotation(v);
+ }
 // Browser input button file input sets an object, not a coordinate.
 function setImportObject(path:String) { 
 	if (path == '/') dropObject = GameObject.FindWithTag('SceneRoot').transform;
@@ -63,24 +70,31 @@ function setImportFilename(name:String) {
 	// error/progress messages.
 	currentDropFilename = name;
 }
+function importThing(id:String) {
+	var scene = GameObject.FindWithTag('SceneRoot');
+	NotifyUser('importThing(' + id + ') scene:' + scene);
+	var restore = scene.GetComponent.<Restore>();
+	restore.savePath = 'import'; // causes Find('import').<Obj>().saveScene('import') when the restore is complete.
+	Debug.Log('set ' + restore + ' destinationPath=' + restore.savePath);
+	var pos = new Vector3[1]; var rot = new Quaternion[1]; setPlacement(pos, rot);
+	var imported = restore.RestoreChild(id, id, restore.savePath, scene.transform); // the instance name will get adjusted as soon as we save
+	imported.transform.position = pos[0];
+	imported.transform.rotation = rot[0];
+}
 function importImage(url:String) {  // Here, rather than Restore or Obj, because this is per user. Might ref user data.
-	var pt = (dropObject == null) ? dropTarget.point : dropObject.position;
+	var pos = new Vector3[1]; var rot = new Quaternion[1]; setPlacement(pos, rot);
 	var max = url.Length;
 	if (max > 256) max = 128;
-	NotifyUser('importing: ' + url.Substring(0, max) + ' to ' + pt); //because .NET has to be different. No slice.
-
+	NotifyUser('importing: ' + url.Substring(0, max) + ' to ' + pos[0]); //because .NET has to be different. No slice.
+	
 	var inputData:WWW = new WWW(url);
     yield inputData;
     NotifyUser('received import data');
     // FIXME: if dropObject, replace the image?
-    var v = pt - cam.transform.position;
-    if (v.magnitude < 1) v = v.normalized;
-    var pos = cam.transform.position + (v / 2);
-    var rot = Quaternion.LookRotation(-v);
-    Debug.Log('camera:' + cam.transform.position + ' v:' + v + ' pos:' + pos);
-    var pict = Instantiate(picturePrefab, pos, rot);
+    Debug.Log('camera:' + cam.transform.position + ' pos:' + pos[0] + ' rot:' + rot[0]);
+    var pict = Instantiate(picturePrefab, pos[0], rot[0]);
     var obj = pict.GetComponent.<Obj>();
-    pict.transform.Rotate(90, 0, 0);
+    pict.transform.Rotate(90, 180, 0);
     pict.transform.parent = GameObject.FindWithTag('SceneRoot').transform;
     var mats = obj.sharedMaterials();
     var mat = Material(mats[0]);
@@ -111,15 +125,21 @@ function importImage(url:String) {  // Here, rather than Restore or Obj, because
 	StatusMessageUpdate(msg, result, 1.0);
 	if (!upload.error) obj.saveScene('import');
 }
-
 /*function Start() {  // For debugging
+	if (Application.isWebPlayer) return;
+	yield WaitForSeconds(5);
+	setImportTarget('374x300');
+	//setImportObject('/G1/G1floor/QvTKHv-OnNHoW3wdEkDEl6M0wx4');
+	importThing('HKKy1I0XGPkf0AQHyunhD5tStsw'); 
+}/*
+function Start() {  // For debugging
 	if (Application.isWebPlayer) return;
 	var basename = 'avatar.jpg';
 	var furl = 'file:///Users/howardstearns/Pictures/' + basename;
 	yield WaitForSeconds(4);
 	Debug.Log('import ' + basename);
 	//setImportTarget('374x300');
-	setImportObject('/G1/G1floor/AuHu9QEqdP3ZkjKjUf3daN4uku0');
+	setImportObject('/G1/G1floor/QvTKHv-OnNHoW3wdEkDEl6M0wx4');
 	setImportFilename(basename);
 	importImage(furl); 
 }*/

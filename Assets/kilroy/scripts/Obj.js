@@ -175,6 +175,9 @@ public function sharedMaterials(mats:Material[]):Material[] {
 	else r.sharedMaterials = mats;	
 	return mats;
 }
+// Materials may have large textures that take a while to download. We don't want to wait for that before we can ask the obj for the material data needed for saving.
+// We can save the material data here during restoration, so we don't have to wait for download before saving.
+public var materialData:Array;
 
 // Answer the Kilroy GameObject of the given c, else c's non-avatar parent GameObject, else null.
 public static function ColliderGameObject(c:Collider):GameObject { 
@@ -260,7 +263,7 @@ function Awake() { // Initialize saver, if available.
 	}
 }
 function saveScene(action:String) { // Save whatever needs to be saved from the whole scene (or silently skip if not set up to save).
-	if (!saveEnabled()) { return; } 
+	if (!saveEnabled()) { Debug.Log('skipping save of ' + name); return; } 
 	//	debugging: Application.ExternalCall('notifyUser', 'now '+ transform.position.ToString() + ' ' + transform.eulerAngles.ToString() + ' ' + transform.lossyScale.ToString());	
 	timestamp = saver.PersistScene(this, action); // for value and for the side-effect on id.
 }
@@ -268,6 +271,7 @@ function savedScene(action:String, changes:Array):IEnumerator { // Callback from
 	yield gameObject.GetComponent.<PictureCapture>().Thumbnail(changes);
 	Application.ExternalCall('saved', id, nametag, timestamp, action, hash, GameObjectPath());
 	if (!enabled) { Destroy(gameObject); } // if deleted, can only safely be destroyed now.
+	if (action == 'import') { ExternalPropertyEdit('metadata', false); } // Give user a chance to edit and share
 }
 
 /*****************************************************************************************/

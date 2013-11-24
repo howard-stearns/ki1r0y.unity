@@ -71,39 +71,38 @@ function setImportFilename(name:String) {
 	currentDropFilename = name;
 }
 function importThing(id:String) {
+	var pos = new Vector3[1]; var rot = new Quaternion[1]; setPlacement(pos, rot);
 	var scene = GameObject.FindWithTag('SceneRoot');
 	NotifyUser('importThing(' + id + ') scene:' + scene);
+
 	var restore = scene.GetComponent.<Restore>();
 	restore.savePath = 'import'; // causes Find('import').<Obj>().saveScene('import') when the restore is complete.
 	Debug.Log('set ' + restore + ' destinationPath=' + restore.savePath);
-	var pos = new Vector3[1]; var rot = new Quaternion[1]; setPlacement(pos, rot);
 	var imported = restore.RestoreChild(id, id, restore.savePath, scene.transform); // the instance name will get adjusted as soon as we save
 	imported.transform.position = pos[0];
 	imported.transform.rotation = rot[0];
 }
 function importImage(url:String) {  // Here, rather than Restore or Obj, because this is per user. Might ref user data.
+	var max = url.Length; if (max > 256) max = 128;
 	var pos = new Vector3[1]; var rot = new Quaternion[1]; setPlacement(pos, rot);
-	var max = url.Length;
-	if (max > 256) max = 128;
+	var scene = GameObject.FindWithTag('SceneRoot');
 	NotifyUser('importing: ' + url.Substring(0, max) + ' to ' + pos[0]); //because .NET has to be different. No slice.
 	
-	var inputData:WWW = new WWW(url);
-    yield inputData;
+	var inputData:WWW = new WWW(url); 
+    yield inputData;  // Do this now, before instantiating the picture, so that we don't have an ugly gray thing sitting there
     NotifyUser('received import data');
-    // FIXME: if dropObject, replace the image?
-    Debug.Log('camera:' + cam.transform.position + ' pos:' + pos[0] + ' rot:' + rot[0]);
+    
     var pict = Instantiate(picturePrefab, pos[0], rot[0]);
     var obj = pict.GetComponent.<Obj>();
     pict.transform.Rotate(90, 180, 0);
-    pict.transform.parent = GameObject.FindWithTag('SceneRoot').transform;
+    pict.transform.parent = scene.transform;
+    obj.size(Vector3(1, 0, 1));  // else the prefab is not really right
+
     var mats = obj.sharedMaterials();
     var mat = Material(mats[0]);
-    //var mat = Material(obj.mesh.renderer.sharedMaterial);
     mat.mainTexture = inputData.texture;
-    //obj.mesh.renderer.material = mat;
     mats[0] = mat;
     obj.sharedMaterials(mats);
-    //obj.size(Vector3(0.6, 1, 0.6));
     obj.nametag = currentDropFilename;
     
     var form = new WWWForm();
@@ -123,6 +122,7 @@ function importImage(url:String) {  // Here, rather than Restore or Obj, because
 		? ('Failed upload of ' + currentDropFilename  + ': ' + upload.error.replace('downloading', 'uploading')) //Unity error message is confusing
 		: 'Saved ' + currentDropFilename + ': ' + upload.text;
 	StatusMessageUpdate(msg, result, 1.0);
+	
 	if (!upload.error) obj.saveScene('import');
 }
 /*function Start() {  // For debugging
@@ -131,15 +131,15 @@ function importImage(url:String) {  // Here, rather than Restore or Obj, because
 	setImportTarget('374x300');
 	//setImportObject('/G1/G1floor/QvTKHv-OnNHoW3wdEkDEl6M0wx4');
 	importThing('HKKy1I0XGPkf0AQHyunhD5tStsw'); 
-}/*
+}
 function Start() {  // For debugging
 	if (Application.isWebPlayer) return;
 	var basename = 'avatar.jpg';
 	var furl = 'file:///Users/howardstearns/Pictures/' + basename;
 	yield WaitForSeconds(4);
 	Debug.Log('import ' + basename);
-	//setImportTarget('374x300');
-	setImportObject('/G1/G1floor/QvTKHv-OnNHoW3wdEkDEl6M0wx4');
+	setImportTarget('374x300');
+	//setImportObject('/G1/G1floor/QvTKHv-OnNHoW3wdEkDEl6M0wx4');
 	setImportFilename(basename);
 	importImage(furl); 
 }*/

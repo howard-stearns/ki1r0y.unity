@@ -63,6 +63,7 @@ function Wrap(picture:GameObject) {
 			targetMat.mainTextureOffset = offsetScaled;
 			parentMats[parentIndex] = targetMat;
 			obj.sharedMaterials(parentMats);
+			obj.materialData = null; // clear cached serialization data
 			success = true;
 			Log(face + ' after scale: ' + scale + ' offset:' + offset + ' offsetScaled:' + offsetScaled); 
 			Log(face + ' texture scale: ' + face.renderer.material.mainTextureScale + ' offset:' + face.renderer.material.mainTextureOffset); 

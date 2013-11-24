@@ -240,9 +240,13 @@ function CoFill(go:GameObject, id:String, data:Hashtable):IEnumerator {
 			var mData = obj.materialData[i];
 			var mat:Material = materialsTable[mData];
 			if (mat == null) {
-				// FIXME: decode other properties from mData (scale, offset)
 				mat = new Material(materialPrototype);
 				materialsTable[mData] = mat;
+				if ((typeof mData) == System.Collections.Hashtable) {
+					var su = mData['su']; var sv = mData['sv']; if (su || sv) mat.mainTextureScale = Vector2(su || 1, sv || 1);
+					var ou = mData['ou']; var ov = mData['ov']; if (ou || ov) mat.mainTextureOffset = Vector2(ou || 0, ov || 0);
+					mData = mData['map'];
+				}
 				StartCoroutine( ResourceLoader.instance.FetchTexture('http://' + Save.host + '/media/' + mData, mData, mat) );
 			}
 			materials[i] = mat;

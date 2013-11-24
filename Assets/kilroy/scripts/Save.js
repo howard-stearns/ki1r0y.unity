@@ -96,9 +96,8 @@ function AddComponent(p:Hashtable, component:Obj) {
 			var txt = mat.mainTexture;
 			if (txt == null) {
 				mats.Push('');
-				continue;
-			}
-			any = true;
+			} else {
+				any = true;
 			// We can't add our own scripts and properties (e.g., id and hash) to 
 			// materials and textures. However, we can treat them as immutable, and
 			// arrange to make sure that they are always given a unique name and
@@ -106,8 +105,16 @@ function AddComponent(p:Hashtable, component:Obj) {
 			// name, and we never have to worry about potentially slow texture uploads 
 			// during scene saves. 
 			// FIXME: encode other properties (scale, offset).
-			mats.Push(txt.name);
+				var id:Object = txt.name;
+				if ((mat.mainTextureScale != Vector2.one) || (mat.mainTextureOffset != Vector2.zero)) {
+					id = {'su': mat.mainTextureScale.x, 'sv': mat.mainTextureScale.y,
+							'ou': mat.mainTextureOffset.x, 'ov': mat.mainTextureOffset.y, 
+							'map': id};
+				}
+				mats.Push(id);
+			}
 		}
+		component.materialData = mats;
 	}
 	if (any) AddProperty(p, 'materials', mats);
 }
@@ -211,7 +218,6 @@ function Persist(x:GameObject, isScene:boolean):Hashtable {
 		}
 		AddProperty(instance, 'idtag', id);
 	}
-	// FIXME remove if (id != obj.name) { AddProperty(instance, 'instance', obj.name); }
 	if (isScene) {
 		// We could optimize the number of POSTs by adding a parameter to the scene data, but for now...
 		StartCoroutine( uploadData(obj.id, obj.hash, JSON.Stringify(new Array(refs.Keys)), 'refs') );

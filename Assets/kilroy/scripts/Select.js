@@ -98,11 +98,12 @@ function importImage(url:String) {  // Here, rather than Restore or Obj, because
     NotifyUser('received import data');
     // Users can interactively tile this texture onto meshes. Set up the ability to do this now, just once.
     var txt = inputData.texture;
-	//txt = Instantiate(txt);
 	// Most graphics cards won't repeat-wrap unless it's a power of 2. 
 	var u = powerOfTwo(txt.width); var v = powerOfTwo(txt.height); 
-	Debug.LogWarning('resizing from ' + txt.width + ' x ' + txt.height + ' to ' + u + ' x ' + v);
-	TextureScale.Bilinear(txt, u, v);
+	if ((u != txt.width) || (v != txt.height)) {
+		Log('resizing from ' + txt.width + ' x ' + txt.height + ' to ' + u + ' x ' + v);
+		TextureScale.Bilinear(txt, u, v);
+	}
 	txt.wrapMode = TextureWrapMode.Repeat;
     
     var pict = Instantiate(picturePrefab, pos[0], rot[0]);

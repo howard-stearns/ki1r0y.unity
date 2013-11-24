@@ -31,12 +31,15 @@ public function sharedMaterials(mats:Material[]):Material[] {
 // (We just have it try to wrap each face, but only one of them will be oriented in a way that "takes".)
 function Wrap(picture:GameObject) {
 	Application.ExternalCall('clearOnce', 'wrap');
-	front.gameObject.GetComponent(PictureDrawing).Wrap(picture);	
-	left.gameObject.GetComponent(PictureDrawing).Wrap(picture);	
-	right.gameObject.GetComponent(PictureDrawing).Wrap(picture);	
-	top.gameObject.GetComponent(PictureDrawing).Wrap(picture);	
-	back.gameObject.GetComponent(PictureDrawing).Wrap(picture);	
-	bottom.gameObject.GetComponent(PictureDrawing).Wrap(picture);
+	// Do all, don't short-circuit
+	var any = false;
+	any = front.gameObject.GetComponent.<PictureDrawing>().Wrap(picture) || any;
+	any = left.gameObject.GetComponent.<PictureDrawing>().Wrap(picture) || any;
+	any = right.gameObject.GetComponent.<PictureDrawing>().Wrap(picture) ||	any;
+	any = top.gameObject.GetComponent.<PictureDrawing>().Wrap(picture) || any;	
+	any = back.gameObject.GetComponent.<PictureDrawing>().Wrap(picture) || any;
+	any = bottom.gameObject.GetComponent.<PictureDrawing>().Wrap(picture) || any;
+	if (any) { gameObject.GetComponent.<Obj>().saveScene('wrap'); }
 }
 function NotWrapping(picture:GameObject) {
 	var pictureObj = picture.GetComponent.<Obj>();

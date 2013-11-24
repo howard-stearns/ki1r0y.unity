@@ -82,6 +82,11 @@ function importThing(id:String) {
 	imported.transform.position = pos[0];
 	imported.transform.rotation = rot[0];
 }
+function powerOfTwo(size:int):int { // answer next larger power of two, up to 1024. (Our display maxes at 600px wide.)
+	var p = 0;
+	for (p in [16, 32, 64, 128, 256, 512, 1024]) { if (p > size) { break; } }
+	return p;
+}
 function importImage(url:String) {  // Here, rather than Restore or Obj, because this is per user. Might ref user data.
 	var max = url.Length; if (max > 256) max = 128;
 	var pos = new Vector3[1]; var rot = new Quaternion[1]; setPlacement(pos, rot);
@@ -91,6 +96,14 @@ function importImage(url:String) {  // Here, rather than Restore or Obj, because
 	var inputData:WWW = new WWW(url); 
     yield inputData;  // Do this now, before instantiating the picture, so that we don't have an ugly gray thing sitting there
     NotifyUser('received import data');
+    // Users can interactively tile this texture onto meshes. Set up the ability to do this now, just once.
+    var txt = inputData.texture;
+	//txt = Instantiate(txt);
+	// Most graphics cards won't repeat-wrap unless it's a power of 2. 
+	var u = powerOfTwo(txt.width); var v = powerOfTwo(txt.height); 
+	Debug.LogWarning('resizing from ' + txt.width + ' x ' + txt.height + ' to ' + u + ' x ' + v);
+	TextureScale.Bilinear(txt, u, v);
+	txt.wrapMode = TextureWrapMode.Repeat;
     
     var pict = Instantiate(picturePrefab, pos[0], rot[0]);
     var obj = pict.GetComponent.<Obj>();
@@ -100,13 +113,13 @@ function importImage(url:String) {  // Here, rather than Restore or Obj, because
 
     var mats = obj.sharedMaterials();
     var mat = Material(mats[0]);
-    mat.mainTexture = inputData.texture;
+    mat.mainTexture = txt;
     mats[0] = mat;
     obj.sharedMaterials(mats);
     obj.nametag = currentDropFilename;
     
     var form = new WWWForm();
-   	var bytes = inputData.texture.EncodeToPNG(); // Our upload is always image/png, regardless of drop.
+   	var bytes = txt.EncodeToPNG(); // Our upload is always image/png, regardless of drop.
    	var id = Utils.sha1(bytes);
    	mat.mainTexture.name = id + '.png';
     form.AddBinaryData('fileUpload', bytes, currentDropFilename, 'image/png');
@@ -134,7 +147,7 @@ function importImage(url:String) {  // Here, rather than Restore or Obj, because
 }
 function Start() {  // For debugging
 	if (Application.isWebPlayer) return;
-	var basename = 'avatar.jpg';
+	var basename = 'avatar.jpg'; //'kilroy-20.png';
 	var furl = 'file:///Users/howardstearns/Pictures/' + basename;
 	yield WaitForSeconds(4);
 	Debug.Log('import ' + basename);

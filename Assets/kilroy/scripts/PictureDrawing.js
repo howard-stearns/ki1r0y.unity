@@ -5,7 +5,7 @@
    	  The width and depth are 10 units across, so the localScale is typically 0.1.
    */
 function Log(msg:String) { 
-	// Debug.Log('wrap: ' + msg);
+	//Debug.Log('wrap: ' + msg);
 }
 
 // The picture argument must already be positioned and sized as desired.
@@ -23,21 +23,20 @@ function Log(msg:String) {
 function Wrap(picture:GameObject) {
 	var face = gameObject;
 	var success = false;
-	var pictureObj = picture.GetComponent(Obj);
+	var pictureObj = picture.GetComponent.<Obj>();
 	var bounds = pictureObj.bounds();
 	var p1 = (bounds.center + bounds.extents);
 	var p2 = (bounds.center - bounds.extents);
 	var pNNormal =  -picture.transform.up;
-	Log(face + ' p1:' + p1 + ' p2:' + p2);
 	var hit1:RaycastHit; var hit2:RaycastHit;
 	var fCollider = face.collider; // 
 	var h1 = fCollider.Raycast(Ray(p1 - pNNormal, pNNormal), hit1, Mathf.Infinity);
 	var h2 = fCollider.Raycast(Ray(p2 - pNNormal, pNNormal), hit2, Mathf.Infinity);
-	
-	Log('p1 hit:' + hit1.point + ' uv:' + hit1.textureCoord);
-	Log('p2 hit:' + hit2.point + ' uv:' + hit2.textureCoord);
 		
 	if (h1 && h2) {
+		Log(face + ' p1:' + p1 + ' p2:' + p2);
+		Log('p1 hit:' + hit1.point + ' uv:' + hit1.textureCoord);
+		Log('p2 hit:' + hit2.point + ' uv:' + hit2.textureCoord);
 		var minU = Mathf.Min(hit1.textureCoord.x, hit2.textureCoord.x);
 		var minV = Mathf.Min(hit1.textureCoord.y, hit2.textureCoord.y);
 		var maxU = Mathf.Max(hit1.textureCoord.x, hit2.textureCoord.x);
@@ -49,13 +48,17 @@ function Wrap(picture:GameObject) {
 		var offsetScaled = Vector2.Scale(-scale, offset); 
 		Log(face + ' min:' + Vector2(minU, minV) + ' max:' + Vector2(maxU, maxV));
 		Log(face + ' scale: ' + scale + ' offset:' + offset  + ' offsetScaled:' + offsetScaled);
-		var obj = face.transform.parent.parent.gameObject.GetComponent(Obj);  // Warning: Demeter not happy about being dependent on Block->Cube->face structure.
+		var obj = face.transform.parent.parent.gameObject.GetComponent.<Obj>();  // Warning: Demeter not happy about being dependent on Block->Cube->face structure.
 		var parentMats:Material[] = obj.sharedMaterials();
 		var targetMat:Material = face.renderer.sharedMaterial;
 		var parentIndex = parentMats.IndexOf(parentMats, targetMat);
-		targetMat = Material(targetMat);
 		if (parentIndex >= 0) {
-			targetMat.mainTexture = pictureObj.sharedMaterials()[0].mainTexture;
+			targetMat = Material(targetMat);
+			var txt = pictureObj.sharedMaterials()[0].mainTexture;
+			Log('txt aniso:' + txt.anisoLevel + ' filterMode:' + txt.filterMode + ' bias:' + txt.mipMapBias + ' wrapMode:' + txt.wrapMode
+				 		+ ' format:' + txt.format + ' mipmapCount:' + txt.mipmapCount + ' ' + txt.width + ' x ' +  txt.height);
+			txt.wrapMode = TextureWrapMode.Repeat; // Set at import, but not preserved by our saving.
+			targetMat.mainTexture = txt;
 			targetMat.mainTextureScale = scale;
 			targetMat.mainTextureOffset = offsetScaled;
 			parentMats[parentIndex] = targetMat;

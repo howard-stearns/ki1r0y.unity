@@ -111,7 +111,7 @@ public static function RemoveAdjuster() {
 	Destroy(StickyInstance.transform.parent.gameObject);
 	StickyInstance = null;
 }
-private static var TransparencyOn = true;
+private static var TransparencyOn = false;
 function Update() {
 	if (Input.GetKeyDown(KeyCode.T) && Input.GetKey(KeyCode.LeftControl)) { TransparencyOn = !TransparencyOn; }
 	transparency.enabled = TransparencyOn;

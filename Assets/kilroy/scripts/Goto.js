@@ -271,7 +271,9 @@ function FixedUpdate() {
 			// around over the object, but still select if we move the mouse over different objects.
 			gameObject.GetComponent(Select).UnHighlight();
 			state = GotoState.AtObject;
-			Sticky.RemoveAdjuster();
+			// Removing would require that the pointer exit and re-enter, which is not great for pictures.
+			// We could conditionalize based on target, but now that we don't do transparancy/highlighting by default, we don't need to remove.
+			// Sticky.RemoveAdjuster(); 
 		}
 		break;
 	}

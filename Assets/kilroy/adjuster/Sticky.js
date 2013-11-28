@@ -87,7 +87,7 @@ public static function AddAdjuster(assy:Transform, adjusterPrefab:Transform) { /
 		StickyInstance = gizmo.Find('StrikeTarget').GetComponent.<Sticky>();
 		gizmo.name = 'Adjuster';   // I.e., not "Adjuster (clone)"
 		gizmo.parent = assy;
-		AnyActive = false;
+		AnyActive = true; StickyInstance.isActive = true;
 	} else if (StickyInstance.assembly == assy) {
 		return;
 	} else {

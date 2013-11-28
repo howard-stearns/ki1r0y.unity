@@ -31,21 +31,23 @@ public function sharedMaterials(mats:Material[]):Material[] {
 // (We just have it try to wrap each face, but only one of them will be oriented in a way that "takes".)
 function Wrap(picture:GameObject) {
 	Application.ExternalCall('clearOnce', 'wrap');
-	// Do all, don't short-circuit
-	var any = false;
-	any = front.gameObject.GetComponent.<PictureDrawing>().Wrap(picture) || any;
-	any = left.gameObject.GetComponent.<PictureDrawing>().Wrap(picture) || any;
-	any = right.gameObject.GetComponent.<PictureDrawing>().Wrap(picture) ||	any;
-	any = top.gameObject.GetComponent.<PictureDrawing>().Wrap(picture) || any;	
-	any = back.gameObject.GetComponent.<PictureDrawing>().Wrap(picture) || any;
-	any = bottom.gameObject.GetComponent.<PictureDrawing>().Wrap(picture) || any;
-	if (any) { gameObject.GetComponent.<Obj>().saveScene('wrap'); }
+	if (front.gameObject.GetComponent.<PictureDrawing>().Wrap(picture) 
+	|| left.gameObject.GetComponent.<PictureDrawing>().Wrap(picture) 
+	|| right.gameObject.GetComponent.<PictureDrawing>().Wrap(picture) 
+	|| top.gameObject.GetComponent.<PictureDrawing>().Wrap(picture) 
+	|| back.gameObject.GetComponent.<PictureDrawing>().Wrap(picture)
+	|| bottom.gameObject.GetComponent.<PictureDrawing>().Wrap(picture)) {
+		gameObject.GetComponent.<Obj>().saveScene('wrap'); 
+	} else {
+		Application.ExternalCall('errorMessage', "Kilroy was unable to figure out where the texture should go. Try putting a corner or the center of the " 
+			+ picture.GetComponent.<Obj>().nametag + " onto the " + gameObject.GetComponent.<Obj>().nametag + ".");
+	}
 }
 function NotWrapping(picture:GameObject) {
 	var pictureObj = picture.GetComponent.<Obj>();
 	var thisObj = gameObject.GetComponent.<Obj>();
 	Application.ExternalCall('sayOnce', 
-		'When you have clicked to a picture, you can click the picture again to wrap it around the background surface. (For example, right now you can tile '
-		 + thisObj.nametag + ' with the image from ' + pictureObj.nametag + ' by clicking again.)',
+		"When you have clicked to a picture, you can click the picture again to wrap it around the background surface. (For example, right now you can tile the "
+		 + thisObj.nametag + " with the image from the " + pictureObj.nametag + " by clicking again.)",
 		'wrap');
 }

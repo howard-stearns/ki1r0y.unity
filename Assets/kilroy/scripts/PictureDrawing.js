@@ -5,7 +5,7 @@
    	  The width and depth are 10 units across, so the localScale is typically 0.1.
    */
 function Log(msg:String) { 
-	Debug.Log('wrap: ' + msg);
+	Debug.LogWarning('wrap: ' + msg);
 }
 
 /* 
@@ -96,12 +96,12 @@ a.u' - (a.u * scale.u) = offset.u
 
 Similarly for v.
 */
+function mid(v1, v2) { return (v1 + v2) / 2.0; }
 
 // The picture argument must already be positioned and sized as desired.
 // This function projects the picture mainTexture along picture's "down" axis onto us,
 // and then tiles as necessary to fill us in. (I.e., it keeps the position and size of the 
 // projected picture.)
-// FIXME: The picture is assumed to have the same rotation (around y) as our object.
 function Wrap(picture:GameObject) {
 	var face = gameObject;
 	var pictureObj = picture.GetComponent.<Obj>();
@@ -115,50 +115,81 @@ function Wrap(picture:GameObject) {
 	var uvMa = Vector2.zero; var uvMd = Vector2.zero;
 	var uvTa = Vector2.zero; var uvTd = Vector2.zero;
 	
-	var bounds = pictureObj.bounds();
-	var p1 = (bounds.center - bounds.extents);
-	var p2 = (bounds.center + bounds.extents);
-	var m1 = fCollider.Raycast(Ray(p1 - pNNormal, pNNormal), hita, Mathf.Infinity);
-	var m2 = fCollider.Raycast(Ray(p2 - pNNormal, pNNormal), hitd, Mathf.Infinity);	
-	Log(face + ' p1:' + p1 + ' p2:' + p2);
-	if (m1 && m2) {
-		Log('m1 hit:' + hita.point + ' uv:' + hita.textureCoord);
-		Log('m2 hit:' + hitd.point + ' uv:' + hitd.textureCoord);
-		uvMa = hita.textureCoord; uvTa = Vector2(0, 0);
-		uvMd = hitd.textureCoord; uvTd = Vector2(1, 1);
-		gotPoints = true;
-	} else {
-		var faceBounds = collider.bounds;
-		var vCollider = pictureObj.objectCollider();
-		p1 = faceBounds.center - faceBounds.extents;
-		p2 = faceBounds.center + faceBounds.extents;
-		Log(face + ' face p1:' + p1 + ' p2:' + p2);
-		uvMa = Vector2(0, 0); 
-		uvMd = Vector2(1, 1); 
-		
-		// I'd like to replace the above with some generalization...
-		//var mesh:Mesh = GetComponent(MeshFilter).sharedMesh;
-		//Log(face + ' mesh:' + (mesh ? mesh : 'none'));
-		
-		var t1 = vCollider.Raycast(Ray(p1 - pNNormal, pNNormal), hita, Mathf.Infinity);
-		var t2 = vCollider.Raycast(Ray(p2 - pNNormal, pNNormal), hitd, Mathf.Infinity);
-		if (t1 && t2) {
-			Log('t1 hit:' + hita.point + ' uv:' + hita.textureCoord);
-			Log('t2 hit:' + hitd.point + ' uv:' + hitd.textureCoord);
-			uvTa = hita.textureCoord;
-			uvTd = hitd.textureCoord;
-			gotPoints = true;
+	var vertices = new Vector3[4]; var uv = new Vector2[4];
+	// We need world space positions of the picture corners for dropping, keeping careful track of order.
+	// Fortunately, pictures are created by us so we know exactly which mesh vertex is which.
+	var pictureMesh = pictureObj.mesh.GetComponent.<MeshFilter>().sharedMesh;
+	var index = 0; var iteration = 0;
+	for (var ii:int in [0, 10, 120, 110]) {
+		vertices[index] = pictureObj.mesh.transform.TransformPoint(pictureMesh.vertices[ii]);
+		uv[index] = pictureMesh.uv[ii];
+		index++;
+	}
+	//Log('uv ' + uv[0] + ' ' + uv[1] + ' ' + uv[2] + ' ' + uv[3]);
+	var txt3dCenter = mid(vertices[0], vertices[2]);
+	uvTa = mid(uv[0], uv[2]);
+	//Log('picture center ' + picture.transform.position + ' ' + txt3dCenter);
+	// If this face doesn't have a hit, we want to bail out fast rather than trying like heck to find one.
+	// Corners are not good choices, for this quick test, because they might be right on the edge giving a false negative or false positive.
+	// Checking a "center" point is a good choice, because they're in the middle and ultimately we'll want two diagonal points 
+	// (each point having a different texture u and different texture v), so having a "center" and a single "corner" works out.
+	if (fCollider.Raycast(Ray(txt3dCenter - pNNormal, pNNormal), hita, Mathf.Infinity)) { // if the initial center is good, use that for point a.
+		uvMa = hita.textureCoord;
+		//Log('got center ' + uvMa + ' ' + uvTa);
+	} else { // Try up to 4 candidate new "centers"
+		for (index = 0; index < 4 && !gotPoints; index++) {
+			var candidate = mid(txt3dCenter, vertices[index]);
+			//Log('check canditate corner ' + index + ' ' + candidate + ' from ' + txt3dCenter + ' ' + vertices[index]);
+			if (fCollider.Raycast(Ray(candidate - pNNormal, pNNormal), hita, Mathf.Infinity)) {
+				uvMa = hita.textureCoord; uvTa = mid(uvTa, uv[index]);
+				txt3dCenter = candidate; // for use in moving corners towards this "center", below.
+				gotPoints = true;
+			}
+		}
+		if (!gotPoints) { return false; } // after five interior misses, it's not worth pecking about
+		gotPoints = false; // reset for further activity below
+	}
+	// Now find a diagonal by checking each "corner".
+	// Outer iteration starts with the outer corners. If we fail, move the corners in by half. Repeat up to 4 outer iterations.
+	//Log('corner is ' + txt3dCenter);
+	var selectedIndex = 0; // For angle computation, below.
+	for (iteration = 0; iteration < 4 && !gotPoints; iteration++) {
+		for (index = 0; index < 4 && !gotPoints; index++) {  // try each corner in turn...
+			//Log('corner candidate ' + iteration + ' ' + index + ' ' + vertices[index]);
+			if (fCollider.Raycast(Ray(vertices[index] - pNNormal, pNNormal), hitd, Mathf.Infinity)) {             // ... until we find a drop.
+				uvMd = hitd.textureCoord; uvTd = uv[index];
+				selectedIndex = index;
+				gotPoints = true;
+			}
+		}
+		// We failed to drop a corner onto the mesh. Since we did drop the center, the corners must be too far out.
+		for (index = 0; index < 4 && !gotPoints; index++) { // Move each corner halfwary towards the center (which worked).
+			vertices[index] = mid(vertices[index], txt3dCenter);
+			uv[index] = mid(uv[index], uvTa);
 		}
 	}
 	
 	if (gotPoints) {
+		var obj = face.transform.parent.parent.gameObject.GetComponent.<Obj>();  // Warning: Demeter not happy about being dependent on Block->Cube->face structure.
+		//Log(face + ' index ' + selectedIndex + ' picture ' + uvTa + ' ' + uvTd + ' mesh ' + uvMa + ' ' + uvMd);
+		// Find out if we're rotated: First grab an adjacent corner and work it towards the corner we used until it hits.
+		var adjacentIndex = (selectedIndex + 1)  % 4;
+		var adjacentCorner = vertices[adjacentIndex]; var adjacentUv = uv[adjacentIndex];
+		for (iteration = 0; iteration < 10; iteration++) {
+			if (fCollider.Raycast(Ray(adjacentCorner - pNNormal, pNNormal), hita, Mathf.Infinity)) { break; }
+			adjacentCorner = mid(adjacentCorner, vertices[selectedIndex]);
+		}
+		var rotation = Vector2.Angle(adjacentUv - uvTd, hita.textureCoord - uvMd);
+		if (rotation) { 
+			Application.ExternalCall('advice', "Kilroy cannot yet handle rotated textures. Of course, you can rotate " 
+				+ obj.nametag + " by alt-dragging a corner.");
+		}
 		var scale = Vector2((uvTa.x - uvTd.x) / (uvMa.x - uvMd.x),
 							(uvTa.y - uvTd.y) / (uvMa.y - uvMd.y)); 
 		var offset = Vector2(uvTa.x - (uvMa.x * scale.x),
 							 uvTa.y - (uvMa.y * scale.y));
-		Log(face + ' scale: ' + scale + ' offset:' + offset);		
+		//Log(face + ' scale: ' + scale + ' offset:' + offset + ' rotation:' + rotation);		
 
-		var obj = face.transform.parent.parent.gameObject.GetComponent.<Obj>();  // Warning: Demeter not happy about being dependent on Block->Cube->face structure.
 		var parentMats:Material[] = obj.sharedMaterials();
 		var targetMat:Material = face.renderer.sharedMaterial;
 		var parentIndex = parentMats.IndexOf(parentMats, targetMat);
@@ -178,6 +209,5 @@ function Wrap(picture:GameObject) {
 			//Log(face + ' texture scale: ' + face.renderer.material.mainTextureScale + ' offset:' + face.renderer.material.mainTextureOffset); 
 		} else Application.ExternalCall('errorMessage', "Failed to find " + targetMat + " in sharedMaterials.");
 	}
-	//Application.ExternalCall('errorMessage', 'Texture wrapping is currently limited to when all four corners of the picture fit squarely on the target.');
 	return false;
 }

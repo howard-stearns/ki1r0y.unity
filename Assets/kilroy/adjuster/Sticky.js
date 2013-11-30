@@ -103,12 +103,7 @@ public static function AddAdjuster(assy:Transform, adjusterPrefab:Transform) { /
 	go.BroadcastMessage('updateAssembly', assy, SendMessageOptions.DontRequireReceiver);	
 	go.BroadcastMessage('updateAffordance', null, SendMessageOptions.DontRequireReceiver); // get the size right
 }
-	/*	if (assy.gameObject.GetComponent.<Obj>().kind == 'Plane') {
-		Destroy(gizmo.Find('X').gameObject);  // We can probably do this more efficiently.
-		Destroy(gizmo.Find('Xneg').gameObject);
-		Destroy(gizmo.Find('Z').gameObject);
-		Destroy(gizmo.Find('Zneg').gameObject);
-	}*/
+
 public static function RemoveAdjuster() {
 	if (!StickyInstance) return;
 	Destroy(StickyInstance.transform.parent.gameObject);
@@ -138,7 +133,7 @@ function startDragging(assembly:Transform, cameraRay:Ray, hit:RaycastHit):Laser 
 		// Transfer gizmo to copy. Can't destroy it because it has state (including our own executing code).
 		var gizmo = unparentGizmo(assembly);
 		originalCopied = go;
-		go = Instantiate(go);
+		go = Instantiate(go, assembly.position, assembly.rotation);
 		assembly = go.transform;  
 		gizmo.parent = assembly;
 		assembly.parent = originalCopied.transform.parent;

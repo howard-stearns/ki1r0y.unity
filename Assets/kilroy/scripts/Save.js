@@ -90,7 +90,7 @@ function AddComponent(p:Hashtable, component:Obj) {
 		AddProperty(p, 'mesh', path[path.length - 1]);  // Specifies materials within data at objPath.
 	} else if (component.materialData) {
 		mats = component.materialData;
-		any = true;
+		any = mats.length > 0;
 	} else {  // If not already cached. We could make a rule that it has to be, but that doesn't feel safe.
 		for (var mat in component.sharedMaterials()) {
 			var txt = mat.mainTexture;
@@ -104,7 +104,6 @@ function AddComponent(p:Hashtable, component:Obj) {
 			// uploaded at creation time. All we have to do here is just include that
 			// name, and we never have to worry about potentially slow texture uploads 
 			// during scene saves. 
-			// FIXME: encode other properties (scale, offset).
 				var id:Object = txt.name;
 				if ((mat.mainTextureScale != Vector2.one) || (mat.mainTextureOffset != Vector2.zero)) {
 					id = {'su': mat.mainTextureScale.x, 'sv': mat.mainTextureScale.y,
@@ -114,7 +113,7 @@ function AddComponent(p:Hashtable, component:Obj) {
 				mats.Push(id);
 			}
 		}
-		component.materialData = mats;
+		component.materialData = any ? mats : [];
 	}
 	if (any) AddProperty(p, 'materials', mats);
 }

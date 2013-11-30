@@ -41,7 +41,7 @@ public class ResourceLoader : MonoBehaviour {
 		yield return loader;
 		Log(DEBUG, "received", path);
 		if (loader.error != null && loader.error != "") { 
-			Warn(loader.error); 
+			Warn(path + ' ' + loader.error); 
 		} else {
 			material.mainTexture = loader.texture;
    			material.mainTexture.name = textureName;

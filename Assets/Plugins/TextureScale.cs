@@ -1,5 +1,6 @@
 ﻿// Only works on ARGB32, RGB24 and Alpha8 textures that are marked readable
 // By Eric Haines, see http://wiki.unity3d.com/index.php/TextureScale
+// Modified to use lock instead of Mutex, which does not work in the Web plugin. -HRS 11/29/13
 using System.Threading;
 using UnityEngine;
  
@@ -22,7 +23,7 @@ public class TextureScale
     private static float ratioY;
     private static int w2;
     private static int finishCount;
-    private static Mutex mutex;
+    //private static Mutex mutex;
  
 	public static void Point (Texture2D tex, int newWidth, int newHeight)
     {
@@ -53,9 +54,9 @@ public class TextureScale
 		var slice = newHeight/cores;
  
 		finishCount = 0;
-		if (mutex == null) {
+		/*if (mutex == null) {
 			mutex = new Mutex(false);
-		}
+		}*/
 		if (cores > 1)
 		{
 		    int i = 0;
@@ -117,9 +118,11 @@ public class TextureScale
 			}
 		}
  
-		mutex.WaitOne();
+		lock (typeof(TextureScale)) {
+		//mutex.WaitOne();
 		finishCount++;
-		mutex.ReleaseMutex();
+		//mutex.ReleaseMutex();
+		}
 	}
  
 	public static void PointScale (System.Object obj)
@@ -134,9 +137,11 @@ public class TextureScale
 			}
 		}
  
-		mutex.WaitOne();
+		lock (typeof(TextureScale)) {
+		//mutex.WaitOne();
 		finishCount++;
-		mutex.ReleaseMutex();
+		//mutex.ReleaseMutex();
+		}
 	}
  
 	private static Color ColorLerpUnclamped (Color c1, Color c2, float value)

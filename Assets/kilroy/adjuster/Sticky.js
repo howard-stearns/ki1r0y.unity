@@ -127,7 +127,9 @@ private var fwd1:Vector3;
 
 private var originalCopied:GameObject; // during a copy drag, this holds the original prototype of the copy.
 private var draggedOriginalLayer = 0;  // of the whole assembly, not just the Obj.mesh
+var lastSurface:Collider;  // Keep track of this during dragging so that we can reparent at end.
 function startDragging(assembly:Transform, cameraRay:Ray, hit:RaycastHit):Laser {
+	lastSurface = null;
 	var go = assembly.gameObject; var obj = go.GetComponent.<Obj>();
 	if (!!Input.GetAxis('Fire2')) {  //  alt/option key
 		// Transfer gizmo to copy. Can't destroy it because it has state (including our own executing code).
@@ -219,7 +221,6 @@ function startDragging(assembly:Transform, cameraRay:Ray, hit:RaycastHit):Laser 
 	hit.point = surfaceHit.point; // so that Laser.StartInteraction() can do the right thing.
 	return Avatar().Find('Shoulder').GetComponent.<Laser>();
 }
-var lastSurface:Collider;  // Keep track of this during dragging so that we can reparent at end.
 function stopDragging(assembly:Transform) {	
 	// StrikeTarget must normally be on the same layer as other objects (Default). Otherwise large but covered StrikeTargets would
 	// soak up DoAdjuster.OnMouseEnter events from the objects that cover it.

@@ -84,7 +84,7 @@ function importThing(id:String) {
 }
 function powerOfTwo(size:int):int { // answer next larger power of two, up to 1024. (Our display maxes at 600px wide.)
 	var p = 0;
-	for (p in [16, 32, 64, 128, 256, 512, 1024]) { if (p > size) { break; } }
+	for (p in [16, 32, 64, 128, 256, 512, 1024]) { if (p >= size) { break; } }
 	return p;
 }
 function importImage(url:String) {  // Here, rather than Restore or Obj, because this is per user. Might ref user data.
@@ -95,14 +95,16 @@ function importImage(url:String) {  // Here, rather than Restore or Obj, because
 	
 	var inputData:WWW = new WWW(url); 
     yield inputData;  // Do this now, before instantiating the picture, so that we don't have an ugly gray thing sitting there
-    NotifyUser('received import data');
     // Users can interactively tile this texture onto meshes. Set up the ability to do this now, just once.
     var txt = inputData.texture;
 	// Most graphics cards won't repeat-wrap unless it's a power of 2. 
 	var u = powerOfTwo(txt.width); var v = powerOfTwo(txt.height); 
 	if ((u != txt.width) || (v != txt.height)) {
-		Log('resizing from ' + txt.width + ' x ' + txt.height + ' to ' + u + ' x ' + v);
+		NotifyUser('resizing ' + txt.format + ' data from ' + txt.width + ' x ' + txt.height + ' to ' + u + ' x ' + v);
 		TextureScale.Bilinear(txt, u, v);
+		NotifyUser('resizing complete');
+	} else {
+	    NotifyUser('received import data ' + txt.width + ' x ' + txt.height);
 	}
 	txt.wrapMode = TextureWrapMode.Repeat;
     

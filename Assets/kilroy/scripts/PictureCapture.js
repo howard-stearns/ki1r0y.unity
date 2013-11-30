@@ -24,6 +24,7 @@ function Thumbnail (ids:Array):IEnumerator {
     // Facebook is variously said to require 50 min, 200 min preferred,
     // 400 min in forum discussions, 1500 preferred, 3:1 maximum aspect ratio,
     // 5MB max size.
+    // TODO: measure timing of uploading this size vs first using TextureScale to downsample.
     var width = Screen.width;
     var height = Screen.height;
     var tex = new Texture2D( width, height, TextureFormat.RGB24, false );

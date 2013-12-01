@@ -66,6 +66,7 @@ public var laser:Laser;
 function startDragging1(cameraRay:Ray, hit:RaycastHit) {
 	isMoving = true;
 	AnyMoving = true;
+	if (laser != null) { laser.EndInteraction(); } // If a bug allows this to happen, kill it now.
 	laser = startDragging(assembly, cameraRay, hit);
 	if (laser != null) { laser.StartInteraction(hit.point, assembly); }
 }

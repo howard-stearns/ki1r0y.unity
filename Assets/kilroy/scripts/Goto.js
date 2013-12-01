@@ -165,8 +165,6 @@ function Goto(trans:Transform, addToHistory) {
 	var obj = trans.gameObject.GetComponent(Obj);
 	if (trans == currentSite) {
 		trans.parent.gameObject.SendMessage("Wrap", trans.gameObject, SendMessageOptions.DontRequireReceiver);
-		//trans.gameObject.GetComponent(PictureDrawing).Wrap(trans.parent.gameObject);
-		//Wrap(trans.gameObject, trans.parent.gameObject);
 		return;
 	}
 	trans.parent.gameObject.SendMessage("NotWrapping", trans.gameObject, SendMessageOptions.DontRequireReceiver);

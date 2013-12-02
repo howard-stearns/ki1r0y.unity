@@ -270,9 +270,25 @@ function saveScene(action:String) { // Save whatever needs to be saved from the 
 function savedScene(action:String, changes:Array):IEnumerator { // Callback from saveScene.
 	yield gameObject.GetComponent.<PictureCapture>().Thumbnail(changes);
 	Application.ExternalCall('saved', id, nametag, timestamp, action, hash, GameObjectPath());
+	switch (action) {
+	case 'import': ExternalPropertyEdit('metadata', false); break; // Give user a chance to edit and share
+	case 'sway':
+	case 'heave':
+	case 'surge':
+	case 'pitch':
+	case 'yaw':
+	case 'roll':
+	case 'width':
+	case 'height':
+	case 'length':
+	case 'nametag':
+	case 'description':
+		Application.ExternalCall('props', GameObjectPath(), nametag, author, description, !!transform.parent);
+		break;
+	}
 	if (!enabled) { Destroy(gameObject); } // if deleted, can only safely be destroyed now.
-	if (action == 'import') { ExternalPropertyEdit('metadata', false); } // Give user a chance to edit and share
 }
+	
 
 /*****************************************************************************************/
 // The following are all messages sent from outside, to change a property of this object.

@@ -114,23 +114,25 @@ function importImage(url:String) {  // Here, rather than Restore or Obj, because
     pict.transform.parent = scene.transform;
     obj.size(Vector3(1, 0, 1));  // else the prefab is not really right
 
+    var bytes = txt.EncodeToPNG(); // Our upload is always image/png, regardless of drop.
+   	var id = Utils.sha1(bytes);
     var mats = obj.sharedMaterials();
     var mat = Material(mats[0]);
     mat.mainTexture = txt;
+    mat.mainTexture.name = id + '.png';
     mats[0] = mat;
     obj.sharedMaterials(mats);
     obj.nametag = currentDropFilename;
+    obj.materialData = null; // clear cache so that it gets generated. (Why does this matter more in plugin than editor?).
     
+    // FIXME? Does the upload have to come after saveScene, in case there are two gcs between upload and rooting an object?
     var form = new WWWForm();
-   	var bytes = txt.EncodeToPNG(); // Our upload is always image/png, regardless of drop.
-   	var id = Utils.sha1(bytes);
-   	mat.mainTexture.name = id + '.png';
     form.AddBinaryData('fileUpload', bytes, currentDropFilename, 'image/png');
    	// Media upload is generally pretty slow, and we don't want the user
     // to exit the browser or close their laptop during that time, so we
     // let the user know what's happening.
     // IWBNI we showed upload progress, but WWW.uploadProgress is broken in the Web player.
-    var msg = 'saving ' + currentDropFilename;
+    var msg = 'Saving ' + currentDropFilename;
     StatusMessageStart(msg);
 	var upload = WWW('http://' + Save.host + '/media/' + id, form);
 	yield upload;
@@ -150,8 +152,8 @@ function importImage(url:String) {  // Here, rather than Restore or Obj, because
 }
 function Start() {  // For debugging
 	if (Application.isWebPlayer) return;
-	var basename = 'avatar.jpg'; //'kilroy-20.png';
-	var furl = 'file:///Users/howardstearns/Pictures/' + basename;
+	var basename = "rough-wood-floor.jpeg"; //'avatar.jpg'; //'kilroy-20.png';
+	var furl = 'file:///Users/howardstearns/Pictures/textures/' + basename;
 	yield WaitForSeconds(4);
 	Debug.Log('import ' + basename);
 	setImportTarget('374x300');

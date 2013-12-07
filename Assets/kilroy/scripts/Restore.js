@@ -383,7 +383,6 @@ function Update() {
 }
 
 function Awake () {
-	if (!enabled) { return; }
 	if (Application.isEditor) {
 		RestoreScene(sceneId, true);
 	}

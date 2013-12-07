@@ -239,11 +239,13 @@ function CoFill(go:GameObject, id:String, data:Hashtable):IEnumerator {
 			var materials = new Material[nMats];
 			for (var i = 0; i < nMats; i++) {
 				var mData = obj.materialData[i];
-				var mat:Material = materialsTable[mData];
+				var complex = (typeof mData) == System.Collections.Hashtable;
+				var mKey = complex ? JSON.Stringify(mData as Hashtable) : mData;
+				var mat:Material = materialsTable[mKey];
 				if (mat == null) {
 					mat = new Material(materialPrototype);
-					materialsTable[mData] = mat;
-					if ((typeof mData) == System.Collections.Hashtable) {
+					materialsTable[mKey] = mat;
+					if (complex) {
 						var su = mData['su']; var sv = mData['sv']; if (su || sv) mat.mainTextureScale = Vector2(su || 1, sv || 1);
 						var ou = mData['ou']; var ov = mData['ov']; if (ou || ov) mat.mainTextureOffset = Vector2(ou || 0, ov || 0);
 						mData = mData['map'];
@@ -278,7 +280,7 @@ function CoFill(go:GameObject, id:String, data:Hashtable):IEnumerator {
 			if (!safetyNet && (comp.nametag == 'floor')) {
 				Log('creating safetyNet');
 				var avatars = GameObject.FindGameObjectsWithTag('Player');
-				for (var avatar in avatars) { avatar.transform.position.y = 1; }
+				for (var avatar in avatars) { avatar.transform.position.y = 2; }
 				safetyNet = Instantiate(safetyNetPrototype.gameObject).transform;
 				safetyNet.parent = transform;
 			}

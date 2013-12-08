@@ -15,16 +15,14 @@ private function trackMouseMotion(enabled:boolean) {
 	Screen.lockCursor = enabled;
 	crosshair.enabled = enabled;
 	
-	var s = 'mouse look:' + enabled + ' lockCursor:' + Screen.lockCursor + ' crosshair:' + crosshair.enabled + ' @' + Time.time + ' fixed:' + Time.fixedTime;
-	/*if ((Screen.lockCursor != enabled) || (crosshair.enabled != enabled)) Debug.LogError(s);
-	else Debug.Log(s);*/
-	Application.ExternalCall('notifyUser', s);
+	//var s = 'mouse look:' + enabled + ' lockCursor:' + Screen.lockCursor + ' crosshair:' + crosshair.enabled + ' @' + Time.time + ' fixed:' + Time.fixedTime;
+	//Application.ExternalCall('notifyUser', s);
 }
 
 function Start() { // set up expected state regardless of environment.
 	crosshair = transform.Find('crosshair').GetComponent.<GUITexture>();
 	if (Application.isEditor) crosshair.pixelInset.y = -15; // because the editor is weird
-	Debug.Log('OverlayControls Screen.lockCursor was ' + Screen.lockCursor);
+	//Debug.Log('OverlayControls Screen.lockCursor was ' + Screen.lockCursor);
 	// In editor and stand-alone we could start off with screen locked, but that is not allowed in a browser, so let's always do that.
 	trackMouseMotion(false);
 }

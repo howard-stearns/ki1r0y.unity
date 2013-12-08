@@ -135,14 +135,15 @@ function startDragging(assembly:Transform, cameraRay:Ray, hit:RaycastHit):Laser 
 		// Transfer gizmo to copy. Can't destroy it because it has state (including our own executing code).
 		var gizmo = unparentGizmo(assembly);
 		originalCopied = go;
+		var originalObj = assemblyObj;
 		go = Instantiate(go, assembly.position, assembly.rotation);
 		assembly = go.transform;  
 		gizmo.parent = assembly;
 		assembly.parent = originalCopied.transform.parent;
 		assembly.BroadcastMessage('updateAssembly', assembly, SendMessageOptions.DontRequireReceiver);		
 		// assemblyObj is side-effected by updateAssembly.
-		// fixme assemblyObj.nametag = obj.nametag + '-copy';  // Hopefully temporary disambiguator during development.
 		assemblyObj.sharedMaterials(obj.sharedMaterials());
+		assemblyObj.renamePlace();       // rename if it's a place.
 		obj = assemblyObj;
 		// If we're making a copy, the first dragging movement will always intersect the original object, and 
 		// we'll instantly jump out from that surface as we try to mount the copy onto the original. Even if 

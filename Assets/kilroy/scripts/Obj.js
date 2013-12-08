@@ -21,6 +21,26 @@ function isGroup() {
 	if (id == '') return false;
 	return id.length != hash.length; 
 }
+function renamePlace() { // every place must have a unique name. Use after import or copy.
+	if (!isGroup()) { return; }
+	id = 'G'; // Will get assigned a guid during save.
+	for (var child:Transform in transform) {
+		var childObj = child.GetComponent.<Obj>();
+		if (childObj) { childObj.renamePlace(); }
+	}
+}
+private function makeNotPlace() {  // Kills the "place"-ness of this and descendants if necessary.
+	if (!isGroup()) { return; }
+	id = ''; // Will get assigned a hash during save
+	for (var child:Transform in transform) {
+		var childObj = child.GetComponent.<Obj>();
+		if (childObj) { childObj.makeNotPlace(); }
+	}
+}	
+function enforcePlaceRules() { //places can only have places as parents
+	if (!transform.parent || transform.parent.GetComponent.<Obj>().isGroup()) { return; }
+	makeNotPlace();
+}
 
 
 public var kind = '';
@@ -264,6 +284,7 @@ function Awake() { // Initialize saver, if available.
 }
 function saveScene(action:String) { // Save whatever needs to be saved from the whole scene (or silently skip if not set up to save).
 	if (!saveEnabled()) { Debug.Log('skipping save of ' + name); return; } 
+	enforcePlaceRules(); // Whether dragging, copying, or importing, the only way to re-parent a place is through here.
 	//	debugging: Application.ExternalCall('notifyUser', 'now '+ transform.position.ToString() + ' ' + transform.eulerAngles.ToString() + ' ' + transform.lossyScale.ToString());	
 	timestamp = saver.PersistScene(this, action); // for value and for the side-effect on id.
 }

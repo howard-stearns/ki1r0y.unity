@@ -301,7 +301,9 @@ public var destinationPath = '';
 public var savePath = '';
 function SceneReady() {
 	if (savePath) { 
-		transform.Find(savePath).GetComponent.<Obj>().saveScene('import');
+		var obj = transform.Find(savePath).GetComponent.<Obj>();
+		obj.renamePlace();
+		obj.saveScene('import');
 		savePath = ''; 
 		return;
 	} 

@@ -326,9 +326,9 @@ function setRotationY(v:String) {var vec = transform.localEulerAngles; transform
 function setRotationZ(v:String) {var vec = transform.localEulerAngles; transform.localEulerAngles = Vector3(vec.x, vec.y, parseFloat(v)); saveScene('roll');}
 
 // While the gizmo is up, we just set localScale. StopGizmo() will recompute size from localScale.
-function setSizeX(v:String) {var vec = transform.localScale; transform.localScale = Vector3(parseFloat(v)/size().x, vec.y, vec.z); saveScene('width');}
-function setSizeY(v:String) {var vec = transform.localScale; transform.localScale = Vector3(vec.x, parseFloat(v)/size().y, vec.z); saveScene('height');}
-function setSizeZ(v:String) {var vec = transform.localScale; transform.localScale = Vector3(vec.x, vec.y, parseFloat(v)/size().z); saveScene('length');}
+function setSizeX(v:String) {var vec = transform.localScale; transform.localScale = Vector3(parseFloat(v)/size().x, vec.y, vec.z); Directional.ApplyChanges(transform).saveScene('width');}
+function setSizeY(v:String) {var vec = transform.localScale; transform.localScale = Vector3(vec.x, parseFloat(v)/size().y, vec.z); Directional.ApplyChanges(transform).saveScene('height');}
+function setSizeZ(v:String) {var vec = transform.localScale; transform.localScale = Vector3(vec.x, vec.y, parseFloat(v)/size().z); Directional.ApplyChanges(transform).saveScene('length');}
 
 function settag0(v:String) { nametag = v; saveScene('nametag'); }
 function setDesc(v:String) { description = v; saveScene('description'); }

@@ -69,7 +69,8 @@ function RestoreChild(data:Hashtable, parent:Transform) {
 }
 function RestoreChild(id:String, hash:String, instance:String, parent:Transform) {
 	var child = parent.Find(instance); // FIXME id: what do we want to do about multiple instance of the same object id?
-	Application.ExternalCall('notifyUser', 'RestoreChild(' + id + ', ' + hash + ', ' + instance + ', ' + parent + ') child:' + child);
+	Application.ExternalCall('notifyUser', 'RestoreChild(' + id + ', ' + hash + ', ' + instance + ', ' + (parent != null ? parent.name : 'null') + ') child:' 
+		+ (child != null ? child.name : 'null'));
 	var newChild = !child;
 	if (newChild) {
 		var childGo = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -274,8 +275,10 @@ function CoFill(go:GameObject, id:String, data:Hashtable):IEnumerator {
 		if (size != null) childObj.size(makeVector3(size));
 	}
 	// Destroy any children with Obj components that are obsolete (not legitimate).
-	for (var childTransform:Transform in go.transform) {
+	for (var index = go.transform.childCount; index > 0;) { // backwards as we remove
+		var childTransform = go.transform.GetChild(--index);
 		var comp = childTransform.gameObject.GetComponent.<Obj>();
+		//Debug.Log(go.name + ': examining child ' + childTransform.name);
 		if (comp && (childTransform.tag != 'SafetyNet') && !IsInArray(comp, legitimateChildren)) { // don't kill SafetyNet until the end.
 			// If we're about to kill the floor, set up the safetyNet again.
 			if (!safetyNet && (comp.nametag == 'floor')) {
@@ -285,9 +288,9 @@ function CoFill(go:GameObject, id:String, data:Hashtable):IEnumerator {
 				safetyNet = Instantiate(safetyNetPrototype.gameObject).transform;
 				safetyNet.parent = transform;
 			}
-			Debug.LogWarning('destroying obsolete ' + childTransform);
+			//Application.ExternalCall('notifyUser', go.name + ': destroying obsolete ' + childTransform.name);
 			childTransform.parent = null;
-			Destroy(childTransform.gameObject);
+			UnityEngine.Object.Destroy(childTransform.gameObject);
 		}
 	}
 }

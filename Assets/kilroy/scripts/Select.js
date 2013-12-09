@@ -123,7 +123,6 @@ function importImage(url:String) {  // Here, rather than Restore or Obj, because
     mats[0] = mat;
     obj.sharedMaterials(mats);
     obj.nametag = currentDropFilename;
-    obj.materialData = null; // clear cache so that it gets generated. (Why does this matter more in plugin than editor?).
     
     // FIXME? Does the upload have to come after saveScene, in case there are two gcs between upload and rooting an object?
     var form = new WWWForm();

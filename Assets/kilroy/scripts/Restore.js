@@ -232,13 +232,13 @@ function CoFill(go:GameObject, id:String, data:Hashtable):IEnumerator {
 		break;
 	}
 
-	obj.materialData = data['materials'];
-	if (obj.materialData != null) {
-		var nMats = obj.materialData.length;
+	var mats = data['materials'];
+	if (mats != null) {
+		var nMats = mats.length;
 		if (nMats) {
 			var materials = new Material[nMats];
 			for (var i = 0; i < nMats; i++) {
-				var mData = obj.materialData[i];
+				var mData = mats[i];
 				var complex = (typeof mData) == System.Collections.Hashtable;
 				var mKey = complex ? JSON.Stringify(mData as Hashtable) : mData;
 				var mat:Material = materialsTable[mKey];
@@ -255,6 +255,7 @@ function CoFill(go:GameObject, id:String, data:Hashtable):IEnumerator {
 				materials[i] = mat;
 			}
 			obj.sharedMaterials(materials);
+			obj.materialData = mats; //after previous line, which clears materialData.
 		}
 	}
 	var legitimateChildren = new Array(); // Keep track of the Objs we're now supposed to have.

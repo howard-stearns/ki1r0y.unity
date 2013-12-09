@@ -185,19 +185,20 @@ public function sharedMaterials():Material[] {
 	else m = r.sharedMaterials;
 	return m;
 }
+// Materials may have large textures that take a while to download. We don't want to wait for that before we can ask the obj for the material data needed for saving.
+// We can save the material data here during restoration, so we don't have to wait for download before saving.
+public var materialData:Object = null; // We use null as way to clear the value, and the plugin sometimes forces it at compile-time to truthy if there's an Array declaration.
 // Assign new sharedMaterials and answer the new value.
 public function sharedMaterials(mats:Material[]):Material[] {
 	var go = !!mesh ? mesh : gameObject;
 	var r = go.renderer;
 	var block = gameObject.GetComponent.<BlockDrawing>();
+	materialData = null; // clear cache so that it gets regenerated on save.
 	if (!r && !block && !mats.Length) return mats;
 	else if (block) block.sharedMaterials(mats);
 	else r.sharedMaterials = mats;	
 	return mats;
 }
-// Materials may have large textures that take a while to download. We don't want to wait for that before we can ask the obj for the material data needed for saving.
-// We can save the material data here during restoration, so we don't have to wait for download before saving.
-public var materialData:Array;
 
 // Answer the Kilroy GameObject of the given c, else c's non-avatar parent GameObject, else null.
 public static function ColliderGameObject(c:Collider):GameObject { 

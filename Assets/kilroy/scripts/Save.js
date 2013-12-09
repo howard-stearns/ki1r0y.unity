@@ -86,7 +86,7 @@ function AddComponent(p:Hashtable, component:Obj) {
 	if (component.kind == 'Mesh') {
 		var path = splitPath(component.mesh.GetComponent.<ObjMesh>().objPath);
 		AddProperty(p, 'mesh', path[path.length - 1]);  // Specifies materials within data at objPath.
-	} else if (component.materialData) {
+	} else if (component.materialData != null) {
 		mats = component.materialData;
 		any = mats.length > 0;
 	} else {  // If not already cached. We could make a rule that it has to be, but that doesn't feel safe.

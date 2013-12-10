@@ -289,7 +289,6 @@ function CoFill(go:GameObject, id:String, data:Hashtable):IEnumerator {
 				safetyNet.parent = transform;
 			}
 			//Application.ExternalCall('notifyUser', go.name + ': destroying obsolete ' + childTransform.name);
-			childTransform.parent = null;
 			UnityEngine.Object.Destroy(childTransform.gameObject);
 		}
 	}
@@ -300,9 +299,9 @@ function IsInArray(item, array:Array):boolean {
 }
 
 public var safetyNet:Transform;
-public var destinationIdtag = '';
-public var destinationPath = '';
-public var savePath = '';
+public var destinationIdtag = '';	// objectIdtag to goto after the restoration. Any matching object will do if there are multiple instances.
+public var destinationPath = '';	// Full scene-graph path to a specific object to goto after the restoration.
+public var savePath = '';  			// Where to report the completion of the restoration (e.g., after import).
 function SceneReady() {
 	if (savePath) { 
 		var obj = transform.Find(savePath).GetComponent.<Obj>();
@@ -344,13 +343,13 @@ function RestoreScene(combo:String, checkHistory:boolean) {
 		if (parts.length == 1) { // oops. really just a scene
 			destinationIdtag = destinationPath = '';
 		} else {
-			id = parts[1];
+			id = parts[1]; // 1 not 0, because path starts with a slash.
 		}
 	}
 	avatarActions(false);
 	var existing = gameObject.GetComponent.<Obj>();
 	existing.versions = null; // Clear out cache so that CoFillVersions doesn't optimize away the fetch.
-	Application.ExternalCall('notifyUser', 'RestoreScene id:' + id + ' version:' + version + ' destination:' + destinationIdtag
+	Application.ExternalCall('notifyUser', 'RestoreScene id:' + id + ' version:' + version + ' destination:' + (destinationPath || destinationIdtag)
 		+ ' checkHistory:' + checkHistory + ' existing idv:' + existing.hash + ' existing SelectedId:' + (Obj.SelectedId ? Obj.SelectedId : 'null'));
 	// The following is a bit of a multi-way pun. After resotoration, we will GoToObj, which will tell the browser to select IFF
 	//   a) we're going to a an object that is different than the current selected object, or

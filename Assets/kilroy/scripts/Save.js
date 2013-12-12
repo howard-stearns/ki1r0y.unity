@@ -8,12 +8,14 @@ public static function splitPath(path:String, sep:String) {
 public static function splitPath(path:String) { return splitPath(path, ':'); }
 
 public static var userId = '100004567501627';
+public static var userNametag = 'Trevor Unity';
 public static var host = 'localhost:3000';
 function ContactInfo(combo:String) {
 	var pair = splitPath(combo, '/'); // can't use : as separator, because host might contain :port.
 	host = pair[0];
 	userId = pair[1];
-	Application.ExternalCall('notifyUser', 'ContactInfo host:' + host + ' userId:' + userId);
+	userNametag = pair[2];
+	Application.ExternalCall('notifyUser', 'ContactInfo host:' + host + ' userId:' + userId + ' userNametag:' + userNametag);
 }
 
 // It is much easier for us to debug code, and for users to match things up, when all

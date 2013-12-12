@@ -126,6 +126,7 @@ function importImage(url:String) {  // Here, rather than Restore or Obj, because
     mats[0] = mat;
     obj.sharedMaterials(mats);
     obj.nametag = currentDropFilename;
+    obj.description = "Picture imported into " + GameObject.FindWithTag('SceneRoot').GetComponent.<Obj>().nametag + " by " + Save.userNametag + ".";
     
     // FIXME? Does the upload have to come after saveScene, in case there are two gcs between upload and rooting an object?
     var form = new WWWForm();
@@ -154,7 +155,7 @@ function importImage(url:String) {  // Here, rather than Restore or Obj, because
 }
 function Start() {  // For debugging
 	if (Application.isWebPlayer) return;
-	var basename = 'bad-facebook-email.jpg'; //"rough-wood-floor.jpeg"; //'avatar.jpg'; //'kilroy-20.png';
+	var basename = 'kilroy-20.png'; //'avatar.jpg';
 	var furl = 'file:///Users/howardstearns/Pictures/' + basename;
 	yield WaitForSeconds(4);
 	Debug.Log('import ' + basename);

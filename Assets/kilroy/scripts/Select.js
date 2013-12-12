@@ -97,7 +97,10 @@ function importImage(url:String) {  // Here, rather than Restore or Obj, because
     yield inputData;  // Do this now, before instantiating the picture, so that we don't have an ugly gray thing sitting there
     // Users can interactively tile this texture onto meshes. Set up the ability to do this now, just once.
     var txt = inputData.texture;
-	// Most graphics cards won't repeat-wrap unless it's a power of 2. 
+    // We could import small pixel sizes as small objects, but that makes them hard to manipulate.
+    // Instead, let's just preserve an aspect ratio to a height of 1.
+    var originalAspectWidth = (1.0 * txt.width) / txt.height;
+ 	// Most graphics cards won't repeat-wrap unless it's a power of 2. 
 	var u = powerOfTwo(txt.width); var v = powerOfTwo(txt.height); 
 	if ((u != txt.width) || (v != txt.height)) {
 		NotifyUser('resizing ' + txt.format + ' data from ' + txt.width + ' x ' + txt.height + ' to ' + u + ' x ' + v);
@@ -112,7 +115,7 @@ function importImage(url:String) {  // Here, rather than Restore or Obj, because
     var obj = pict.GetComponent.<Obj>();
     pict.transform.Rotate(90, 180, 0);
     pict.transform.parent = scene.transform;
-    obj.size(Vector3(1, 0, 1));  // else the prefab is not really right
+    obj.size(Vector3(originalAspectWidth, 0, 1));  // else the prefab is not really right
 
     var bytes = txt.EncodeToPNG(); // Our upload is always image/png, regardless of drop.
    	var id = Utils.sha1(bytes);
@@ -151,8 +154,8 @@ function importImage(url:String) {  // Here, rather than Restore or Obj, because
 }
 function Start() {  // For debugging
 	if (Application.isWebPlayer) return;
-	var basename = "rough-wood-floor.jpeg"; //'avatar.jpg'; //'kilroy-20.png';
-	var furl = 'file:///Users/howardstearns/Pictures/textures/' + basename;
+	var basename = 'bad-facebook-email.jpg'; //"rough-wood-floor.jpeg"; //'avatar.jpg'; //'kilroy-20.png';
+	var furl = 'file:///Users/howardstearns/Pictures/' + basename;
 	yield WaitForSeconds(4);
 	Debug.Log('import ' + basename);
 	setImportTarget('374x300');

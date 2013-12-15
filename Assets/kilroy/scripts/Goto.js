@@ -46,7 +46,7 @@ public function GetRelated() {
 		data.push({
 			'objectIdtag': obj.hash, 'objectNametag': obj.nametag, 
 			'sceneNametag': sceneNametag, 'timestamp': obj.timestamp,
-			'userIdtag': obj.author});
+			'userIdtag': obj.author, 'description': obj.description});
 	}
 	Application.ExternalCall('setRelated', JSON.Stringify(data));
 }

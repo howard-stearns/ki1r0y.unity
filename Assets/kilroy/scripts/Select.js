@@ -115,7 +115,7 @@ function importImage(url:String) {  // Here, rather than Restore or Obj, because
     var obj = pict.GetComponent.<Obj>();
     pict.transform.Rotate(90, 180, 0);
     pict.transform.parent = scene.transform;
-    obj.size(Vector3(originalAspectWidth, 0, 1));  // else the prefab is not really right
+    obj.size(Vector3(originalAspectWidth, 0, 1));
 
     var bytes = txt.EncodeToPNG(); // Our upload is always image/png, regardless of drop.
    	var id = Utils.sha1(bytes);

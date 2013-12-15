@@ -236,7 +236,7 @@ public static function SceneSelect(addToHistory) { // Tell browser to select who
 		else addToHistory = (SelectedId != NoShortCircuit);
 	}
 	SelectedId = null;
-	Application.ExternalCall('select', rootComponent.id, tag, addToHistory ? rootComponent.hash : '', rootComponent.author);
+	Application.ExternalCall('select', rootComponent.id, tag, addToHistory ? rootComponent.hash : '', rootComponent.author, rootComponent.description);
 }
 function structureInfo(trans:Transform):Hashtable { // Not used yet. To appear below.
 	var o = trans.gameObject.GetComponent.<Obj>(); 
@@ -248,7 +248,7 @@ function structureInfo(trans:Transform):Hashtable { // Not used yet. To appear b
 }
 // Tell external property editor about this object's editable properties, and select the object.
 function ExternalPropertyEdit(tabName:String, addToHistory) {
-	// Update properties regardless of whether we 'select' down below.
+	// Update properties regardless of whether we 'select'. Must be before 'select' so that path is set if select needs to setProp of anything.
 	var path = GameObjectPath();
 	var pos = gameObject.transform.localPosition;
 	var rot = gameObject.transform.localEulerAngles; //Not what we persist, but easier for users.
@@ -264,15 +264,14 @@ function ExternalPropertyEdit(tabName:String, addToHistory) {
 		structure['children'].Push(structureInfo(child));
 	}
 	Application.ExternalCall('structure', JSON.Stringify(structure));*/
-
 	if (addToHistory == null) {
 		Application.ExternalCall('notifyUser', 'ExternalPropertyEdit(' + tabName + ', null), id=' + id + ', Obj.SelectedId=', Obj.SelectedId);
 		if (Obj.SelectedId == id) return;
 		else addToHistory = (SelectedId != NoShortCircuit);
 	}
 	SelectedId = id;
-	Application.ExternalCall('select', id, nametag, addToHistory ? hash : '');
 	Application.ExternalCall('tabSelect', tabName);
+	Application.ExternalCall('select', id, nametag, addToHistory ? hash : '', author, description);
 }
 
 public var saver:Save; // Save script, if available.
@@ -293,7 +292,7 @@ function savedScene(action:String, changes:Array):IEnumerator { // Callback from
 	yield gameObject.GetComponent.<PictureCapture>().Thumbnail(changes);
 	Application.ExternalCall('saved', id, nametag, timestamp, action, hash, GameObjectPath());
 	switch (action) {
-	case 'import': ExternalPropertyEdit('metadata', false); break; // Give user a chance to edit and share
+	case 'import': ExternalPropertyEdit('metadata', false); break;
 	case 'sway':
 	case 'heave':
 	case 'surge':

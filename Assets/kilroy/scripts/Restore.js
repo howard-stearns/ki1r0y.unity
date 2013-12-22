@@ -69,8 +69,8 @@ function RestoreChild(data:Hashtable, parent:Transform) {
 }
 function RestoreChild(id:String, hash:String, instance:String, parent:Transform) {
 	var child = parent.Find(instance); // FIXME id: what do we want to do about multiple instance of the same object id?
-	Application.ExternalCall('notifyUser', 'RestoreChild(' + id + ', ' + hash + ', ' + instance + ', ' + (parent != null ? parent.name : 'null') + ') child:' 
-		+ (child != null ? child.name : 'null'));
+	/* Application.ExternalCall('notifyUser', 'RestoreChild(' + id + ', ' + hash + ', ' + instance + ', ' + (parent != null ? parent.name : 'null') + ') child:' 
+		+ (child != null ? child.name : 'null')); */
 	var newChild = !child;
 	if (newChild) {
 		var childGo = GameObject.CreatePrimitive(PrimitiveType.Cube);

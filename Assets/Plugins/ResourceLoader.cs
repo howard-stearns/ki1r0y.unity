@@ -44,6 +44,13 @@ public class ResourceLoader : MonoBehaviour {
 			Warn(path + ' ' + loader.error); 
 		} else {
 			material.mainTexture = loader.texture;
+			/*Debug.Log("Restored " + textureName + " with wrapMode " + material.mainTexture.wrapMode
+				+ " filterMode " + material.mainTexture.filterMode
+				+ " anisoLevel " + material.mainTexture.anisoLevel);*/
+			/* These two appear to already be the default:
+			material.mainTexture.wrapMode = TextureWrapMode.Repeat; 
+			material.mainTexture.filterMode = FilterMode.Bilinear;*/
+			material.mainTexture.anisoLevel = 9;
    			material.mainTexture.name = textureName;
 		}
 	}

@@ -122,6 +122,7 @@ function importImage(url:String) {  // Here, rather than Restore or Obj, because
     var mats = obj.sharedMaterials();
     var mat = Material(mats[0]);
     mat.mainTexture = txt;
+    mat.mainTexture.anisoLevel = 9;
     mat.mainTexture.name = id + '.png';
     mats[0] = mat;
     obj.sharedMaterials(mats);

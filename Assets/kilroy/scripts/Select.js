@@ -42,10 +42,20 @@ public var dropTarget:RaycastHit;
 public var dropObject:Transform;
 function setPlacement(pos:Vector3[], rot:Quaternion[]) {
 	var pt = (dropObject == null) ? dropTarget.point : dropObject.position;
-	var v = pt - cam.transform.position;
-    if (v.magnitude < 1) v = v.normalized;
-    pos[0] = cam.transform.position + (v / 2);
-    rot[0] = Quaternion.LookRotation(v);
+	// IWBNI if we animated between this first pos/rot (which is floating half way between camera and surface, perpendicular to camera)
+	// and the second pos/rot (below, which is pushed back to the intersecting surface, and on it).
+	//var v = pt - cam.transform.position;
+    //if (v.magnitude < 1) v = v.normalized;
+    //pos[0] = cam.transform.position + (v / 2);
+    //rot[0] = Quaternion.LookRotation(v);
+    var v = (cam.transform.position - pt).normalized;
+    
+ 	var norm = Sticky.HitNormal(dropTarget);
+    pos[0] = pt + (norm * 0.1);
+   	var up = Vector3.up;
+   	if (Mathf.Abs(Vector3.Dot(up, norm)) > 0.9) { up = Vector3.Cross(Vector3.right, norm); }
+ 	rot[0] = Quaternion.LookRotation(norm,  up);
+ 	Debug.LogWarning('pt=' + pt + ' v=' + v + ' norm=' + norm + ' pos=' + pos[0] + ' up=' + up + ' rot=' + rot[0]);
  }
 // Browser input button file input sets an object, not a coordinate.
 function setImportObject(path:String) { 
@@ -59,8 +69,8 @@ function setImportTarget(coordinates:String) {
 	var y:int = int.Parse(pair[1]);
     var pointerRay:Ray = cam.ScreenPointToRay(Vector3(x, y, 0));
 	if (Physics.Raycast(pointerRay, dropTarget)) {
-		NotifyUser('got object ' + dropTarget.transform.gameObject + ' at ' + x + 'x' + y);
-	} else NotifyUser('no drop target found at ' + x + 'x' + y);
+		/*NotifyUser*/Debug.LogWarning('got object ' + dropTarget.transform.gameObject + ' at ' + x + 'x' + y);
+	} else /*NotifyUser*/Debug.LogWarning('no drop target found at ' + x + 'x' + y);
 	dropObject = null;
 }
 public var currentDropFilename:String;
@@ -113,7 +123,8 @@ function importImage(url:String) {  // Here, rather than Restore or Obj, because
     
     var pict = Instantiate(picturePrefab, pos[0], rot[0]);
     var obj = pict.GetComponent.<Obj>();
-    pict.transform.Rotate(90, 180, 0);
+    //pict.transform.Rotate(90, 180, 0);
+    pict.transform.Rotate(90, 0, 0);
     pict.transform.parent = scene.transform;
     obj.size(Vector3(originalAspectWidth, 0, 1));
 
@@ -153,10 +164,10 @@ function importImage(url:String) {  // Here, rather than Restore or Obj, because
 	setImportTarget('374x300');
 	//setImportObject('/G1/G1floor/QvTKHv-OnNHoW3wdEkDEl6M0wx4');
 	importThing('HKKy1I0XGPkf0AQHyunhD5tStsw'); 
-}
+}*/
 function Start() {  // For debugging
 	if (Application.isWebPlayer) return;
-	var basename = 'kilroy-20.png'; //'avatar.jpg';
+	var basename = 'avatar.jpg';
 	var furl = 'file:///Users/howardstearns/Pictures/' + basename;
 	yield WaitForSeconds(4);
 	Debug.Log('import ' + basename);
@@ -164,7 +175,7 @@ function Start() {  // For debugging
 	//setImportObject('/G1/G1floor/QvTKHv-OnNHoW3wdEkDEl6M0wx4');
 	setImportFilename(basename);
 	importImage(furl); 
-}*/
+}
 
 
 /****************************************************************************************************/

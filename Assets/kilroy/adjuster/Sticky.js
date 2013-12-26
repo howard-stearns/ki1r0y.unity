@@ -265,7 +265,7 @@ function doDragging(assembly:Transform, hit:RaycastHit) {
 	lastSurface = hit.collider;
 	var pivot = assembly.parent;
 	pivot.Translate(delta, Space.World);
-	var norm:Vector3 = hitNormal(hit);
+	var norm:Vector3 = HitNormal(hit);
 	var alignedX:boolean = Mathf.Abs(Vector3.Dot(rt1, norm)) > 0.9;
 	var fwd:Vector3 = alignedX ? fwd1 : Vector3.Cross(rt1, norm);
 	pivot.rotation = Quaternion.LookRotation(fwd, norm);
@@ -282,10 +282,12 @@ public static function SetAssemblyLayer(go:GameObject, layer:int):int {  // set 
 	}
 	return old;
 }
-function hitNormal(hit:RaycastHit) { // answer normal to the surface at hit.point, for meshes and primitives
+public static function HitNormal(hit:RaycastHit) { // answer normal to the surface at hit.point, for meshes and primitives
 	// Just in case, also make sure the collider also has a renderer material and texture 
    	var meshCollider = hit.collider as MeshCollider; 
+   	Debug.LogWarning('collider=' + (meshCollider ? meshCollider : 'null') + ' parent=' + (meshCollider ? meshCollider.transform.parent : 'null'));
    	if (meshCollider == null || meshCollider.sharedMesh == null) {
+   		Debug.LogWarning('using hit.normal');
        	return hit.normal; 
 	}
    	var mesh : Mesh = meshCollider.sharedMesh; 
@@ -308,6 +310,7 @@ function hitNormal(hit:RaycastHit) { // answer normal to the surface at hit.poin
    	// Transform local space normals to world space 
    	var hitTransform : Transform = hit.collider.transform; 
    	interpolatedNormal = hitTransform.TransformDirection(interpolatedNormal); 
+   	Debug.LogWarning('computing ' + hit.normal + ' baryCenter=' + baryCenter + ' local normal=' + interpolatedNormal);
 
    	return interpolatedNormal;
 }

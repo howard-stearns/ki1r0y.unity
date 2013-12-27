@@ -164,7 +164,7 @@ function importImage(url:String) {  // Here, rather than Restore or Obj, because
 	setImportTarget('374x300');
 	//setImportObject('/G1/G1floor/QvTKHv-OnNHoW3wdEkDEl6M0wx4');
 	importThing('HKKy1I0XGPkf0AQHyunhD5tStsw'); 
-}*/
+}
 function Start() {  // For debugging
 	if (Application.isWebPlayer) return;
 	var basename = 'avatar.jpg';
@@ -175,7 +175,7 @@ function Start() {  // For debugging
 	//setImportObject('/G1/G1floor/QvTKHv-OnNHoW3wdEkDEl6M0wx4');
 	setImportFilename(basename);
 	importImage(furl); 
-}
+}*/
 
 
 /****************************************************************************************************/
@@ -231,15 +231,18 @@ function UnHighlight(go:GameObject) {
 public var gizmoPrefab:Transform;  // The prefab.
 public var gizmo:Transform;  // The currently active gizmo. Should we really instantiate/destroy each time?
 //public var gizmoOldParent:Transform; // When gizmo is on, it's parent object is held by avatar.
-function StopGizmo() {
-	if (!gizmo) return;
+public function StopGizmo():GameObject { // Stop any running gizmo and return the associated gameObject, else null;
+	if (!gizmo) return null;
 	//gizmo.parent.parent = gizmoOldParent;
 	//gizmoOldParent = null;
+	var old = gizmo.parent.gameObject;
 	Directional.ApplyChanges(gizmo.parent);
 	Destroy(gizmo.gameObject);
 	gizmo = null;
+	return old;
 }
-function StartGizmo(go:GameObject) {
+public function StartGizmo(go:GameObject) { // start a gizmo on the given gameObject. Does nothing if arg is null.
+	if (go == null) { return; }
 	StopGizmo();
 	//UnSelection();
 	var trans = go.transform;
@@ -251,7 +254,7 @@ function StartGizmo(go:GameObject) {
 	//gizmoOldParent = trans.parent;
 	//trans.parent = transform; // e.g. avatar
 }
-function StartGizmo(path:String) {
+public function StartGizmo(path:String) { // StargGizmo for the given GameObjectPath().
 	if (!path) return;
 	StartGizmo(Obj.FindByPath(path));
 }

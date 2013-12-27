@@ -285,7 +285,7 @@ public static function SetAssemblyLayer(go:GameObject, layer:int):int {  // set 
 public static function HitNormal(hit:RaycastHit) { // answer normal to the surface at hit.point, for meshes and primitives
 	// Just in case, also make sure the collider also has a renderer material and texture 
    	var meshCollider = hit.collider as MeshCollider; 
-   	Debug.LogWarning('collider=' + (meshCollider ? meshCollider : 'null') + ' parent=' + (meshCollider ? meshCollider.transform.parent : 'null'));
+   	//Debug.LogWarning('collider=' + (meshCollider ? meshCollider : 'null') + ' parent=' + (meshCollider ? meshCollider.transform.parent : 'null'));
    	if (meshCollider == null || meshCollider.sharedMesh == null) {
    		Debug.LogWarning('using hit.normal');
        	return hit.normal; 
@@ -310,7 +310,7 @@ public static function HitNormal(hit:RaycastHit) { // answer normal to the surfa
    	// Transform local space normals to world space 
    	var hitTransform : Transform = hit.collider.transform; 
    	interpolatedNormal = hitTransform.TransformDirection(interpolatedNormal); 
-   	Debug.LogWarning('computing ' + hit.normal + ' baryCenter=' + baryCenter + ' local normal=' + interpolatedNormal);
+   	//Debug.LogWarning('computing ' + hit.normal + ' baryCenter=' + baryCenter + ' local normal=' + interpolatedNormal);
 
    	return interpolatedNormal;
 }

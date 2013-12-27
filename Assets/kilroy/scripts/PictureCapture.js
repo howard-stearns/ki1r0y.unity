@@ -18,6 +18,9 @@
 // In any case, this function is always a coroutine, because the upload will 
 // certainly be asynchronous.
 function Thumbnail (ids:Array):IEnumerator {
+	// While we take the picture, make sure that there is no gizmo in the way, and restore it later.
+	var avatarSelect = Camera.main.transform.parent.GetComponent.<Select>();
+	var runningGizmo = avatarSelect.StopGizmo();
     // We should only read the screen after all rendering is complete
     yield WaitForEndOfFrame();
     // The picture will be our Unity screen size (e.g., currently 600x450 px). 
@@ -31,6 +34,7 @@ function Thumbnail (ids:Array):IEnumerator {
     // Read screen contents into the texture
     tex.ReadPixels( Rect(0, 0, width, height), 0, 0 );
     tex.Apply();
+    if (runningGizmo != null) { avatarSelect.StartGizmo(runningGizmo); }
     // Encode texture into PNG
     var bytes = tex.EncodeToPNG();
     Destroy( tex );

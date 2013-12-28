@@ -249,6 +249,7 @@ function structureInfo(trans:Transform):Hashtable { // Not used yet. To appear b
 // Tell external property editor about this object's editable properties, and select the object.
 function ExternalPropertyEdit(tabName:String, addToHistory) {
 	// Update properties regardless of whether we 'select'. Must be before 'select' so that path is set if select needs to setProp of anything.
+	Interactor.Avatar().GetComponent.<Select>().StopGizmo(); 
 	var path = GameObjectPath();
 	var pos = gameObject.transform.localPosition;
 	var rot = gameObject.transform.localEulerAngles; //Not what we persist, but easier for users.

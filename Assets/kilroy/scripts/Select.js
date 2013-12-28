@@ -282,7 +282,7 @@ function UnSelection():boolean { // May or may not have been dragging. Answer tr
 function Update () {
 	if (Input.GetAxis("Horizontal") || Input.GetAxis("Vertical")) {
 		OverlayControls.TrackMouseMotion(true);
-		StopGizmo();
+		//StopGizmo(); we don't stop gizmo on driving -- just on public/properties tab switch
 		//UnSelection();
 		Obj.SceneSelect(false);
 		return;

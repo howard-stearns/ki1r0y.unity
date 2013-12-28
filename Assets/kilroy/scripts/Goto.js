@@ -14,7 +14,7 @@ public var headHeight = 1.0; 	// Relative to avatar position
 public var scene:Transform;	    // The head of that part of the scene graph that defines each Kilroy Obj we can goto.
 
 function Awake() { // Initialize the above.
-	if (avatar == null) avatar = Camera.main.transform.parent;
+	if (avatar == null) avatar = Interactor.Avatar();
 	if (head == null) head = avatar.Find("Main Camera/Head");
 	if (scene == null) scene = GameObject.FindWithTag('SceneRoot').transform; // By tag, because it could be called anything.
 }

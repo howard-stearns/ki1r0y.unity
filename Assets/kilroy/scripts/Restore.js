@@ -326,7 +326,7 @@ function SceneReady() {
 		targetObj ? targetObj.GetComponent(Obj).nametag : '',
 		sceneComp.timestamp,
 		sceneComp.hash);
-	var goto = Camera.main.transform.parent.GetComponent.<Goto>();
+	var goto = Interactor.Avatar().GetComponent.<Goto>();
 	goto.GoToObj(targetObj, null); 
 }
 function RestoreScene(combo:String, checkHistory:boolean) {
@@ -382,7 +382,7 @@ function Update() {
 	if (!undoId) return;
 	var id = undoId;
 	undoId = ''; 
-	Camera.main.transform.parent.GetComponent.<Goto>().RestoreSceneBack(id);
+	Interactor.Avatar().GetComponent.<Goto>().RestoreSceneBack(id);
 	/*Obj.SelectedId = Obj.NoShortCircuit;
 	RestoreScene(id, false);*/
 }

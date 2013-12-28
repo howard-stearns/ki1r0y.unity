@@ -19,7 +19,7 @@
 // certainly be asynchronous.
 function Thumbnail (ids:Array):IEnumerator {
 	// While we take the picture, make sure that there is no gizmo in the way, and restore it later.
-	var avatarSelect = Camera.main.transform.parent.GetComponent.<Select>();
+	var avatarSelect = Interactor.Avatar().GetComponent.<Select>();
 	var runningGizmo = avatarSelect.StopGizmo();
     // We should only read the screen after all rendering is complete
     yield WaitForEndOfFrame();

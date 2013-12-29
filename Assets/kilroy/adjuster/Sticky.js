@@ -153,8 +153,11 @@ function startDragging(assembly:Transform, cameraRay:Ray, hit:RaycastHit):Laser 
 		// from it, but couldn't make them work.
 		draggedOriginalLayer = SetAssemblyLayer(originalCopied, 2);
 	} else if (!!Input.GetAxis('Fire3')) { // cmd key
-		var select = Avatar().gameObject.GetComponent(Select);
-		if (!!select) { select.StartGizmo(assembly.gameObject); }
+		var select = Avatar().GetComponent.<Select>();
+		if (!!select) {
+			obj.ExternalPropertyEdit('properties', false);
+			select.StartGizmo(assembly.gameObject);
+		}
 		return null;
 	}
 	var mountingDirection = obj ? assembly.TransformDirection(obj.localMounting) : -assembly.up;

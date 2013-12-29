@@ -41,7 +41,7 @@ public var picturePrefab:Transform;
 public var dropTarget:RaycastHit;
 public var dropObject:Transform;
 function setPlacement(pos:Vector3[], rot:Quaternion[]) {
-	var pt = (dropObject == null) ? dropTarget.point : dropObject.position;
+	var pt = dropTarget.point;
 	// IWBNI if we animated between this first pos/rot (which is floating half way between camera and surface, perpendicular to camera)
 	// and the second pos/rot (below, which is pushed back to the intersecting surface, and on it).
 	//var v = pt - cam.transform.position;
@@ -62,6 +62,9 @@ function setImportObject(path:String) {
 	if (path == '/') dropObject = GameObject.FindWithTag('SceneRoot').transform;
 	else dropObject = Obj.FindByPath(path).transform; 
 	NotifyUser('drop to ' + dropObject + ' @' + dropObject.position);
+	var pointerRay:Ray = Ray(cam.transform.position, dropObject.position - cam.transform.position);
+	dropObject.GetComponent.<Obj>().objectCollider().Raycast(pointerRay, dropTarget, Mathf.Infinity); 
+	Debug.Log('ray: ' + pointerRay.origin + ' + ' + pointerRay.direction + ' ' + dropTarget.point + ' on ' + dropTarget.transform);
 }
 function setImportTarget(coordinates:String) {
 	var pair = Save.splitPath(coordinates, 'x'); 
@@ -125,7 +128,7 @@ function importImage(url:String) {  // Here, rather than Restore or Obj, because
     var obj = pict.GetComponent.<Obj>();
     //pict.transform.Rotate(90, 180, 0);
     pict.transform.Rotate(90, 0, 0);
-    pict.transform.parent = scene.transform;
+    pict.transform.parent = dropObject == null ? scene.transform : dropObject.transform;
     obj.size(Vector3(originalAspectWidth, 0, 1));
 
     var bytes = txt.EncodeToPNG(); // Our upload is always image/png, regardless of drop.
@@ -171,8 +174,8 @@ function Start() {  // For debugging
 	var furl = 'file:///Users/howardstearns/Pictures/' + basename;
 	yield WaitForSeconds(4);
 	Debug.Log('import ' + basename);
-	setImportTarget('374x300');
-	//setImportObject('/G1/G1floor/QvTKHv-OnNHoW3wdEkDEl6M0wx4');
+	//setImportTarget('374x300');
+	setImportObject('/G1/G1floor/r4ATbSDF2oS2gXlJ3lrV3TU3Wv4');
 	setImportFilename(basename);
 	importImage(furl); 
 }*/

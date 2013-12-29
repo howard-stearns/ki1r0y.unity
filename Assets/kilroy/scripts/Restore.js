@@ -325,7 +325,8 @@ function SceneReady() {
 	Application.ExternalCall('sceneReady', sceneComp.nametag,
 		targetObj ? targetObj.GetComponent(Obj).nametag : '',
 		sceneComp.timestamp,
-		sceneComp.hash);
+		sceneComp.hash,
+		sceneComp.author);
 	var goto = Interactor.Avatar().GetComponent.<Goto>();
 	goto.GoToObj(targetObj, null); 
 }

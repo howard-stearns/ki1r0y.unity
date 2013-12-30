@@ -104,11 +104,18 @@ public static function AddAdjuster(assy:Transform, adjusterPrefab:Transform) { /
 	go.BroadcastMessage('updateAffordance', null, SendMessageOptions.DontRequireReceiver); // get the size right
 }
 
-public static function RemoveAdjuster() {
+public static function RemoveAdjuster(immediate:boolean) {
+	Debug.Log('RemoveAdjuster instance=' + StickyInstance);
 	if (!StickyInstance) return;
+	if (immediate) { 
+		SetAssemblyLayer(StickyInstance.transform.parent.gameObject, 2); // Get the StrikeTarget out of the way
+		SetAssemblyLayer(StickyInstance.assemblyObj.mesh, StickyInstance.originalAssemblyLayer); // now, without waiting until destroy
+	}
 	Destroy(StickyInstance.transform.parent.gameObject);
+	AnyMoving = false;
 	StickyInstance = null;
 }
+public static function RemoveAdjuster() { RemoveAdjuster(false); }
 private static var TransparencyOn = false;
 function Update() {
 	if (Input.GetKeyDown(KeyCode.T) && Input.GetKey(KeyCode.LeftControl)) { TransparencyOn = !TransparencyOn; }

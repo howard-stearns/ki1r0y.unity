@@ -70,8 +70,9 @@ function setImportTarget(coordinates:String) {
 	var pair = Save.splitPath(coordinates, 'x'); 
 	var x:int = int.Parse(pair[0]);
 	var y:int = int.Parse(pair[1]);
-    var pointerRay:Ray = cam.ScreenPointToRay(Vector3(x, y, 0));
-	if (Physics.Raycast(pointerRay, dropTarget)) {
+    var pointerRay:Ray = cam.ScreenPointToRay(Vector3(x, y, 0)); 
+    Sticky.RemoveAdjuster(true); // if any. No need to retore as we'll be dealing with an import. 
+ 	if (Physics.Raycast(pointerRay, dropTarget)) {
 		/*NotifyUser*/Debug.LogWarning('got object ' + dropTarget.transform.gameObject + ' at ' + x + 'x' + y);
 	} else /*NotifyUser*/Debug.LogWarning('no drop target found at ' + x + 'x' + y);
 	dropObject = null;
@@ -174,8 +175,10 @@ function Start() {  // For debugging
 	var furl = 'file:///Users/howardstearns/Pictures/' + basename;
 	yield WaitForSeconds(4);
 	Debug.Log('import ' + basename);
-	//setImportTarget('374x300');
-	setImportObject('/G1/G1floor/r4ATbSDF2oS2gXlJ3lrV3TU3Wv4');
+	//setImportTarget('374x300'); 
+	setImportTarget('374x100');
+	//setImportObject('/G1/G1floor/r4ATbSDF2oS2gXlJ3lrV3TU3Wv4'); 
+	//setImportObject('/G1/G1floor');
 	setImportFilename(basename);
 	importImage(furl); 
 }*/

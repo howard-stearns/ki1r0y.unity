@@ -7,6 +7,7 @@ public static function splitPath(path:String, sep:String) {
 }
 public static function splitPath(path:String) { return splitPath(path, ':'); }
 
+// This is about the active user, not necessarilly the owner of the scene.
 public static var userId = '100004567501627';
 public static var userNametag = 'Trevor Unity';
 public static var host = 'localhost:3000';
@@ -137,8 +138,21 @@ function AddComponent(p:Hashtable, component:Light) {
 	//AddProperty(p, 'type', component.type.ToString());
 	AddProperty(p, 'intensity', component.intensity);
 }
-function AddComponent(p:Hashtable, component:Component) {
+// Save component is only attached to the scene singleton:
+public static var TabOrderTransforms:Array = null;
+public static var TabOrderPaths:Array = null;
+function AddComponent(p:Hashtable, component:Save) {
+	if (TabOrderTransforms == null) { TabOrderTransforms = Interactor.Avatar().GetComponent.<Goto>().GetAssemblies(transform); }
+	if (TabOrderPaths == null) {
+		TabOrderPaths = [];
+		for (var trans in TabOrderTransforms) {
+			var path = trans.GetComponent(Obj).GameObjectPath();
+			TabOrderPaths.Push(path);
+		}
+	}
+	AddProperty(p, 'tabOrder', TabOrderPaths);
 }
+function AddComponent(p:Hashtable, component:Component) { }
 
 public var forceUpload = false; // forces upload even if not changed. Used for regenerating db.
 // Answers the id of this group. Side effects include:
@@ -228,13 +242,13 @@ function Persist(x:GameObject, isScene:boolean):Hashtable {
 		StartCoroutine( uploadData(obj.id, obj.hash, JSON.Stringify(new Array(refs.Keys)), 'refs') );
 	} else {
 		refs[obj.id] = true; // accumulate one each of all the refs as we trace.
+		if (x.transform.localPosition != Vector3.zero) 
+			AddProperty(instance, 'position', x.transform.localPosition);
+		if (x.transform.localRotation != Quaternion.identity)
+			AddProperty(instance, 'rotation', x.transform.localRotation);
+		var size = obj.size();
+		if (size != Vector3.one) AddProperty(instance, 'size', size);
 	}
-	if (x.transform.localPosition != Vector3.zero) 
-		AddProperty(instance, 'position', x.transform.localPosition);
-	if (x.transform.localRotation != Quaternion.identity)
-		AddProperty(instance, 'rotation', x.transform.localRotation);
-	var size = obj.size();
-	if (size != Vector3.one) AddProperty(instance, 'size', size);
 	return instance;
 }
 

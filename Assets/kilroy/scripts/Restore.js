@@ -160,6 +160,8 @@ function CoFillScene(timestamp:String) {
 	var holder = new Hashtable[1];
 	yield CoFetchObjectData(holder, idvtag);
 	yield CoFill(gameObject, obj.id, holder[0]);
+	Save.TabOrderTransforms = null;
+	Save.TabOrderPaths = holder[0]['tabOrder'];
 	if (obj.timestamp != previousTimestamp) { gameObject.GetComponent.<Save>().UpdateSceneVersion(obj); }
 	if (!--nRemainingObjects) SceneReady();
 }	
@@ -328,7 +330,11 @@ function SceneReady() {
 		sceneComp.hash,
 		sceneComp.author);
 	var goto = Interactor.Avatar().GetComponent.<Goto>();
-	goto.GoToObj(targetObj, null); 
+	goto.GoToObj(targetObj, null);
+	if (Save.TabOrderPaths) {
+		Save.TabOrderTransforms = [];
+		for (var path in Save.TabOrderPaths) { Save.TabOrderTransforms.Push(Obj.FindByPath(path).transform); }
+	}
 }
 function RestoreScene(combo:String, checkHistory:boolean) {
 	var trio = Save.splitPath(combo);

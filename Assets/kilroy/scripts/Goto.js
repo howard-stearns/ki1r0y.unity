@@ -37,7 +37,7 @@ function GetAssemblies(trans:Transform):Array {
 	return assemblies;  // FIXME: how shall we sort this?
 }
 public function GetRelated() {
-	var objs = GetAssemblies(scene);
+	var objs = Save.TabOrderTransforms; // FIXME GetAssemblies(scene);
 	var data = new Array();
 	var root = GameObject.FindWithTag('SceneRoot').GetComponent.<Obj>();
 	var sceneNametag = root.nametag;
@@ -57,7 +57,7 @@ public function GetRelated() {
 public var currentSite:Transform;
 // Find the assembly we're at (or closest to), and goto the next one.
 public function Next(isForward:boolean) {
-	var objs = GetAssemblies(scene);
+	var objs = Save.TabOrderTransforms; // FIXME GetAssemblies(scene);
 	var closest:int; 
 	var closestDistance:float = Mathf.Infinity;
 	// Find the closest assembly to where we are. If we're not at an assembly, we still want

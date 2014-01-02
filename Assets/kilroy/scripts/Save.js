@@ -140,17 +140,41 @@ function AddComponent(p:Hashtable, component:Light) {
 }
 // Save component is only attached to the scene singleton:
 public static var TabOrderTransforms:Array = null;
-public static var TabOrderPaths:Array = null;
-function AddComponent(p:Hashtable, component:Save) {
-	if (TabOrderTransforms == null) { TabOrderTransforms = Interactor.Avatar().GetComponent.<Goto>().GetAssemblies(transform); }
-	if (TabOrderPaths == null) {
+public static var TabOrderPaths:Array = null;  // A cache of the paths
+public static function AddTabItem(t:Transform) {
+	TabOrderPaths = null;
+	if (!TabOrderTransforms) { TabOrderTransforms = []; }
+	TabOrderTransforms.Push(t);
+	//Debug.LogWarning('added ' + t + ' to ' + TabOrderTransforms.join(', '));
+}
+public static function RemoveTabItem(t:Transform) { // It is safe to give a transform that is not actually in the tab order
+	var index = 0;
+	for (var e in TabOrderTransforms) {
+		if (e == t) {
+			TabOrderPaths = null;
+			TabOrderTransforms.RemoveAt(index);
+			//Debug.LogWarning('removed ' + t + ' from ' + TabOrderTransforms.join(', '));
+			return;
+		}
+		index++;
+	}
+}
+public static function GetTabItems() {
+		if (TabOrderPaths == null) {  // Recompute if the cache is no good
 		TabOrderPaths = [];
 		for (var trans in TabOrderTransforms) {
-			var path = trans.GetComponent(Obj).GameObjectPath();
+			var obj = trans.GetComponent(Obj);
+			var path = obj.GameObjectPath();
 			TabOrderPaths.Push(path);
+			//FIXMEinstances += '[' + trans.name + ' ' + obj.instanceCounter + ' ' + path + '] ';
 		}
 	}
-	AddProperty(p, 'tabOrder', TabOrderPaths);
+	return TabOrderPaths;
+}
+function AddComponent(p:Hashtable, component:Save) {
+	//var FIXMEinstances = '';
+	//Debug.LogWarning('saved tabOrder: ' + TabOrderPaths.join(', ') + ' ' + FIXMEinstances);
+	AddProperty(p, 'tabOrder', GetTabItems());
 }
 function AddComponent(p:Hashtable, component:Component) { }
 

@@ -11,6 +11,9 @@ public var hash = '';
 public var versions:Object; // Only used for groups
 public var timestamp:String;
 
+public static var InstanceCounter = 0; // Sometimes used for debugging.
+public var instanceCounter = 0;
+
 // hashtable.Keys doesn't specify order. Here we have latest last.
 function timestamps():Array {
 	var keys = new Array(versions.Keys); 
@@ -59,8 +62,10 @@ function Start() {
 		if (index >= 0) kind = kind.Remove(index);
 	}
 	if (kind == 'Plane') localFacing = Vector3(0, 1, 0);
+	instanceCounter = InstanceCounter++;
 }
 
+/* NOT USED
 // Answer a qualifer integer that, if non-zero and appended to idtag, will produce a name that is unique among the children of p.
 // ignored Transform will be ignored if it is among the children of p.
 // The current implementation simplifies debugging by answering zero when possible, but if that's too slow for bushy scene graphs,
@@ -73,7 +78,7 @@ public static function ComputeQualifier(idtag:String, p:Transform, ignored:Trans
 		else if (count) { break; } // optimization based on Unity's current practice of keeping children in alphabatical order
 	}
 	return count;
-}
+}*/
 // Make sure that child has a unique name among its siblings. We rely on Unity keeping siblings in alphabetical order, and our
 // own scheme of using id for name unless the previous sibling has id, in which case we add a suffix that preserves order.
 public static function NameUniquely(child:Transform, previous:Obj):Obj {
@@ -84,6 +89,7 @@ public static function NameUniquely(child:Transform, previous:Obj):Obj {
 	// Otherwise calculate a new name for child that will not conflict with the previous instance name (not just it's id).
 	// concatenate the next digit. Cheaper than slicing and parsing.
 	child.name = previous.name + ((previous.name.length - id.length) % 10);
+	Debug.Log('child ' + id + ' => ' + child.name + ' prev:' + (previous ? previous.name : 'none'));
 	return obj;
 }
 // Answers one (of the possibly many) GameObjects with the given id, else null.
@@ -212,6 +218,7 @@ public static function ColliderGameObject(c:Collider):GameObject {
 /***************************************************************************************/
 public function deleteObject() {
 	enabled = false;  // first unhook me without destroying, so that I can save. Toplevel object have null parents, so null parent can't be used to tell.
+	Save.RemoveTabItem(transform);
 //	Application.ExternalCall('notifyUser', 'deleted:' + nametag);
 	saveScene('delete'); // will do the destroying on the callback.
 	if (!saveEnabled()) Destroy(gameObject); // we won't get a callback, so scheduled Destroy now.
@@ -230,7 +237,7 @@ public static function SceneSelect(addToHistory) { // Tell browser to select who
 	var root = GameObject.FindWithTag('SceneRoot');
 	var rootComponent = root.GetComponent.<Obj>();
 	var tag = rootComponent.nametag;
-	Application.ExternalCall('props', rootComponent.GameObjectPath(), tag, rootComponent.author, rootComponent.description); // regardless of addToHistory, etc.
+	Application.ExternalCall('props', rootComponent.GameObjectPath(), tag, rootComponent.author, rootComponent.description, Save.GetTabItems()); // regardless of addToHistory, etc.
 	if (addToHistory == null) {
 		if (!SelectedId) return;
 		else addToHistory = (SelectedId != NoShortCircuit);
@@ -257,7 +264,7 @@ function ExternalPropertyEdit(tabName:String, addToHistory) {
 	Application.ExternalCall('updatePosition', pos.x, pos.y, pos.z);
 	Application.ExternalCall('updateRotation', rot.x, rot.y, rot.z);
 	Application.ExternalCall('updateSize', size.x, size.y, size.z);
-	Application.ExternalCall('props', path, nametag, author, description, true);
+	Application.ExternalCall('props', path, nametag, author, description);
 	/*var structure = {'children': new Array()};
 	Debug.Log('parent:' + transform.parent);
 	if (transform.parent != null) { structure['parent'] = structureInfo(transform.parent);}
@@ -309,7 +316,7 @@ function savedScene(action:String, changes:Array):IEnumerator { // Callback from
 	case 'length':
 	case 'nametag':
 	case 'description':
-		Application.ExternalCall('props', GameObjectPath(), nametag, author, description, !!transform.parent);
+		Application.ExternalCall('props', GameObjectPath(), nametag, author, description, !transform.parent ? Save.GetTabItems() : null);
 		break;
 	}
 	if (!enabled) { Destroy(gameObject); } // if deleted, can only safely be destroyed now.

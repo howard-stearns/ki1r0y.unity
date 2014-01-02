@@ -160,8 +160,8 @@ function CoFillScene(timestamp:String) {
 	var holder = new Hashtable[1];
 	yield CoFetchObjectData(holder, idvtag);
 	yield CoFill(gameObject, obj.id, holder[0]);
-	Save.TabOrderTransforms = null;
-	Save.TabOrderPaths = holder[0]['tabOrder'];
+	Save.TabOrderPaths = holder[0]['tabOrder']; 
+	Save.TabOrderTransforms = null;  // We cannot compute transforms yet because the objects might not yet be resolved.
 	if (obj.timestamp != previousTimestamp) { gameObject.GetComponent.<Save>().UpdateSceneVersion(obj); }
 	if (!--nRemainingObjects) SceneReady();
 }	
@@ -334,6 +334,8 @@ function SceneReady() {
 	if (Save.TabOrderPaths) {
 		Save.TabOrderTransforms = [];
 		for (var path in Save.TabOrderPaths) { Save.TabOrderTransforms.Push(Obj.FindByPath(path).transform); }
+	} else { // compatability with old scenes
+		Save.TabOrderTransforms = Interactor.Avatar().GetComponent.<Goto>().GetAssemblies(transform); 
 	}
 }
 function RestoreScene(combo:String, checkHistory:boolean) {

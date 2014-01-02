@@ -251,6 +251,7 @@ function stopDragging(assembly:Transform) {
 
 	// Test for movement must be here rather than DoDragging, because we might not receive any DoDragging events.
 	if (Vector3.Distance(firstDragPosition, lastDragPosition) > 0.2) {   // real movement, not just a click
+		if (!!original) { Save.AddTabItem(assembly); }
 		assembly.gameObject.GetComponent(Obj).saveScene(!!original ? 'copy' : 'move');
 	} else if (!!original) {
 		assembly.parent = null;
@@ -297,7 +298,7 @@ public static function HitNormal(hit:RaycastHit) { // answer normal to the surfa
    	var meshCollider = hit.collider as MeshCollider; 
    	//Debug.LogWarning('collider=' + (meshCollider ? meshCollider : 'null') + ' parent=' + (meshCollider ? meshCollider.transform.parent : 'null'));
    	if (meshCollider == null || meshCollider.sharedMesh == null) {
-   		Debug.LogWarning('using hit.normal');
+//   		Debug.LogWarning('using hit.normal');
        	return hit.normal; 
 	}
    	var mesh : Mesh = meshCollider.sharedMesh; 

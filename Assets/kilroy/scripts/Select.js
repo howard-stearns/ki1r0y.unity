@@ -248,7 +248,8 @@ public function StopGizmo():GameObject { // Stop any running gizmo and return th
 	return old;
 }
 public function StartGizmo(go:GameObject) { // start a gizmo on the given gameObject. Does nothing if arg is null.
-	if (go == null) { return; }
+	if (go == null) { return; } 
+	if (go.tag == 'SceneRoot') { return; } // no gizmo for scene as a whole
 	StopGizmo();
 	//UnSelection();
 	var trans = go.transform;

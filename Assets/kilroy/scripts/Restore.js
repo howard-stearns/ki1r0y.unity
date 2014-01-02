@@ -332,8 +332,7 @@ function SceneReady() {
 	var goto = Interactor.Avatar().GetComponent.<Goto>();
 	goto.GoToObj(targetObj, null);
 	if (Save.TabOrderPaths) {
-		Save.TabOrderTransforms = [];
-		for (var path in Save.TabOrderPaths) { Save.TabOrderTransforms.Push(Obj.FindByPath(path).transform); }
+		Save.SetTabItems(Save.TabOrderPaths);
 	} else { // compatability with old scenes
 		Save.TabOrderTransforms = Interactor.Avatar().GetComponent.<Goto>().GetAssemblies(transform); 
 	}

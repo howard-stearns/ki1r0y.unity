@@ -205,11 +205,18 @@ function GoToObj(go:GameObject, addToHistory) {
 // to it (as we don't know it's scene-graph path). That's ok, though because we can figure 
 // that out from here (in Unity).
 function RestoreScene(spec:String) {
-	scene.gameObject.GetComponent(Restore).RestoreScene(spec, true);
+	scene.gameObject.GetComponent.<Restore>().RestoreScene(spec, true);
 }
 function RestoreSceneBack(spec:String) {
 	Obj.SelectedId = Obj.NoShortCircuit;
-	scene.gameObject.GetComponent(Restore).RestoreScene(spec, false);
+	scene.gameObject.GetComponent.<Restore>().RestoreScene(spec, false);
+}
+public function setTabItems(json:String) {
+	Application.ExternalCall('notifyUser', 'setTabItems ' + json);
+	var paths:Array = JSON.Parse(json)['paths'] as Array;
+	Save.SetTabItems(paths);
+	Application.ExternalCall('notifyUser', 'setTabItems parsed: ' + paths.Join(', ') + ' set:' + Save.TabOrderTransforms.Join(', '));
+	scene.gameObject.GetComponent.<Obj>().saveScene('tab order');
 }
 
 

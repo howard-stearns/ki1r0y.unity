@@ -305,6 +305,7 @@ function savedScene(action:String, changes:Array):IEnumerator { // Callback from
 		SelectedId = id; /* so select fires */ 
 		SceneSelect(false); // In case now-deleted object was selected.
 		break;
+	case 'tab order': break;
 	case 'sway':
 	case 'heave':
 	case 'surge':

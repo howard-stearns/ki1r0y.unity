@@ -160,7 +160,7 @@ public static function RemoveTabItem(t:Transform) { // It is safe to give a tran
 	}
 }
 public static function GetTabItems() {
-		if (TabOrderPaths == null) {  // Recompute if the cache is no good
+	if (TabOrderPaths == null) {  // Recompute if the cache is no good
 		TabOrderPaths = [];
 		for (var trans in TabOrderTransforms) {
 			var obj = trans.GetComponent(Obj);
@@ -170,6 +170,11 @@ public static function GetTabItems() {
 		}
 	}
 	return TabOrderPaths;
+}
+public static function SetTabItems(pathsArray:Array) {
+	Save.TabOrderPaths = pathsArray;
+	Save.TabOrderTransforms = [];
+	for (var path in Save.TabOrderPaths) { Save.TabOrderTransforms.Push(Obj.FindByPath(path).transform); }
 }
 function AddComponent(p:Hashtable, component:Save) {
 	//var FIXMEinstances = '';

@@ -160,7 +160,10 @@ function importImage(url:String) {  // Here, rather than Restore or Obj, because
 		: 'Saved ' + currentDropFilename + ': ' + upload.text;
 	StatusMessageUpdate(msg, result, 1.0);
 	
-	if (!upload.error) obj.saveScene('import');
+	if (!upload.error) { 
+		Save.AddTabItem(pict);
+		obj.saveScene('import'); 
+	}
 }
 /*function Start() {  // For debugging
 	if (Application.isWebPlayer) return;

@@ -18,7 +18,7 @@ function Fetch(id:String, mode:String):WWW {
 // {name:val0, key1:val1, ...}
 // {hash:xxx} in one file, and {name:val0, key1:val1, ...} in file xxx.
 function Parsed(www:WWW):Hashtable {
-	// Alas, www.error is empty on 404s!
+	// Alas, www.error was empty on 404s in some Unity versions!
 	if (!String.IsNullOrEmpty(www.error) || (www.text[0] != '{'[0])) {
 		Application.ExternalCall('errorMessage', www.url + ': ' + (www.error || www.text));
 		return new Hashtable();
@@ -305,9 +305,12 @@ public var destinationIdtag = '';	// objectIdtag to goto after the restoration. 
 public var destinationPath = '';	// Full scene-graph path to a specific object to goto after the restoration.
 public var savePath = '';  			// Where to report the completion of the restoration (e.g., after import).
 function SceneReady() {
-	if (savePath) { 
-		var obj = transform.Find(savePath).GetComponent.<Obj>();
+	if (savePath) { // after importing a kilroy object
+		var tran = transform.Find(savePath);
+		var obj = tran.GetComponent.<Obj>();
 		obj.renamePlace();
+		// If the imported object is a place, we're only adding the place itself to the tab order, not the stuff on it. Is that what we want?
+		Save.AddTabItem(tran);
 		obj.saveScene('import');
 		savePath = ''; 
 		return;

@@ -79,9 +79,11 @@ public static function ComputeQualifier(idtag:String, p:Transform, ignored:Trans
 	}
 	return count;
 }*/
-// Make sure that child has a unique name among its siblings. We rely on Unity keeping siblings in alphabetical order, and our
+// Make sure that child has a unique name among its siblings. 
+// This fancy alternate version fails the following requirement. See Save for less fancy alternative
+// We rely on Unity keeping siblings in alphabetical order, and our
 // own scheme of using id for name unless the previous sibling has id, in which case we add a suffix that preserves order.
-public static function NameUniquely(child:Transform, previous:Obj):Obj {
+/*public static function NameUniquely(child:Transform, previous:Obj):Obj {
 	var obj = child.gameObject.GetComponent.<Obj>();
 	if (!obj) return previous;  // There are meshes and adjusters in the scene graph, which do not effect our naming.
 	var id:String = obj.id;
@@ -91,7 +93,9 @@ public static function NameUniquely(child:Transform, previous:Obj):Obj {
 	child.name = previous.name + ((previous.name.length - id.length) % 10);
 	Debug.Log('child ' + id + ' => ' + child.name + ' prev:' + (previous ? previous.name : 'none'));
 	return obj;
-}
+}*/
+
+
 // Answers one (of the possibly many) GameObjects with the given id, else null.
 // id is an objectIdtag and may be falsey.
 public static function FindById(idtag:String):GameObject {

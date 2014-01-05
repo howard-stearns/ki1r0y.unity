@@ -122,14 +122,31 @@ function AddComponent(p:Hashtable, component:Transform) {
 	// The only shared data for all instances is the child data.
 	// The instance-specific transform data (position/rotation/scale) is above.
 	var children:Array = [];
-	var previous:Obj;
+	//var previous:Obj; // fancy alternate code
+	var counts = new System.Collections.Generic.Dictionary.<String, int>();
 	for (var child:Transform in component) {
 		var persisted:Hashtable = Persist(child.gameObject);
-		previous = Obj.NameUniquely(child, previous);  // afterPersist, b/c we may now have a new id
+		if (!persisted.Count) { continue; }
+		
+		// check name after Persist, b/c we may now have a new id
+		/*previous = Obj.NameUniquely(child, previous);  // fancy alternative code
 		if (persisted.Count != 0) { 
 			if (previous.name != previous.id) { persisted['instance'] = previous.name; }
 			children.Push(persisted);
+		}*/
+		var obj = child.gameObject.GetComponent.<Obj>();
+		if (!obj) { continue; }
+		var nn:int;
+		counts.TryGetValue(obj.id, nn);
+		if (nn++) {
+			obj.name = obj.id + nn.ToString();
+		} else {
+			obj.name = obj.id; // note that this clear name back to id if there had been a difference before
 		}
+		counts[obj.id] = nn;
+		if (obj.name != obj.id) { persisted['instance'] = obj.name; }
+		children.Push(persisted);
+		
 	}
 	if (children.length != 0)
 		AddProperty(p, 'children', children);
@@ -162,23 +179,30 @@ public static function RemoveTabItem(t:Transform) { // It is safe to give a tran
 public static function GetTabItems() {
 	if (TabOrderPaths == null) {  // Recompute if the cache is no good
 		TabOrderPaths = [];
+		var FIXMEinstances = '';
 		for (var trans in TabOrderTransforms) {
 			var obj = trans.GetComponent(Obj);
 			var path = obj.GameObjectPath();
 			TabOrderPaths.Push(path);
-			//FIXMEinstances += '[' + trans.name + ' ' + obj.instanceCounter + ' ' + path + '] ';
+			FIXMEinstances += '[' + trans.name + ' ' + obj.instanceCounter + ' ' + path + '] ';
 		}
+		Application.ExternalCall('notifyUser', 'saved tabOrder: ' + TabOrderPaths.join(', ') + ' ' + FIXMEinstances);
 	}
 	return TabOrderPaths;
 }
 public static function SetTabItems(pathsArray:Array) {
 	Save.TabOrderPaths = pathsArray;
 	Save.TabOrderTransforms = [];
-	for (var path in Save.TabOrderPaths) { Save.TabOrderTransforms.Push(Obj.FindByPath(path).transform); }
+	for (var path in Save.TabOrderPaths) {
+		var go = Obj.FindByPath(path);
+		if (go == null) {
+			Debug.LogError('cannot find tab item ' + path);
+		} else {
+			Save.TabOrderTransforms.Push(go.transform);
+		}
+	}
 }
 function AddComponent(p:Hashtable, component:Save) {
-	//var FIXMEinstances = '';
-	//Debug.LogWarning('saved tabOrder: ' + TabOrderPaths.join(', ') + ' ' + FIXMEinstances);
 	AddProperty(p, 'tabOrder', GetTabItems());
 }
 function AddComponent(p:Hashtable, component:Component) { }

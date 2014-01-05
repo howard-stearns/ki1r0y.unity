@@ -176,34 +176,39 @@ public static function RemoveTabItem(t:Transform) { // It is safe to give a tran
 		index++;
 	}
 }
-public static function GetTabItems() {
-	if (TabOrderPaths == null) {  // Recompute if the cache is no good
+public static function GetTabItems(includeRichData:boolean) {
+	if (includeRichData || (TabOrderPaths == null)) {  // Recompute if the cache is no good
 		TabOrderPaths = [];
+		var data:Array = [];
 		var FIXMEinstances = '';
 		for (var trans in TabOrderTransforms) {
 			var obj = trans.GetComponent(Obj);
 			var path = obj.GameObjectPath();
+			if (includeRichData) { 
+				data.Push({'path': path, 'nametag': obj.nametag, 'description': obj.description, 'idvtag': obj.hash || obj.id});
+			}
 			TabOrderPaths.Push(path);
 			FIXMEinstances += '[' + trans.name + ' ' + obj.instanceCounter + ' ' + path + '] ';
 		}
-		Application.ExternalCall('notifyUser', 'saved tabOrder: ' + TabOrderPaths.join(', ') + ' ' + FIXMEinstances);
+		Application.ExternalCall('notifyUser', 'saved tabOrder: ' + TabOrderPaths.join(', ') + ' ' + FIXMEinstances + ' data:' + JSON.Stringify(data));
 	}
-	return TabOrderPaths;
+	return includeRichData ? JSON.Stringify(data) : TabOrderPaths;
 }
 public static function SetTabItems(pathsArray:Array) {
 	Save.TabOrderPaths = pathsArray;
 	Save.TabOrderTransforms = [];
 	for (var path in Save.TabOrderPaths) {
 		var go = Obj.FindByPath(path);
-		if (go == null) {
-			Debug.LogError('cannot find tab item ' + path);
+		if (go == null) { // Is this just in our bootstrapping, or does this really happen?
+			Debug.LogError('cannot find tab item ' + path); 
+			Save.TabOrderPaths = null; 
 		} else {
 			Save.TabOrderTransforms.Push(go.transform);
 		}
 	}
 }
 function AddComponent(p:Hashtable, component:Save) {
-	AddProperty(p, 'tabOrder', GetTabItems());
+	AddProperty(p, 'tabOrder', GetTabItems(false));
 }
 function AddComponent(p:Hashtable, component:Component) { }
 

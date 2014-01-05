@@ -241,7 +241,7 @@ public static function SceneSelect(addToHistory) { // Tell browser to select who
 	var root = GameObject.FindWithTag('SceneRoot');
 	var rootComponent = root.GetComponent.<Obj>();
 	var tag = rootComponent.nametag;
-	Application.ExternalCall('props', rootComponent.GameObjectPath(), tag, rootComponent.author, rootComponent.description, Save.GetTabItems()); // regardless of addToHistory, etc.
+	Application.ExternalCall('props', rootComponent.GameObjectPath(), tag, rootComponent.author, rootComponent.description, Save.GetTabItems(true)); // regardless of addToHistory, etc.
 	if (addToHistory == null) {
 		if (!SelectedId) return;
 		else addToHistory = (SelectedId != NoShortCircuit);
@@ -321,7 +321,7 @@ function savedScene(action:String, changes:Array):IEnumerator { // Callback from
 	case 'length':
 	case 'nametag':
 	case 'description':
-		Application.ExternalCall('props', GameObjectPath(), nametag, author, description, !transform.parent ? Save.GetTabItems() : null);
+		Application.ExternalCall('props', GameObjectPath(), nametag, author, description, !transform.parent ? Save.GetTabItems(true) : null);
 		break;
 	}
 	if (!enabled) { Destroy(gameObject); } // if deleted, can only safely be destroyed now.

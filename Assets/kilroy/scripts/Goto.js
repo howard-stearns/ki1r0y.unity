@@ -121,7 +121,16 @@ function setupCameraAnimation(obj:Obj) {
 	var distByWidth = horizontalMax /
 		(2 * Mathf.Tan(Mathf.Deg2Rad * Camera.main.fieldOfView*Camera.main.aspect/2));
 	var facing = trans.TransformDirection(obj.localFacing);
-	cameraEndPos += (facing * (horizontalMax/2 + Mathf.Max(distByHeight, distByWidth)));
+	// This is the smallest distance that would show everything (except that we only 
+	// approximated the horizontal width using horizontalMax, above...
+	var dist = Mathf.Max(distByHeight, distByWidth);
+	// ...and because we didn't allow for the depth or thickness of the object itself.
+	// Ideally that would be 0.5 * horizontalMax, but that result in a bit too much margin
+	// in practice. It also tends to push us past the opposite wall in square rooms, which
+	// makes it a challenge for most people to figure out how to get back into the room.
+	// So add a little bit less.
+	dist += 0.3 * horizontalMax;
+	cameraEndPos += (facing * dist);
 	cameraEndRot = Quaternion.LookRotation(trans.position - cameraEndPos);
 }
 
@@ -275,6 +284,9 @@ function FixedUpdate() {
 			// don't unselect it. That will keep it from re-highliting when we move the mouse
 			// around over the object, but still select if we move the mouse over different objects.
 			gameObject.GetComponent(Select).UnHighlight();
+			if (Vector3.Dot(Camera.main.transform.up, Vector3.up) < 0.9) {
+				Application.ExternalCall('advice', "You are looking at things a bit sideways. You can use the 's' or down-arrow key to back up a bit and 'level out'.");
+			}
 			state = GotoState.AtObject;
 			// Removing would require that the pointer exit and re-enter, which is not great for pictures.
 			// We could conditionalize based on target, but now that we don't do transparancy/highlighting by default, we don't need to remove.

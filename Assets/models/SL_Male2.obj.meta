@@ -1,0 +1,166 @@
+fileFormatVersion: 2
+guid: 7c86c50991b47486fa2916677bab1e32
+ModelImporter:
+  serializedVersion: 16
+  fileIDToRecycleName:
+    100000: abdomen:3_Texture_Upperbo abdomen
+    100002: chest:3_Texture_Upperbo chest
+    100004: head:3_Texture_Head head
+    100006: hip:3_hip Texture_Lowerbo
+    100008: hip:3_hip Texture_Upperbo
+    100010: lCollar:3_Texture_Upperbo lCollar
+    100012: lFoot:3_Texture_Lowerbo lFoot
+    100014: lForeArm:3_Texture_Upperbo lForeArm
+    100016: lHand:3_Texture_Upperbo lHand
+    100018: lShin:3_Texture_Lowerbo lShin
+    100020: lShldr:3_Texture_Upperbo lShldr
+    100022: lThigh:3_Texture_Lowerbo lThigh
+    100024: neck:3_neck Texture_Head
+    100026: neck:3_Texture_Upperbo neck
+    100028: rCollar:3_Texture_Upperbo rCollar
+    100030: rFoot:3_Texture_Lowerbo rFoot
+    100032: rForeArm:3_Texture_Upperbo rForeArm
+    100034: rHand:3_Texture_Upperbo rHand
+    100036: rShin:3_Texture_Lowerbo rShin
+    100038: rShldr:3_Texture_Upperbo rShldr
+    100040: rThigh:3_Texture_Lowerbo rThigh
+    100042: //RootNode
+    400000: abdomen:3_Texture_Upperbo abdomen
+    400002: chest:3_Texture_Upperbo chest
+    400004: head:3_Texture_Head head
+    400006: hip:3_hip Texture_Lowerbo
+    400008: hip:3_hip Texture_Upperbo
+    400010: lCollar:3_Texture_Upperbo lCollar
+    400012: lFoot:3_Texture_Lowerbo lFoot
+    400014: lForeArm:3_Texture_Upperbo lForeArm
+    400016: lHand:3_Texture_Upperbo lHand
+    400018: lShin:3_Texture_Lowerbo lShin
+    400020: lShldr:3_Texture_Upperbo lShldr
+    400022: lThigh:3_Texture_Lowerbo lThigh
+    400024: neck:3_neck Texture_Head
+    400026: neck:3_Texture_Upperbo neck
+    400028: rCollar:3_Texture_Upperbo rCollar
+    400030: rFoot:3_Texture_Lowerbo rFoot
+    400032: rForeArm:3_Texture_Upperbo rForeArm
+    400034: rHand:3_Texture_Upperbo rHand
+    400036: rShin:3_Texture_Lowerbo rShin
+    400038: rShldr:3_Texture_Upperbo rShldr
+    400040: rThigh:3_Texture_Lowerbo rThigh
+    400042: //RootNode
+    2300000: abdomen:3_Texture_Upperbo abdomen
+    2300002: chest:3_Texture_Upperbo chest
+    2300004: head:3_Texture_Head head
+    2300006: hip:3_hip Texture_Lowerbo
+    2300008: hip:3_hip Texture_Upperbo
+    2300010: lCollar:3_Texture_Upperbo lCollar
+    2300012: lFoot:3_Texture_Lowerbo lFoot
+    2300014: lForeArm:3_Texture_Upperbo lForeArm
+    2300016: lHand:3_Texture_Upperbo lHand
+    2300018: lShin:3_Texture_Lowerbo lShin
+    2300020: lShldr:3_Texture_Upperbo lShldr
+    2300022: lThigh:3_Texture_Lowerbo lThigh
+    2300024: neck:3_neck Texture_Head
+    2300026: neck:3_Texture_Upperbo neck
+    2300028: rCollar:3_Texture_Upperbo rCollar
+    2300030: rFoot:3_Texture_Lowerbo rFoot
+    2300032: rForeArm:3_Texture_Upperbo rForeArm
+    2300034: rHand:3_Texture_Upperbo rHand
+    2300036: rShin:3_Texture_Lowerbo rShin
+    2300038: rShldr:3_Texture_Upperbo rShldr
+    2300040: rThigh:3_Texture_Lowerbo rThigh
+    3300000: abdomen:3_Texture_Upperbo abdomen
+    3300002: chest:3_Texture_Upperbo chest
+    3300004: head:3_Texture_Head head
+    3300006: hip:3_hip Texture_Lowerbo
+    3300008: hip:3_hip Texture_Upperbo
+    3300010: lCollar:3_Texture_Upperbo lCollar
+    3300012: lFoot:3_Texture_Lowerbo lFoot
+    3300014: lForeArm:3_Texture_Upperbo lForeArm
+    3300016: lHand:3_Texture_Upperbo lHand
+    3300018: lShin:3_Texture_Lowerbo lShin
+    3300020: lShldr:3_Texture_Upperbo lShldr
+    3300022: lThigh:3_Texture_Lowerbo lThigh
+    3300024: neck:3_neck Texture_Head
+    3300026: neck:3_Texture_Upperbo neck
+    3300028: rCollar:3_Texture_Upperbo rCollar
+    3300030: rFoot:3_Texture_Lowerbo rFoot
+    3300032: rForeArm:3_Texture_Upperbo rForeArm
+    3300034: rHand:3_Texture_Upperbo rHand
+    3300036: rShin:3_Texture_Lowerbo rShin
+    3300038: rShldr:3_Texture_Upperbo rShldr
+    3300040: rThigh:3_Texture_Lowerbo rThigh
+    4300000: abdomen:3_Texture_Upperbo abdomen
+    4300002: chest:3_Texture_Upperbo chest
+    4300004: head:3_Texture_Head head
+    4300006: hip:3_hip Texture_Lowerbo
+    4300008: hip:3_hip Texture_Upperbo
+    4300010: lCollar:3_Texture_Upperbo lCollar
+    4300012: lFoot:3_Texture_Lowerbo lFoot
+    4300014: lForeArm:3_Texture_Upperbo lForeArm
+    4300016: lHand:3_Texture_Upperbo lHand
+    4300018: lShin:3_Texture_Lowerbo lShin
+    4300020: lShldr:3_Texture_Upperbo lShldr
+    4300022: lThigh:3_Texture_Lowerbo lThigh
+    4300024: neck:3_neck Texture_Head
+    4300026: neck:3_Texture_Upperbo neck
+    4300028: rCollar:3_Texture_Upperbo rCollar
+    4300030: rFoot:3_Texture_Lowerbo rFoot
+    4300032: rForeArm:3_Texture_Upperbo rForeArm
+    4300034: rHand:3_Texture_Upperbo rHand
+    4300036: rShin:3_Texture_Lowerbo rShin
+    4300038: rShldr:3_Texture_Upperbo rShldr
+    4300040: rThigh:3_Texture_Lowerbo rThigh
+    9500000: //RootNode
+  materials:
+    importMaterials: 1
+    materialName: 0
+    materialSearch: 1
+  animations:
+    legacyGenerateAnimations: 4
+    bakeSimulation: 0
+    optimizeGameObjects: 0
+    animationCompression: 1
+    animationRotationError: .5
+    animationPositionError: .5
+    animationScaleError: .5
+    animationWrapMode: 0
+    extraExposedTransformPaths: []
+    clipAnimations: []
+    isReadable: 1
+  meshes:
+    lODScreenPercentages: []
+    globalScale: 1
+    meshCompression: 0
+    addColliders: 0
+    importBlendShapes: 1
+    swapUVChannels: 0
+    generateSecondaryUV: 0
+    useFileUnits: 1
+    optimizeMeshForGPU: 1
+    weldVertices: 1
+    secondaryUVAngleDistortion: 8
+    secondaryUVAreaDistortion: 15.000001
+    secondaryUVHardAngle: 88
+    secondaryUVPackMargin: 4
+  tangentSpace:
+    normalSmoothAngle: 60
+    splitTangentsAcrossUV: 1
+    normalImportMode: 0
+    tangentImportMode: 1
+  importAnimation: 1
+  copyAvatar: 0
+  humanDescription:
+    human: []
+    skeleton: []
+    armTwist: .5
+    foreArmTwist: .5
+    upperLegTwist: .5
+    legTwist: .5
+    armStretch: .0500000007
+    legStretch: .0500000007
+    feetSpacing: 0
+    rootMotionBoneName: 
+  lastHumanDescriptionAvatarSource: {instanceID: 0}
+  animationType: 2
+  additionalBone: 1
+  userData: 

@@ -254,10 +254,18 @@ function UpdatePlace(obj:Obj) {
 	var vers = {}; 
 	var keys = obj.timestamps();
 	// We could keep different amounts for different time periods.
-	// Right now, we just keep the 10 most recent.
+	// Right now, we just keep the last 24 hours. IWBNI to keep one of each day for a week, each week for a month, each month after that.
+	var now = JSTime();
+	var until = now - (1000 * 60 * 60 * 24);
+	var untilString = until.ToString();
 	var bottom = System.Math.Max(0, keys.Count - 10);
-	for (var i = keys.Count - 1; i >= bottom; i--) { // working backwards from most recent
-		var key = keys[i];
+	for (var i = keys.Count - 1; i >= 0; i--) { // working backwards from most recent
+		var key = keys[i] as String;
+		Debug.Log('key[' + i + ']=' + key);
+		if ((vers.Count >= 2) && (String.Compare(key, untilString) < 0)) { 
+			Application.ExternalCall('notifyUser', "Trimming " + (keys.Count - vers.Count) + " versions older than " + untilString);
+			break;
+		}
 		var val = obj.versions[key];
 		//Debug.Log(obj.id + ' copying version ' + val + ' at ' + key);
 		vers[key] = val;

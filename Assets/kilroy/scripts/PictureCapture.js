@@ -38,16 +38,12 @@ function Thumbnail (ids:Array):IEnumerator {
     // Encode texture into PNG
     var bytes = tex.EncodeToPNG();
     Destroy( tex );
-    for (var id:String in ids) {
- 		yield upload(bytes, id);  // FIXME: have this upload just once, with the ids as data, and let the server make the copies.
- 	}
-}
-function updateThumbnail() { Thumbnail([gameObject.GetComponent.<Obj>().hash]); } // From browser
-
-private function upload(bytes:byte[], id:String) {
-   	// Create a Web Form
+       	
+    var id = ids.Pop();
+    // Create a Web Form
     var form = new WWWForm();
-    form.AddBinaryData("fileUpload", bytes, "screenShot.png", "image/png");
+    form.AddBinaryData('fileUpload', bytes, 'screenShot.png', 'image/png');
+    if (ids.length) { form.AddField('additionalIds', JSON.Stringify(ids)); }
     // Upload to id
     var www = WWW('http://' + Save.host + '/thumb/' + id, form);
     //Debug.Log('uploading ' + www.url);
@@ -55,3 +51,4 @@ private function upload(bytes:byte[], id:String) {
     if (!String.IsNullOrEmpty(www.error))
     	Application.ExternalCall('errorMessage', 'Thumbnail ' + id + ' failed:' + www.error);
 }
+function updateThumbnail() { Thumbnail([gameObject.GetComponent.<Obj>().hash]); } // From browser

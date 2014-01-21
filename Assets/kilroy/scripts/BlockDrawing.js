@@ -45,6 +45,7 @@ function Wrap(picture:GameObject) {
 }
 function NotWrapping(picture:GameObject) {
 	var pictureObj = picture.GetComponent.<Obj>();
+	if (pictureObj.kind != 'Plane') { return; } // for now...
 	var thisObj = gameObject.GetComponent.<Obj>();
 	Application.ExternalCall('sayOnce', 
 		"When you have clicked to a picture, you can click the picture again to wrap it around the background surface. (For example, right now you can tile the "

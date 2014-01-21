@@ -42,6 +42,7 @@ function Thumbnail (ids:Array):IEnumerator {
  		yield upload(bytes, id);  // FIXME: have this upload just once, with the ids as data, and let the server make the copies.
  	}
 }
+function updateThumbnail() { Thumbnail([gameObject.GetComponent.<Obj>().hash]); } // From browser
 
 private function upload(bytes:byte[], id:String) {
    	// Create a Web Form

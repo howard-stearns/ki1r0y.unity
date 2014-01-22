@@ -302,7 +302,7 @@ function saveScene(action:String) { // Save whatever needs to be saved from the 
 }
 function savedScene(action:String, changes:Array):IEnumerator { // Callback from saveScene.
 	yield gameObject.GetComponent.<PictureCapture>().Thumbnail(changes);
-	Application.ExternalCall('saved', id, nametag, timestamp, action, hash, GameObjectPath());
+	Application.ExternalCall('saved', id, nametag, timestamp, action, hash, GameObjectPath(), saver.gameObject.GetComponent.<Obj>().id);
 	switch (action) {
 	case 'import': ExternalPropertyEdit('metadata', false); break;
 	case 'delete': 

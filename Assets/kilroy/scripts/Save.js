@@ -8,7 +8,7 @@ public static function splitPath(path:String, sep:String) {
 public static function splitPath(path:String) { return splitPath(path, ':'); }
 
 // This is about the active user, not necessarilly the owner of the scene.
-public static var userId = '100004567501627';
+public static var userId = '100004567501627'; //'100000015148499'; 
 public static var userNametag = 'Trevor Unity';
 public static var host = 'localhost:3000';
 function ContactInfo(combo:String) {
@@ -76,7 +76,6 @@ function AddProperty (p:Hashtable, key:String, q:Quaternion) {
 }
 
 function AddComponent(p:Hashtable, component:Obj) {
-	// FIXME: if obj.author doesn't match our userId, then create a new object.	
 	if (component.author == '') component.author = userId;
 	
 	AddProperty(p, 'type', component.kind);
@@ -218,12 +217,15 @@ public var forceUpload = false; // forces upload even if not changed. Used for r
 //   Updates Obj.hash (so we can tell later if a new upload is needed).
 //   Updates Obj.id IFF it was empty.
 function PersistGroup(x:GameObject):String {
-	var obj:Obj = x.GetComponent.<Obj>();
+	var obj = x.GetComponent.<Obj>();
+	if (obj.author == '') { Debug.LogWarning('FIXME: reset id ' + obj + ' was ' + obj.id + ' hash ' + obj.hash); obj.id = 'G'; } // generate new id, before asString.
 	var serialized = asString(x);
 	var hash = Utils.sha1(serialized);
-	var uploadPlace = false;  // but the next two conditions below may change that.
+	var uploadPlace = false;  // but this may change below.
 	if (obj.id == 'G') {      // New object => new id.
 		obj.id = 'G' + System.Guid.NewGuid().ToString();
+		Debug.LogWarning('FIXME changing name ' + x + ' to ' + obj.id);
+		x.name = obj.id;
 		uploadPlace = true;
 	}  
 	if (forceUpload || (hash != obj.hash)) {  // Upload the data needed to rebuild this version of the object.
@@ -231,6 +233,7 @@ function PersistGroup(x:GameObject):String {
 		uploadPlace = true;
 	}
 	if (!uploadPlace) { return obj.hash; } // No need to upload.
+	if (changeUser(obj)) { return PersistGroup(x); }
 	
 	changes.Push(hash); // the versioned (hash) id gets noted for a thumbnail upload.
 	// Update the local and persisted group info.
@@ -280,6 +283,14 @@ function UpdatePlace(obj:Obj) {
 		});
 	StartCoroutine( uploadData(obj.id, Utils.sha1(groupSerialization), groupSerialization, 'place') ); // FIXME we're not really using the sha1. Remove?
 }
+// If obj is not owned by this user, set it up for us and answer true, else just false.
+// Only intended to be called aftwer we know that obj has indeed been changed.
+function changeUser(obj:Obj) {
+	if (obj.author == userId) { return false; }
+	obj.author = ''; // not userId, becuase '' is a flag for groups to reset their id.
+	Debug.LogWarning('FIXME: reset author ' + obj + ' was ' + obj.id + ' hash ' + obj.hash);
+	return true;
+}
 function Persist(x:GameObject):Hashtable { return Persist(x, false); }
 function Persist(x:GameObject, isScene:boolean):Hashtable {
 	var instance = new Hashtable(); 
@@ -294,6 +305,7 @@ function Persist(x:GameObject, isScene:boolean):Hashtable {
 		var serialized = asString(x);
 		id = Utils.sha1(serialized);
 		if (forceUpload || (id != obj.id)) {
+			if (changeUser(obj)) { return Persist(x, isScene); } // try again after changeUser does its work
 			StartCoroutine( uploadData(id, id, serialized, 'thing') );
 			obj.id = id;
 			obj.hash = id;

@@ -218,13 +218,23 @@ public var forceUpload = false; // forces upload even if not changed. Used for r
 //   Updates Obj.id IFF it was empty.
 function PersistGroup(x:GameObject):String {
 	var obj = x.GetComponent.<Obj>();
-	if (obj.author == '') { Debug.LogWarning('FIXME: reset id ' + obj + ' was ' + obj.id + ' hash ' + obj.hash); obj.id = 'G'; } // generate new id, before asString.
+	var oldId = '';
+	if (obj.author == '') { 
+		Debug.LogWarning('reset id ' + obj + ' was ' + obj.id + ' hash ' + obj.hash);
+		oldId = obj.id;
+		obj.id = 'G'; // generate new id, before asString.
+	}
 	var serialized = asString(x);
 	var hash = Utils.sha1(serialized);
 	var uploadPlace = false;  // but this may change below.
 	if (obj.id == 'G') {      // New object => new id.
-		obj.id = 'G' + System.Guid.NewGuid().ToString();
-		Debug.LogWarning('FIXME changing name ' + x + ' to ' + obj.id);
+		if (oldId) {
+			// Unique, but same every time this user modifies the same source object, and not the same length as a sha.
+			obj.id = 'G' + Utils.sha1(oldId + userId);
+		} else {
+			obj.id = 'G' + System.Guid.NewGuid().ToString();
+		}
+		Debug.LogWarning('changing name ' + x + ' to ' + obj.id);
 		x.name = obj.id;
 		uploadPlace = true;
 	}  
@@ -288,7 +298,7 @@ function UpdatePlace(obj:Obj) {
 function changeUser(obj:Obj) {
 	if (obj.author == userId) { return false; }
 	obj.author = ''; // not userId, becuase '' is a flag for groups to reset their id.
-	Debug.LogWarning('FIXME: reset author ' + obj + ' was ' + obj.id + ' hash ' + obj.hash);
+	Debug.LogWarning('reset author ' + obj + ' was ' + obj.id + ' hash ' + obj.hash);
 	return true;
 }
 function Persist(x:GameObject):Hashtable { return Persist(x, false); }

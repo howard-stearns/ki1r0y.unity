@@ -107,6 +107,8 @@ function Wrap(picture:GameObject) {
 	var pictureObj = picture.GetComponent.<Obj>();
 	var pNNormal =  -picture.transform.up;
 	var fCollider = face.collider;
+	var faceEnabled = fCollider.enabled;
+	fCollider.enabled = true;
 	var gotPoints = false;
 	// We're picking points that, by construction, will be a and d, above, although we don't know until
 	// we're done which is which.
@@ -133,20 +135,22 @@ function Wrap(picture:GameObject) {
 	// Corners are not good choices, for this quick test, because they might be right on the edge giving a false negative or false positive.
 	// Checking a "center" point is a good choice, because they're in the middle and ultimately we'll want two diagonal points 
 	// (each point having a different texture u and different texture v), so having a "center" and a single "corner" works out.
-	if (fCollider.Raycast(Ray(txt3dCenter - pNNormal, pNNormal), hita, Mathf.Infinity)) { // if the initial center is good, use that for point a.
+	var rayOrigin = txt3dCenter - pNNormal;
+	//Log('collider=' + fCollider + ' picture center ray position=' + rayOrigin + ' direction (picture normal=' + pNNormal);
+	if (fCollider.Raycast(Ray(rayOrigin, pNNormal), hita, Mathf.Infinity)) { // if the initial center is good, use that for point a.
 		uvMa = hita.textureCoord;
 		//Log('got center ' + uvMa + ' ' + uvTa);
 	} else { // Try up to 4 candidate new "centers"
 		for (index = 0; index < 4 && !gotPoints; index++) {
 			var candidate = mid(txt3dCenter, vertices[index]);
-			//Log('check canditate corner ' + index + ' ' + candidate + ' from ' + txt3dCenter + ' ' + vertices[index]);
+			//Log('check candidate corner ' + index + ' ' + candidate + ' from ' + txt3dCenter + ' ' + vertices[index]);
 			if (fCollider.Raycast(Ray(candidate - pNNormal, pNNormal), hita, Mathf.Infinity)) {
 				uvMa = hita.textureCoord; uvTa = mid(uvTa, uv[index]);
 				txt3dCenter = candidate; // for use in moving corners towards this "center", below.
 				gotPoints = true;
 			}
 		}
-		if (!gotPoints) { return false; } // after five interior misses, it's not worth pecking about
+		if (!gotPoints) { fCollider.enabled = faceEnabled; return false; } // after five interior misses, it's not worth pecking about
 		gotPoints = false; // reset for further activity below
 	}
 	// Now find a diagonal by checking each "corner".
@@ -204,10 +208,10 @@ function Wrap(picture:GameObject) {
 			parentMats[parentIndex] = targetMat;
 			obj.sharedMaterials(parentMats);
 			obj.materialData = null; // clear cached serialization data
+			fCollider.enabled = faceEnabled;
 			return true;
-			//Log(face + ' after scale: ' + scale + ' offsetUnscaled:' + offsetUnscaled + ' offset:' + offset); 
-			//Log(face + ' texture scale: ' + face.renderer.material.mainTextureScale + ' offset:' + face.renderer.material.mainTextureOffset); 
 		} else Application.ExternalCall('errorMessage', "Failed to find " + targetMat + " in sharedMaterials.");
 	}
+	fCollider.enabled = faceEnabled;
 	return false;
 }

@@ -66,6 +66,11 @@ function setImportObject(path:String) {
 	dropObject.GetComponent.<Obj>().objectCollider().Raycast(pointerRay, dropTarget, Mathf.Infinity); 
 	Debug.Log('ray: ' + pointerRay.origin + ' + ' + pointerRay.direction + ' ' + dropTarget.point + ' on ' + dropTarget.transform);
 }
+function findObj(trans:Transform):Transform {
+	if (trans.gameObject.GetComponent(Obj)) { return trans; }
+	if (trans.parent) { return findObj(trans.parent); }
+	return null;
+}
 function setImportTarget(coordinates:String) {
 	var pair = Save.splitPath(coordinates, 'x'); 
 	var x:int = int.Parse(pair[0]);
@@ -73,9 +78,12 @@ function setImportTarget(coordinates:String) {
     var pointerRay:Ray = cam.ScreenPointToRay(Vector3(x, y, 0)); 
     Sticky.RemoveAdjuster(true); // if any. No need to retore as we'll be dealing with an import. 
  	if (Physics.Raycast(pointerRay, dropTarget)) {
-		/*NotifyUser*/Debug.LogWarning('got object ' + dropTarget.transform.gameObject + ' at ' + x + 'x' + y);
-	} else /*NotifyUser*/Debug.LogWarning('no drop target found at ' + x + 'x' + y);
-	dropObject = null;
+ 		dropObject = findObj(dropTarget.transform);
+		/*NotifyUser*/Debug.LogWarning('got object ' + dropTarget.transform.gameObject + ' (' + dropObject + ') at ' + x + 'x' + y);
+	} else {
+		/*NotifyUser*/Debug.LogWarning('no drop target found at ' + x + 'x' + y);
+		dropObject = null;
+	}
 }
 public var currentDropFilename:String;
 function setImportFilename(name:String) {
@@ -84,7 +92,7 @@ function setImportFilename(name:String) {
 	// error/progress messages.
 	currentDropFilename = name;
 }
-function importThing(id:String) {
+function importThing(id:String) { // A kilroy object, e.g., from search results
 	var pos = new Vector3[1]; var rot = new Quaternion[1]; setPlacement(pos, rot);
 	var scene = GameObject.FindWithTag('SceneRoot');
 	NotifyUser('importThing(' + id + ') scene:' + scene);
@@ -92,6 +100,7 @@ function importThing(id:String) {
 	var restore = scene.GetComponent.<Restore>();
 	restore.savePath = 'import'; // causes Find('import').<Obj>().saveScene('import') when the restore is complete.
 	Debug.Log('set ' + restore + ' destinationPath=' + restore.savePath);
+	// instance path argument (.savePath) is something that won't be found in scene, so RestoreChild makes a new object.
 	var imported = restore.RestoreChild(id, id, restore.savePath, scene.transform); // the instance name will get adjusted as soon as we save
 	imported.transform.position = pos[0];
 	imported.transform.rotation = rot[0];

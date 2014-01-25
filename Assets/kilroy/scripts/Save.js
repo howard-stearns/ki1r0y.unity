@@ -81,6 +81,7 @@ function AddComponent(p:Hashtable, component:Obj) {
 	AddProperty(p, 'type', component.kind);
 	AddProperty(p, 'nametag', component.nametag);
 	AddProperty(p, 'desc', component.description);
+	if (component.initialSize != Vector3.one) { AddProperty(p, 'iSize', component.initialSize); }
 	AddProperty(p, 'author', component.author);
 	// Save obj.sharedMaterials() here, rather than letting Renderer component do it on its own, 
 	// because Obj component may indirect sharedMaterials in different ways.
@@ -243,7 +244,7 @@ function PersistGroup(x:GameObject):String {
 		uploadPlace = true;
 	}
 	if (!uploadPlace) { return obj.hash; } // No need to upload.
-	if (changeUser(obj)) { return PersistGroup(x); }
+	if (onHashChange(obj)) { return PersistGroup(x); }
 	
 	changes.Push(hash); // the versioned (hash) id gets noted for a thumbnail upload.
 	// Update the local and persisted group info.
@@ -293,10 +294,18 @@ function UpdatePlace(obj:Obj) {
 		});
 	StartCoroutine( uploadData(obj.id, Utils.sha1(groupSerialization), groupSerialization, 'place') ); // FIXME we're not really using the sha1. Remove?
 }
-// If obj is not owned by this user, set it up for us and answer true, else just false.
-// Only intended to be called aftwer we know that obj has indeed been changed.
-function changeUser(obj:Obj) {
-	if (obj.author == userId) { return false; }
+// If obj is not owned by this user, set it up for us and answer true.
+// If size no longer matches initialSize, update initialSize and answer true.
+// (Does both tests. No short-circuit evaluation.)
+// Otherwise answer false.
+// Only intended to be called after we know that obj has indeed been changed.
+function onHashChange(obj:Obj) {
+	// Alternatively, we could update the size whenever we change something important. But that feels error-prone.
+	var s = obj.size();
+	var sizeChanged = (s != obj.initialSize);
+	if (sizeChanged) { obj.initialSize = s; }
+	
+	if (obj.author == userId) { return sizeChanged; }
 	obj.author = ''; // not userId, becuase '' is a flag for groups to reset their id.
 	Debug.LogWarning('reset author ' + obj + ' was ' + obj.id + ' hash ' + obj.hash);
 	return true;
@@ -315,7 +324,7 @@ function Persist(x:GameObject, isScene:boolean):Hashtable {
 		var serialized = asString(x);
 		id = Utils.sha1(serialized);
 		if (forceUpload || (id != obj.id)) {
-			if (changeUser(obj)) { return Persist(x, isScene); } // try again after changeUser does its work
+			if (onHashChange(obj)) { return Persist(x, isScene); } // try again after onHashChange does its work
 			StartCoroutine( uploadData(id, id, serialized, 'thing') );
 			obj.id = id;
 			obj.hash = id;

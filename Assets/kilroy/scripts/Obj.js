@@ -10,6 +10,7 @@ public var author = '';
 public var hash = ''; 
 public var versions:Object; // Only used for groups
 public var timestamp:String;
+public var initialSize = Vector3.one; // Only for import from search, but crucial for maintaing  pict intended aspect ratio+depth.
 
 public static var InstanceCounter = 0; // Sometimes used for debugging.
 public var instanceCounter = 0;

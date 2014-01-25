@@ -218,6 +218,8 @@ function CoFill(go:GameObject, id:String, data:Hashtable):IEnumerator {
 	obj.hash = data['idvtag'];
 	obj.nametag = data['nametag'];
 	obj.description = data['desc'] || '';
+	var iSize = data['iSize'];
+	if (iSize) { obj.initialSize = makeVector3(iSize); }
 	obj.author = data['author'] || ''; 
 	// Now any type-specific initialization:
 	switch (obj.kind) {
@@ -308,6 +310,9 @@ function SceneReady() {
 	if (savePath) { // after importing a kilroy object
 		var tran = transform.Find(savePath);
 		var obj = tran.GetComponent.<Obj>();
+		// Restore does not normally set size, as that's the parent's job.
+		// The import itself cannot do this, because it deals only with the placeholder and doesn't have the obj data available yet.
+		obj.size(obj.initialSize);
 		obj.renamePlace();
 		// If the imported object is a place, we're only adding the place itself to the tab order, not the stuff on it. Is that what we want?
 		Save.AddTabItem(tran);

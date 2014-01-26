@@ -21,7 +21,7 @@ function Parsed(www:WWW):Hashtable {
 	// Alas, www.error was empty on 404s in some Unity versions!
 	if (!String.IsNullOrEmpty(www.error) || (www.text[0] != '{'[0])) {
 		Application.ExternalCall('errorMessage', www.url + ': ' + (www.error || www.text));
-		return new Hashtable();
+		return null;
 	}
 	var data = JSON.Parse(www.text);
 	return data;
@@ -33,13 +33,13 @@ function CoFetchObjectData(holder:Hashtable[], id:String) {
 	var www = Fetch(id, 'thing');;
    	yield www;
 	var data:Hashtable = Parsed(www);
-	if (!data) { return; }
+	if (!data) { holder[0] = null; return; }
 	var hash:String = data['idvtag'];
 	if (hash) { // separately stored group and object info
 		www = Fetch(hash, 'thing');
 		yield www;
 		data = Parsed(www);
-		if (!data) { return; }
+		if (!data) { holder[0] = null; return; }
 	} else {
 		hash = id;
 	}
@@ -107,6 +107,7 @@ function CoInflate(existing:GameObject, id:String, hash:String, newChild:boolean
 		case 'Directional':
 		case 'Spot':
 		case 'Point': proto = lightPrototype; break;
+		default: Debug.LogError('invalid data id=' + id + ' idvtag=' + hash);
 		}
 		var go = Instantiate(proto.gameObject);
 		var obj = go.GetComponent.<Obj>();	
@@ -187,11 +188,13 @@ function CoFillVersions(x:GameObject, id:String, continuation:String, version:St
 	var www = Fetch(id, 'place');
    	yield www;
 	var data:Hashtable = Parsed(www);
-	if (!obj.hash) { // e.g., if a toplevel request for the latest
-		obj.hash = data['idvtag'];
+	if (data) {
+		if (!obj.hash) { // e.g., if a toplevel request for the latest
+			obj.hash = data['idvtag'];
+		}
+		obj.versions = data['versions']; 
 	}
-	obj.versions = data['versions']; 
-	if (!obj.versions) { // bootstrapping. synthesize some values
+	if (!obj.versions) { // bootstrapping or error. synthesize some values
 		obj.timestamp = GetComponent.<Save>().JSTime().ToString();
 		obj.versions = {obj.timestamp: obj.hash};
 	}

@@ -236,6 +236,7 @@ function PersistGroup(x:GameObject):String {
 			obj.id = 'G' + System.Guid.NewGuid().ToString();
 		}
 		Debug.LogWarning('changing name ' + x + ' to ' + obj.id);
+		TabOrderPaths = null; // clear cache
 		x.name = obj.id;
 		uploadPlace = true;
 	}  
@@ -329,6 +330,7 @@ function Persist(x:GameObject, isScene:boolean):Hashtable {
 			StartCoroutine( uploadData(id, id, serialized, 'thing') );
 			obj.id = id;
 			obj.hash = id;
+			TabOrderPaths = null; // clear cache
 			changes.Push(obj.id);
 		}
 		AddProperty(instance, 'idtag', id);

@@ -52,15 +52,32 @@ function setPlacement(pos:Vector3[], rot:Quaternion[]) {
     
  	var norm = Sticky.HitNormal(dropTarget);
     pos[0] = pt + (norm * 0.1);
-   	var up = Vector3.up;
+    
+    if (!dropObject) { dropObject = GameObject.FindWithTag('SceneRoot').transform; }
+   	// We really want object to be positioned against object as though slide along it.
+ 	// For most objects, the mounting direction is down, so this means a further rotation around X.
+ 	// (In fact, we might someday have other mounting directions, and for imported kilroy objects, we haven't completed
+ 	//  finished reading the object in at this point, so we wouldn't know any non-standard dimensions. For now, assume normal mounting.)
+ 	// This will leave blocks half-embedded in the selected object, but that's good enough for now.
+ 	
+ 	// Shall we combine this code with that in Select.js?
+   	var rt1 = dropObject.right; 
+	var fwd1 = dropObject.forward;
+	var alignedX = Mathf.Abs(Vector3.Dot(rt1, norm)) > 0.9;
+	var fwd = alignedX ? fwd1 : Vector3.Cross(rt1, norm);
+	rot[0] = Quaternion.LookRotation(fwd, norm);
+
+ 	/*var up = Vector3.up;
    	if (Mathf.Abs(Vector3.Dot(up, norm)) > 0.9) { up = Vector3.Cross(Vector3.right, norm); }
- 	rot[0] = Quaternion.LookRotation(norm,  up);
- 	Debug.LogWarning('pt=' + pt + ' v=' + v + ' norm=' + norm + ' pos=' + pos[0] + ' up=' + up + ' rot=' + rot[0]);
+	rot[0] = Quaternion.LookRotation(-norm,  up);
+ 	//rot[0] *= Quaternion.AngleAxis(-90, Vector3.right);
+ 	//rot[0] *= Quaternion.AngleAxis(180, Vector3.up);
+ 	Debug.LogWarning('pt=' + pt + ' v=' + v + ' norm=' + norm + ' pos=' + pos[0] + ' up=' + up + ' rot=' + rot[0]);*/
  }
 // Browser input button file input sets an object, not a coordinate.
 function setImportObject(path:String) { 
-	if (path == '/') dropObject = GameObject.FindWithTag('SceneRoot').transform;
-	else dropObject = Obj.FindByPath(path).transform; 
+	dropObject = null; 
+	if (path != '/') { dropObject = Obj.FindByPath(path).transform; }
 	NotifyUser('drop to ' + dropObject + ' @' + dropObject.position);
 	var pointerRay:Ray = Ray(cam.transform.position, dropObject.position - cam.transform.position);
 	dropObject.GetComponent.<Obj>().objectCollider().Raycast(pointerRay, dropTarget, Mathf.Infinity); 
@@ -98,10 +115,11 @@ function importThing(id:String) { // A kilroy object, e.g., from search results
 	NotifyUser('importThing(' + id + ') scene:' + scene);
 
 	var restore = scene.GetComponent.<Restore>();
-	restore.savePath = 'import'; // causes Find('import').<Obj>().saveScene('import') when the restore is complete.
+	// causes a saveScene() when the restore is complete.
+	restore.savePath = dropObject.gameObject.GetComponent.<Obj>().GameObjectPath() + '/import';
 	Debug.Log('set ' + restore + ' destinationPath=' + restore.savePath);
-	// instance path argument (.savePath) is something that won't be found in scene, so RestoreChild makes a new object.
-	var imported = restore.RestoreChild(id, id, restore.savePath, scene.transform); // the instance name will get adjusted as soon as we save
+	// instance argument is something that won't be found in dropObject, so RestoreChild makes a new object.
+	var imported = restore.RestoreChild(id, id, 'import', dropObject); // the instance name will get adjusted as soon as we save
 	imported.transform.position = pos[0];
 	imported.transform.rotation = rot[0];
 }
@@ -136,9 +154,9 @@ function importImage(url:String) {  // Here, rather than Restore or Obj, because
     
     var pict = Instantiate(picturePrefab, pos[0], rot[0]);
     var obj = pict.GetComponent.<Obj>();
-    //pict.transform.Rotate(90, 180, 0);
-    pict.transform.Rotate(90, 0, 0);
-    pict.transform.parent = dropObject == null ? scene.transform : dropObject.transform;
+    pict.transform.Rotate(0, 180, 0);
+    //pict.transform.Rotate(90, 0, 0);
+    pict.transform.parent = dropObject;
     obj.size(Vector3(originalAspectWidth, 0, 1));
 
     var bytes = txt.EncodeToPNG(); // Our upload is always image/png, regardless of drop.
@@ -176,23 +194,18 @@ function importImage(url:String) {  // Here, rather than Restore or Obj, because
 }
 /*function Start() {  // For debugging
 	if (Application.isWebPlayer) return;
-	yield WaitForSeconds(5);
-	setImportTarget('374x300');
-	//setImportObject('/G1/G1floor/QvTKHv-OnNHoW3wdEkDEl6M0wx4');
-	importThing('HKKy1I0XGPkf0AQHyunhD5tStsw'); 
-}
-function Start() {  // For debugging
-	if (Application.isWebPlayer) return;
-	var basename = 'avatar.jpg';
-	var furl = 'file:///Users/howardstearns/Pictures/' + basename;
 	yield WaitForSeconds(4);
-	Debug.Log('import ' + basename);
-	//setImportTarget('374x300'); 
-	setImportTarget('374x100');
+	
+	setImportTarget('374x300'); 
+	//setImportTarget('374x100');
 	//setImportObject('/G1/G1floor/r4ATbSDF2oS2gXlJ3lrV3TU3Wv4'); 
 	//setImportObject('/G1/G1floor');
+	
+	var basename = 'avatar.jpg';
+	var furl = 'file:///Users/howardstearns/Pictures/' + basename;
 	setImportFilename(basename);
-	importImage(furl); 
+	importImage(furl);
+	//importThing('HKKy1I0XGPkf0AQHyunhD5tStsw');
 }*/
 
 

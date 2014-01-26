@@ -275,7 +275,7 @@ function UpdatePlace(obj:Obj) {
 	for (var i = keys.Count - 1; i >= 0; i--) { // working backwards from most recent
 		var key = keys[i] as String;
 		if ((vers.Count >= 2) && (String.Compare(key, untilString) < 0)) { 
-			Application.ExternalCall('notifyUser', "Trimming " + (keys.Count - vers.Count) + " versions older than " + untilString);
+			Application.ExternalCall('notifyUser', "Trimming " + (keys.Count - vers.Count) + " versions older than " + untilString + " in " + obj.id);
 			break;
 		}
 		var val = obj.versions[key];

@@ -17,7 +17,7 @@
 //
 // In any case, this function is always a coroutine, because the upload will 
 // certainly be asynchronous.
-function Thumbnail (ids:Array):IEnumerator {
+function Thumbnail(ids:Array):IEnumerator {
 	// While we take the picture, make sure that there is no gizmo in the way, and restore it later.
 	var avatarSelect = Interactor.Avatar().GetComponent.<Select>();
 	var runningGizmo = avatarSelect.StopGizmo();

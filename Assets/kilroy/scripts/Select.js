@@ -54,20 +54,34 @@ function setPlacement(pos:Vector3[], rot:Quaternion[]) {
     pos[0] = pt + (norm * 0.1);
     
     if (!dropObject) { dropObject = GameObject.FindWithTag('SceneRoot').transform; }
+    
    	// We really want object to be positioned against object as though slide along it.
  	// For most objects, the mounting direction is down, so this means a further rotation around X.
  	// (In fact, we might someday have other mounting directions, and for imported kilroy objects, we haven't completed
  	//  finished reading the object in at this point, so we wouldn't know any non-standard dimensions. For now, assume normal mounting.)
  	// This will leave blocks half-embedded in the selected object, but that's good enough for now.
  	
- 	// Shall we combine this code with that in Select.js?
-   	var rt1 = dropObject.right; 
+ 	// Textures on Plane primitives are upside down to what we want, so this requires that the internal Plane child
+ 	// be rotated 180 around local y relative to the main obj, roughly similar to the way we manuall orient block faces.
+ 	// Note that this has to be in the part definition rather than code, because we don't want code to conditional
+ 	// on the type of object, when we don't know at the start of an object import what type it will be. 
+ 	
+ 	// Shall we integrate this code with that in Select.js?
+ 	var aligned = Mathf.Abs(Vector3.Dot(dropObject.up, norm)) > 0.9;
+ 	var surfaceLeft = Vector3.Cross(aligned ? dropObject.forward : dropObject.up, norm);
+ 	var vert = Vector3.Cross(norm, surfaceLeft);
+ 	var out = Vector3.Cross(surfaceLeft, vert);
+	rot[0] = Quaternion.LookRotation(vert, out);
+	//Debug.LogWarning('aligned=' + aligned + ' norm=' + norm + ' surfaceLeft=' + surfaceLeft + ' vert=' + vert + ' out=' + out);
+	
+	/*var rt1 = dropObject.right; 
 	var fwd1 = dropObject.forward;
 	var alignedX = Mathf.Abs(Vector3.Dot(rt1, norm)) > 0.9;
 	var fwd = alignedX ? fwd1 : Vector3.Cross(rt1, norm);
-	rot[0] = Quaternion.LookRotation(fwd, norm);
+	Debug.Log('alignedX=' + alignedX + ' fwd=' + fwd + ' norm=' + norm);
+	rot[0] = Quaternion.LookRotation(fwd, norm);*/
 
- 	/*var up = Vector3.up;
+ 	/* var up = Vector3.up;
    	if (Mathf.Abs(Vector3.Dot(up, norm)) > 0.9) { up = Vector3.Cross(Vector3.right, norm); }
 	rot[0] = Quaternion.LookRotation(-norm,  up);
  	//rot[0] *= Quaternion.AngleAxis(-90, Vector3.right);
@@ -154,8 +168,8 @@ function importImage(url:String) {  // Here, rather than Restore or Obj, because
     
     var pict = Instantiate(picturePrefab, pos[0], rot[0]);
     var obj = pict.GetComponent.<Obj>();
-    pict.transform.Rotate(0, 180, 0);
-    //pict.transform.Rotate(90, 0, 0);
+    //pict.transform.Rotate(0, 180, 0); // if setPlacement has bottom along surface normal
+    //pict.transform.Rotate(90, 0, 0); // if setPlacement has forward (look) along normal
     pict.transform.parent = dropObject;
     obj.size(Vector3(originalAspectWidth, 0, 1));
 
@@ -194,18 +208,47 @@ function importImage(url:String) {  // Here, rather than Restore or Obj, because
 }
 /*function Start() {  // For debugging
 	if (Application.isWebPlayer) return;
+	var delay = 3;
+	
 	yield WaitForSeconds(4);
-	
-	setImportTarget('374x300'); 
-	//setImportTarget('374x100');
-	//setImportObject('/G1/G1floor/r4ATbSDF2oS2gXlJ3lrV3TU3Wv4'); 
-	//setImportObject('/G1/G1floor');
-	
 	var basename = 'avatar.jpg';
 	var furl = 'file:///Users/howardstearns/Pictures/' + basename;
 	setImportFilename(basename);
-	importImage(furl);
-	//importThing('HKKy1I0XGPkf0AQHyunhD5tStsw');
+
+	//setImportTarget('374x300'); 
+	//setImportTarget('374x100');
+	
+	Debug.LogError('import on PjcKM3kgWuRHR8vLHlCv6ZEYOvM');
+	setImportObject('/G1/G1floor/PjcKM3kgWuRHR8vLHlCv6ZEYOvM'); 
+	yield WaitForSeconds(delay); importImage(furl);
+	//yield WaitForSeconds(delay); importThing('HKKy1I0XGPkf0AQHyunhD5tStsw');
+	//yield WaitForSeconds(delay); importThing('VdO3Xx-QEIXGxlALLto1iyXykls');
+	
+	Debug.LogError('import on Hzc3ZvJoi-8HaXu62YQqzNvZgaA');
+	setImportObject('/G1/G1floor/Hzc3ZvJoi-8HaXu62YQqzNvZgaA');
+	//yield WaitForSeconds(delay); importImage(furl);
+	//yield WaitForSeconds(delay); importThing('HKKy1I0XGPkf0AQHyunhD5tStsw');
+	yield WaitForSeconds(delay); importThing('VdO3Xx-QEIXGxlALLto1iyXykls');
+	
+	Debug.LogError('import on G1floor');
+	setImportObject('/G1/G1floor');
+	//yield WaitForSeconds(delay); importImage(furl);
+	//yield WaitForSeconds(delay); importThing('HKKy1I0XGPkf0AQHyunhD5tStsw');
+	yield WaitForSeconds(delay); importThing('VdO3Xx-QEIXGxlALLto1iyXykls');
+	
+	Debug.LogError('import on b7eDSLf3OZIb7J4R4O-jf6_UX6E');
+	setImportObject('/G1/G1floor/b7eDSLf3OZIb7J4R4O-jf6_UX6E');
+	//yield WaitForSeconds(delay); importImage(furl);
+	//yield WaitForSeconds(delay); importThing('HKKy1I0XGPkf0AQHyunhD5tStsw');
+	yield WaitForSeconds(delay); importThing('VdO3Xx-QEIXGxlALLto1iyXykls');
+	
+	Debug.LogError('import on FLEbFC7J8Xy9C0V6a2cyGCCcUbk');
+	setImportObject('/G1/G1floor/FLEbFC7J8Xy9C0V6a2cyGCCcUbk');
+	//yield WaitForSeconds(delay); importImage(furl);
+	//yield WaitForSeconds(delay); importThing('HKKy1I0XGPkf0AQHyunhD5tStsw');
+	yield WaitForSeconds(delay); importThing('VdO3Xx-QEIXGxlALLto1iyXykls');
+
+	Debug.LogError('Import tests complete');
 }*/
 
 

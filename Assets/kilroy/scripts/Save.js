@@ -301,6 +301,7 @@ function UpdatePlace(obj:Obj) {
 // Only intended to be called after we know that obj has indeed been changed.
 function onHashChange(obj:Obj) {
 	// Alternatively, we could update the size whenever we change something important. But that feels error-prone.
+	// Alternatively, it might be better to hold the initialSize outside the main serialized data, in order to make it easier to match old copies or other copies.
 	var s = obj.size();
 	var sizeChanged = (s != obj.initialSize);
 	if (sizeChanged) { obj.initialSize = s; }

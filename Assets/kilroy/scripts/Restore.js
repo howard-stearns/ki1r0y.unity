@@ -310,25 +310,27 @@ public var destinationIdtag = '';	// objectIdtag to goto after the restoration. 
 public var destinationPath = '';	// Full scene-graph path to a specific object to goto after the restoration.
 public var savePath = '';  			// Where to report the completion of the restoration (e.g., after import).
 function SceneReady() {
-	if (savePath) { // after importing a kilroy object
-		var go = GameObject.Find(savePath);
-		var obj = go.GetComponent.<Obj>();
-		// Restore does not normally set size, as that's the parent's job.
-		// The import itself cannot do this, because it deals only with the placeholder and doesn't have the obj data available yet.
-		obj.size(obj.initialSize);
-		obj.renamePlace();
-		// If the imported object is a place, we're only adding the place itself to the tab order, not the stuff on it. Is that what we want?
-		Save.AddTabItem(go.transform);
-		savePath = ''; 
-		obj.saveScene('import');
-		return;
-	} 
-	if (safetyNet && GameObject.FindWithTag('SceneRoot').GetComponent.<Obj>().FindNametag('floor')) {
+	if (safetyNet && (savePath.Length <= 1) && GameObject.FindWithTag('SceneRoot').GetComponent.<Obj>().FindNametag('floor')) {
 		Log('removing temporary floor');
 		safetyNet.parent = null;
 		Destroy(safetyNet.gameObject);
 		safetyNet = null; 
 	}
+	if (savePath) { // after importing a kilroy object
+		var go = (savePath == '/') ? gameObject : GameObject.Find(savePath);
+		var obj = go.GetComponent.<Obj>();
+		obj.renamePlace();
+		if (savePath != '/') {
+			// Restore does not normally set size, as that's the parent's job.
+			// The import itself cannot do this, because it deals only with the placeholder and doesn't have the obj data available yet.
+			obj.size(obj.initialSize);
+			// If the imported object is a place, we're only adding the place itself to the tab order, not the stuff on it. Is that what we want?
+			Save.AddTabItem(go.transform);
+		}
+		savePath = ''; 
+		obj.saveScene('import');
+		return;
+	} 
 	avatarActions(true);
 	var targetObj = destinationPath ? Obj.FindByPath(destinationPath) : Obj.FindById(destinationIdtag);
 	//Debug.Log('SceneReady destinationIdtag:' + destinationIdtag + ' destinationPath:' + destinationPath + ' target:' + targetObj);

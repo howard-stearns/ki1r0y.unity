@@ -137,6 +137,14 @@ function importThing(id:String) { // A kilroy object, e.g., from search results
 	imported.transform.position = pos[0];
 	imported.transform.rotation = rot[0];
 }
+// This version merely restores the scene and renames/saves when done.
+// That's not going to be good enough for multi-user, in which the scene might be occupied, and we don't want to disrupt each other.
+// We'll need some sort of exclusive mode in which we restore our own private version without connecting to anyone.
+function copyScene(id:String) { 
+	var restore = GameObject.FindWithTag('SceneRoot').GetComponent.<Restore>();
+	restore.savePath = '/';  // renames and saves on SceneReady 
+	restore.RestoreScene(':' + id, true);
+}
 function powerOfTwo(size:int):int { // answer next larger power of two, up to 1024. (Our display maxes at 600px wide.)
 	var p = 0;
 	for (p in [16, 32, 64, 128, 256, 512, 1024]) { if (p >= size) { break; } }

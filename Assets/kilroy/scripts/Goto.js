@@ -173,7 +173,16 @@ var state = GotoState.None; 	// This avatar's current state.
 function Goto(trans:Transform, addToHistory) {
 	var obj = trans.gameObject.GetComponent(Obj);
 	if (trans == currentSite) {
-		trans.parent.gameObject.SendMessage("Wrap", trans.gameObject, SendMessageOptions.DontRequireReceiver);
+		/*Application.ExternalCall('notifyUser', 'lockCursor=' + Screen.lockCursor
+			+ ' wasLocked=' + GameObject.Find('PlayerOverlay').GetComponent(OverlayControls).wasLocked
+			+ ' NeedsNotice=' + OverlayControls.NeedsNotice
+		); */
+		Debug.LogWarning('BlockActionFrames ' + OverlayControls.BlockActionFrames);
+		if (OverlayControls.BlockActionFrames) {
+			Application.ExternalCall('notifyUser', 'Ignoring goto on first return click');
+		} else {
+			trans.parent.gameObject.SendMessage("Wrap", trans.gameObject, SendMessageOptions.DontRequireReceiver);
+		}
 		return;
 	}
 	trans.parent.gameObject.SendMessage("NotWrapping", trans.gameObject, SendMessageOptions.DontRequireReceiver);

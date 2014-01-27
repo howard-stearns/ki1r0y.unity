@@ -44,7 +44,10 @@ function Update () {
 		trackMouseMotion(true);
 	}
 }
-private static var NeedsNotice = true;
+// When the mouse exits the scene and then someone clicks back on the scene, we need to wait several frames before doing at-object actions such as tiling:
+// Our first LateUpdate frame will be BEFORE we get the Sticky StartDragging and StopDragging.
+// The third is after the StopDragging, where we can safely allow such actions.
+public static var BlockActionFrames = 0; // If truthy, the mouse has exited the scene and we don't yet consider the user to have clicked back.
 // Public interface to request that we track mouse motion or not.
 public static function TrackMouseMotion(enabled:boolean) { 
 	// We do not trackMouseMotion directly, but rather attempt to set this flag and let Update keep things consistent.
@@ -55,10 +58,24 @@ public static function TrackMouseMotion(enabled:boolean) {
 		NeedsNotice = true; // ...reset for next discrepency
 	} else {
 		if (NeedsNotice) { // don't flood messages
-			var msg = "Click in scene to unlock camera.";
+			var msg = "Click in scene to unlock camera for free motion.";
 			Debug.LogWarning(msg);
 			Application.ExternalCall('advice', msg);
 			NeedsNotice = false;
 		}
+	}
+}
+function OnMouseExit () { 
+	//Debug.LogWarning('exit');
+	BlockActionFrames = -1;
+}
+function OnMouseUp () { 
+	//Debug.LogWarning('click ' + BlockActionFrames);
+	if (BlockActionFrames < 0) { BlockActionFrames = 1; }
+}
+function LateUpdate() {
+	if (BlockActionFrames > 0) { 
+		//Debug.LogWarning('clear exit ' + BlockActionFrames);
+		BlockActionFrames--;
 	}
 }

@@ -185,7 +185,9 @@ public static function GetTabItems(includeRichData:boolean) {
 			var obj = trans.GetComponent(Obj);
 			var path = obj.GameObjectPath();
 			if (includeRichData) { 
-				data.Push({'path': path, 'nametag': obj.nametag, 'description': obj.description, 'idvtag': obj.hash || obj.id});
+				data.Push({'path': path, 'nametag': obj.nametag, 'description': obj.description, 'idvtag': obj.hash || obj.id,
+					'idtag': obj.id // Only used for bookkeeping. E.g., If someone grabs the url of a an item in the tab order display.
+					});
 			}
 			TabOrderPaths.Push(path);
 			//FIXMEinstances += '[' + trans.name + ' ' + obj.instanceCounter + ' ' + path + '] ';

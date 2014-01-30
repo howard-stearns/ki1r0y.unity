@@ -25,13 +25,14 @@ function isGroup() {
 	if (id == '') return false;
 	return id.length != hash.length; 
 }
-function renamePlace() { // every place must have a unique name. Use after import or copy.
-	if (!isGroup()) { return; }
-	id = 'G'; // Will get assigned a guid during save.
+function renamePlace():boolean { // every place must have a unique name. Use after import or copy.
+	if (!isGroup()) { return false; }
+	author = ''; // not to userId, becuase '' is a flag for groups to reset their id during save. 
 	for (var child:Transform in transform) {
 		var childObj = child.GetComponent.<Obj>();
 		if (childObj) { childObj.renamePlace(); }
 	}
+	return true;
 }
 private function makeNotPlace() {  // Kills the "place"-ness of this and descendants if necessary.
 	if (!isGroup()) { return; }

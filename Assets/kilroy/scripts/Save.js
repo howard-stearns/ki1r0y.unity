@@ -310,8 +310,10 @@ function onHashChange(obj:Obj) {
 	if (sizeChanged) { obj.initialSize = s; }
 	
 	if (obj.author == userId) { return sizeChanged; }
-	obj.author = ''; // not userId, becuase '' is a flag for groups to reset their id.
-	Debug.LogWarning('reset author ' + obj + ' was ' + obj.id + ' hash ' + obj.hash);
+	Debug.LogWarning('reset author ' + obj.author + ' of ' + obj.id + ' hash ' + obj.hash);
+	if (!obj.renamePlace()) { 
+		obj.author = '';  // effect when not a place
+	};
 	return true;
 }
 function Persist(x:GameObject):Hashtable { return Persist(x, false); }

@@ -56,8 +56,14 @@ public function GetRelated() {
 // the object closest to the avatar, we might come up with one that is not the one we are in front of!
 public var currentSite:Transform;
 // Find the assembly we're at (or closest to), and goto the next one.
-public function Next(isForward:boolean) {
+public function Next(isForward:boolean, includeAll:boolean) {
 	var objs = Save.TabOrderTransforms; // FIXME GetAssemblies(scene);
+	if (includeAll) {
+		var allComponents = FindObjectsOfType(Obj) as Obj[];
+		var ii = 0;
+		objs = new Array(allComponents.length);
+		for (var comp:Obj in allComponents) { objs[ii++] = comp.transform; }
+	}
 	var closest:int; 
 	var closestDistance:float = Mathf.Infinity;
 	// Find the closest assembly to where we are. If we're not at an assembly, we still want
@@ -81,10 +87,11 @@ public function Next(isForward:boolean) {
 		if (--closest < 0) closest = objs.length-1;
 		Application.ExternalCall('clearOnce', 'shiftTab');
 	}
+	//Debug.LogWarning('Next(' + isForward + ', ' + includeAll + ') ' + closest + '/' + objs.length + '=' + objs[closest]);
 	Goto(objs[closest], true);
 }
 public function Next(isForward:String) { // For testing from browser.
-	Next(isForward=="true");
+	Next(isForward=="true", false);
 }
 
 public var pulseDuration = 0.8;  // The scene's natural period. Animate to next pulse.
@@ -180,12 +187,12 @@ function Goto(trans:Transform, addToHistory) {
 		Debug.LogWarning('BlockActionFrames ' + OverlayControls.BlockActionFrames);
 		if (OverlayControls.BlockActionFrames) {
 			Application.ExternalCall('notifyUser', 'Ignoring goto on first return click');
-		} else {
+		} else if (!!trans.parent) {
 			trans.parent.gameObject.SendMessage("Wrap", trans.gameObject, SendMessageOptions.DontRequireReceiver);
 		}
 		return;
 	}
-	trans.parent.gameObject.SendMessage("NotWrapping", trans.gameObject, SendMessageOptions.DontRequireReceiver);
+	if (!!trans.parent) trans.parent.gameObject.SendMessage("NotWrapping", trans.gameObject, SendMessageOptions.DontRequireReceiver);
 	OverlayControls.TrackMouseMotion(false);
 	obj.ExternalPropertyEdit('metadata', addToHistory);
 	currentSite = trans;
@@ -241,8 +248,12 @@ public function setTabItems(json:String) {
 private var lastVertical:float; // Z position while FallingAtObjectAfterArrival.
 // Check for tab key, driving AtObject, and animate Transporting.
 function Update() {
-	if (Input.GetKeyDown(KeyCode.Tab)) 
-		Next(!(Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift)));
+	if (Input.GetKeyDown(KeyCode.Tab)) {
+		var isShifted = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
+		var isOpt = !!Input.GetAxis('Fire2');
+		Next(!isShifted, isOpt);
+		return;
+	}
 	switch (state) {
 	case GotoState.Transporting:
 		if (Time.time < animationEndTime) {

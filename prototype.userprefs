@@ -1,0 +1,26 @@
+﻿<Properties>
+  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" PreferredExecutionTarget="MonoDevelop.Default" />
+  <MonoDevelop.Ide.Workbench ActiveDocument="Assets/kilroy/scripts/Save.js">
+    <Files>
+      <File FileName="Assets/kilroy/scripts/Obj.js" Line="32" Column="36" />
+      <File FileName="Assets/kilroy/scripts/Restore.js" Line="322" Column="7" />
+      <File FileName="Assets/kilroy/scripts/Save.js" Line="11" Column="49" />
+      <File FileName="Assets/Plugins/Utils.js" Line="1" Column="1" />
+      <File FileName="Assets/kilroy/scripts/Goto.js" Line="1" Column="1" />
+      <File FileName="Assets/kilroy/scripts/Select.js" Line="369" Column="19" />
+      <File FileName="Assets/kilroy/scripts/OverlayControls.js" Line="1" Column="1" />
+      <File FileName="Assets/kilroy/adjuster/Sticky.js" Line="153" Column="15" />
+      <File FileName="Assets/kilroy/Gizmo/Directional.js" Line="1" Column="1" />
+      <File FileName="Assets/kilroy/scripts/PictureDrawing.js" Line="1" Column="1" />
+    </Files>
+    <Pads>
+      <Pad Id="ClassPad">
+        <State expanded="True" selected="True" />
+      </Pad>
+    </Pads>
+  </MonoDevelop.Ide.Workbench>
+  <MonoDevelop.Ide.DebuggingService.Breakpoints>
+    <BreakpointStore />
+  </MonoDevelop.Ide.DebuggingService.Breakpoints>
+  <MonoDevelop.Ide.DebuggingService.PinnedWatches />
+</Properties>

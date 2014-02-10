@@ -4,6 +4,7 @@ public var localMounting = Vector3(0, -1, 0);
 public var localFacing = Vector3(0, 0, -1);
 public var nametag = '';
 public var description = '';
+public var details = '';
 public var author = '';
 // Usually the same as id, but cand be different for groups (such as scenes).
 // Used to determine if there's been a change.
@@ -243,7 +244,9 @@ public static function SceneSelect(addToHistory) { // Tell browser to select who
 	var root = GameObject.FindWithTag('SceneRoot');
 	var rootComponent = root.GetComponent.<Obj>();
 	var tag = rootComponent.nametag;
-	Application.ExternalCall('props', rootComponent.GameObjectPath(), tag, rootComponent.author, rootComponent.description, Save.GetTabItems(true)); // regardless of addToHistory, etc.
+	Application.ExternalCall('props', rootComponent.GameObjectPath(), tag, rootComponent.author, 
+		rootComponent.description, rootComponent.details,
+		Save.GetTabItems(true)); // regardless of addToHistory, etc.
 	if (addToHistory == null) {
 		if (!SelectedId) return;
 		else addToHistory = (SelectedId != NoShortCircuit);
@@ -270,7 +273,7 @@ function ExternalPropertyEdit(tabName:String, addToHistory) {
 	Application.ExternalCall('updatePosition', pos.x, pos.y, pos.z);
 	Application.ExternalCall('updateRotation', rot.x, rot.y, rot.z);
 	Application.ExternalCall('updateSize', size.x, size.y, size.z);
-	Application.ExternalCall('props', path, nametag, author, description);
+	Application.ExternalCall('props', path, nametag, author, description, details);
 	/*var structure = {'children': new Array()};
 	Debug.Log('parent:' + transform.parent);
 	if (transform.parent != null) { structure['parent'] = structureInfo(transform.parent);}
@@ -323,7 +326,10 @@ function savedScene(action:String, changes:Array):IEnumerator { // Callback from
 	case 'length':
 	case 'nametag':
 	case 'description':
-		Application.ExternalCall('props', GameObjectPath(), nametag, author, description, !transform.parent ? Save.GetTabItems(true) : null);
+	case 'details':
+		Application.ExternalCall('props', GameObjectPath(), nametag, author, 
+			description, details,
+			!transform.parent ? Save.GetTabItems(true) : null);
 		break;
 	}
 	if (!enabled) { Destroy(gameObject); } // if deleted, can only safely be destroyed now.
@@ -350,6 +356,7 @@ function setSizeZ(v:String) {var vec = transform.localScale; transform.localScal
 
 function settag0(v:String) { nametag = v; saveScene('nametag'); }
 function setDesc(v:String) { description = v; saveScene('description'); }
+function setDetails(v:String) { details = v; saveScene('details'); }
 /***************************************************************************************/
 public var deleteMe = false; // To delete in editor
 function Update() {

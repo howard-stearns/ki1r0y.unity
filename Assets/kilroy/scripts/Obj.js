@@ -5,6 +5,7 @@ public var localFacing = Vector3(0, 0, -1);
 public var nametag = '';
 public var description = '';
 public var details = '';
+public var detailsLabel = '';
 public var author = '';
 // Usually the same as id, but cand be different for groups (such as scenes).
 // Used to determine if there's been a change.
@@ -245,7 +246,7 @@ public static function SceneSelect(addToHistory) { // Tell browser to select who
 	var rootComponent = root.GetComponent.<Obj>();
 	var tag = rootComponent.nametag;
 	Application.ExternalCall('props', rootComponent.GameObjectPath(), tag, rootComponent.author, 
-		rootComponent.description, rootComponent.details,
+		rootComponent.description, rootComponent.details, rootComponent.detailsLabel,
 		Save.GetTabItems(true)); // regardless of addToHistory, etc.
 	if (addToHistory == null) {
 		if (!SelectedId) return;
@@ -273,7 +274,7 @@ function ExternalPropertyEdit(tabName:String, addToHistory) {
 	Application.ExternalCall('updatePosition', pos.x, pos.y, pos.z);
 	Application.ExternalCall('updateRotation', rot.x, rot.y, rot.z);
 	Application.ExternalCall('updateSize', size.x, size.y, size.z);
-	Application.ExternalCall('props', path, nametag, author, description, details);
+	Application.ExternalCall('props', path, nametag, author, description, details, detailsLabel);
 	/*var structure = {'children': new Array()};
 	Debug.Log('parent:' + transform.parent);
 	if (transform.parent != null) { structure['parent'] = structureInfo(transform.parent);}
@@ -327,8 +328,9 @@ function savedScene(action:String, changes:Array):IEnumerator { // Callback from
 	case 'nametag':
 	case 'description':
 	case 'details':
+	case 'detailsLabel':
 		Application.ExternalCall('props', GameObjectPath(), nametag, author, 
-			description, details,
+			description, details, detailsLabel,
 			!transform.parent ? Save.GetTabItems(true) : null);
 		break;
 	}
@@ -357,6 +359,7 @@ function setSizeZ(v:String) {var vec = transform.localScale; transform.localScal
 function settag0(v:String) { nametag = v; saveScene('nametag'); }
 function setDesc(v:String) { description = v; saveScene('description'); }
 function setDetails(v:String) { details = v; saveScene('details'); }
+function setDetailsLabel(v:String) { detailsLabel = v; saveScene('detailsLabel'); }
 /***************************************************************************************/
 public var deleteMe = false; // To delete in editor
 function Update() {

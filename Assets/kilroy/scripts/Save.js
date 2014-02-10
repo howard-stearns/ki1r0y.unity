@@ -82,6 +82,7 @@ function AddComponent(p:Hashtable, component:Obj) {
 	AddProperty(p, 'nametag', component.nametag);
 	AddProperty(p, 'desc', component.description);
 	AddProperty(p, 'details', component.details);
+	AddProperty(p, 'detailsLabel', component.detailsLabel);
 	if (component.initialSize != Vector3.one) { AddProperty(p, 'iSize', component.initialSize); }
 	AddProperty(p, 'author', component.author);
 	// Save obj.sharedMaterials() here, rather than letting Renderer component do it on its own, 

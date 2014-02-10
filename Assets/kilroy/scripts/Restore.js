@@ -222,6 +222,7 @@ function CoFill(go:GameObject, id:String, data:Hashtable):IEnumerator {
 	obj.nametag = data['nametag'];
 	obj.description = data['desc'] || '';
 	obj.details = data['details'] || '';
+	obj.detailsLabel = data['detailsLabel'] || '';
 	var iSize = data['iSize'];
 	if (iSize) { obj.initialSize = makeVector3(iSize); }
 	obj.author = data['author'] || ''; 

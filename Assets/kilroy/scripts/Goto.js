@@ -90,7 +90,7 @@ public function Next(isForward:boolean, includeAll:boolean) {
 	//Debug.LogWarning('Next(' + isForward + ', ' + includeAll + ') ' + closest + '/' + objs.length + '=' + objs[closest]);
 	Goto(objs[closest], true);
 }
-public function Next(isForward:String) { // For testing from browser.
+public function Tabber(isForward:String) { // For testing from browser.
 	Next(isForward=="true", false);
 }
 

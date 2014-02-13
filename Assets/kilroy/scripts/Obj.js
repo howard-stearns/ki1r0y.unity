@@ -30,6 +30,10 @@ function isGroup() {
 function renamePlace(isCopy:boolean):boolean { // every place must have a unique name. Use after import or copy.
 	if (!isGroup()) { return false; }
 	author = ''; // not to userId, becuase '' is a flag for groups to reset their id during save. 
+	// Set new basis id for copies. This isn't actually used directly for the new id, as the above line
+	// causes a new id to be generated from the old basis and the user id. The purpose of that is to get
+	// repeatability for changes by a new author. For a real copy by the same author, though, we really
+	// do want a new independent basis.
 	if (isCopy) { id = System.Guid.NewGuid().ToString(); }
 	for (var child:Transform in transform) {
 		var childObj = child.GetComponent.<Obj>();

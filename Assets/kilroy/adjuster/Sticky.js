@@ -150,7 +150,7 @@ function startDragging(assembly:Transform, cameraRay:Ray, hit:RaycastHit):Laser 
 		assembly.BroadcastMessage('updateAssembly', assembly, SendMessageOptions.DontRequireReceiver);		
 		// assemblyObj is side-effected by updateAssembly.
 		assemblyObj.sharedMaterials(obj.sharedMaterials());
-		assemblyObj.renamePlace();       // rename if it's a place.
+		assemblyObj.renamePlace(true);       // rename if it's a place.
 		obj = assemblyObj;
 		// If we're making a copy, the first dragging movement will always intersect the original object, and 
 		// we'll instantly jump out from that surface as we try to mount the copy onto the original. Even if 

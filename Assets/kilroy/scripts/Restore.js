@@ -321,7 +321,7 @@ function SceneReady() {
 	if (savePath) { // after importing a kilroy object
 		var go = (savePath == '/') ? gameObject : GameObject.Find(savePath);
 		var obj = go.GetComponent.<Obj>();
-		obj.renamePlace();
+		obj.renamePlace(true);
 		if (savePath != '/') {
 			// Restore does not normally set size, as that's the parent's job.
 			// The import itself cannot do this, because it deals only with the placeholder and doesn't have the obj data available yet.

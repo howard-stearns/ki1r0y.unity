@@ -27,12 +27,13 @@ function isGroup() {
 	if (id == '') return false;
 	return id.length != hash.length; 
 }
-function renamePlace():boolean { // every place must have a unique name. Use after import or copy.
+function renamePlace(isCopy:boolean):boolean { // every place must have a unique name. Use after import or copy.
 	if (!isGroup()) { return false; }
 	author = ''; // not to userId, becuase '' is a flag for groups to reset their id during save. 
+	if (isCopy) { id = System.Guid.NewGuid().ToString(); }
 	for (var child:Transform in transform) {
 		var childObj = child.GetComponent.<Obj>();
-		if (childObj) { childObj.renamePlace(); }
+		if (childObj) { childObj.renamePlace(isCopy); }
 	}
 	return true;
 }

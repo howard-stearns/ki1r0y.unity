@@ -1,5 +1,5 @@
-// Capture the scene from the current camera. callback is a message to send with bytes.
-function SceneCapture(callback:String, scale:float):IEnumerator {
+// Capture the scene from the current camera, putting bytes in bytesHolder.
+function SceneCapture(callback:String, scale:float, bytesHolder:Object[]):IEnumerator {
 	// While we take the picture, make sure that there is no gizmo in the way, and restore it later.
 	var avatarSelect = Interactor.Avatar().GetComponent.<Select>();
 	var runningGizmo = avatarSelect.StopGizmo();
@@ -19,18 +19,16 @@ function SceneCapture(callback:String, scale:float):IEnumerator {
     if (scale != 1.0) { Application.ExternalCall('notifyUser', 'rescaling thumbnail'); TextureScale.Bilinear(tex, scale * Screen.width, scale * Screen.height); }
     if (runningGizmo != null) { avatarSelect.StartGizmo(runningGizmo); }
     // Encode texture into PNG
-    var bytes = tex.EncodeToPNG();
-    Application.ExternalCall('notifyUser', 'texture ' + scale + ' ' + tex.width + 'x' + tex.height + ' png bytes=' + bytes.Length);
+    bytesHolder[0] = tex.EncodeToPNG();
+    Application.ExternalCall('notifyUser', 'texture ' + scale + ' ' + tex.width + 'x' + tex.height + ' png bytes=' + bytesHolder[0].Length);
     Destroy( tex );
-	SendMessage(callback, bytes);
 }
-function updateBrowserBackgroundImage(bytes:byte[]) {
-	var base64 = System.Convert.ToBase64String(bytes);
-	Application.ExternalCall('notifyUser', 'image is ' + bytes.Length + ' sending ' + base64.Length);
-	Application.ExternalCall('updateBackgroundImage', 'data:image/jpeg;base64,' + base64);
-}
+
 function captureSceneToBackground(scale:String) {
-	SceneCapture('updateBrowserBackgroundImage', float.Parse(scale));
+	var bytesHolder = new Object[1];
+	yield SceneCapture('updateBrowserBackgroundImage', float.Parse(scale), bytesHolder);
+	var base64 = System.Convert.ToBase64String(bytesHolder[0]);
+	Application.ExternalCall('updateBackgroundImage', 'data:image/jpeg;base64,' + base64);
 }
 
 // Ensure that the gameObject has a recent thumbnail uploaded for all ids.
@@ -54,15 +52,12 @@ function captureSceneToBackground(scale:String) {
 // certainly be asynchronous.
 var pendingIds:Array;
 function Thumbnail(ids:Array):IEnumerator {
-	pendingIds = ids;
-	yield SceneCapture('uploadThumbnail', 1.0);
-}
-function uploadThumbnail(bytes:byte[]) {
-	var ids = pendingIds;      	
+	var bytesHolder = new Object[1];
+	yield SceneCapture('uploadThumbnail', 1.0, bytesHolder);
     var id = ids.Pop();
     // Create a Web Form
     var form = new WWWForm();
-    form.AddBinaryData('fileUpload', bytes, 'screenShot.png', 'image/png');
+    form.AddBinaryData('fileUpload', bytesHolder[0], 'screenShot.png', 'image/png');
     if (ids.length) { form.AddField('additionalIds', JSON.Stringify(ids)); }
     // Upload to id
     var www = WWW('http://' + Save.host + '/thumb/' + id, form);

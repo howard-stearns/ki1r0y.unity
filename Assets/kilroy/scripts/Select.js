@@ -369,6 +369,8 @@ function Update () {
 		//UnSelection();
 		Obj.SceneSelect(false);
 		return;
+	} else if ((Input.GetKeyDown(KeyCode.Delete) || Input.GetKeyDown(KeyCode.Backspace)) && (Obj.SelectedObj != null)) {
+		Obj.SelectedObj.deleteObject(); // which does a save as well.
 	}
 	//if (gizmo) return;
     /*var hit:RaycastHit;

@@ -235,9 +235,12 @@ public function deleteObject() {
 //	Application.ExternalCall('notifyUser', 'deleted:' + nametag);
 	saveScene('delete'); // will do the destroying on the callback.
 	if (!saveEnabled()) Destroy(gameObject); // we won't get a callback, so scheduled Destroy now.
+	SelectedObj = null;
+	SelectedId = null;
 }
 
 public static var SelectedId = null; // global state for this user.
+public static var SelectedObj:Obj = null;
 
 // SceneSelect and ExternalPropertyEdit may both send browser 'select' with an optional idvtag to add to history.
 // However, the functions here can also take a true/false/null addToHistory argument:
@@ -258,6 +261,7 @@ public static function SceneSelect(addToHistory) { // Tell browser to select who
 		else addToHistory = (SelectedId != NoShortCircuit);
 	}
 	SelectedId = null;
+	SelectedObj = null;
 	Application.ExternalCall('select', rootComponent.id, tag, addToHistory ? rootComponent.hash : '', rootComponent.author, rootComponent.description);
 }
 function structureInfo(trans:Transform):Hashtable { // Not used yet. To appear below.
@@ -293,6 +297,7 @@ function ExternalPropertyEdit(tabName:String, addToHistory) {
 		else addToHistory = (SelectedId != NoShortCircuit);
 	}
 	SelectedId = id;
+	SelectedObj = this;
 	Application.ExternalCall('tabSelect', tabName);
 	Application.ExternalCall('select', id, nametag, addToHistory ? hash : '', author, description);
 }

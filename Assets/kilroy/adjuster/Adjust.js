@@ -87,6 +87,9 @@ function doDragging(assembly:Transform, axis:Transform, plane:Transform, hit:Ray
 		lastRotationV = v;
 	} else {
 		var pointerDelta = hit.point - firstPoint;
+		if (Input.GetKey(KeyCode.LeftControl)) {
+			pointerDelta = Vector3.Project(pointerDelta, startCorner - oppositeCorner);
+		}
 		var newCorner = startCorner + pointerDelta;
 		var span = newCorner - oppositeCorner;
 		if (!doShift) { 

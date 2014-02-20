@@ -25,8 +25,8 @@ function Awake() {
 		var rgb = axis.parent.InverseTransformDirection(axis.right);
 		
 		// We can modify this to fit our pallet:
-		if (Vector3.Dot(rgb, Vector3.right) > 0.5) rgb = Vector3(0.596, 0.227, 0.349); // red triad of FB blue
-		else if (Vector3.Dot(rgb, Vector3.up) > 0.5) rgb = Vector3(0.349, 0.596, 0.227); // green trial of FB blue
+		if (Mathf.Abs(Vector3.Dot(rgb, Vector3.right)) > 0.5) rgb = Vector3(0.596, 0.227, 0.349); // red triad of FB blue
+		else if (Mathf.Abs(Vector3.Dot(rgb, Vector3.up)) > 0.5) rgb = Vector3(0.349, 0.596, 0.227); // green trial of FB blue
 		else rgb = Vector3(0.231, 0.349, 0.596); // FB blue.
 		
 		highlightColor = makeAlpha(rgb);

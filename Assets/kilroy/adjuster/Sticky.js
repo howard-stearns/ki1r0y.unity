@@ -80,6 +80,7 @@ function unparentGizmo(assy:Transform):Transform {
 }
 public static function AddAdjuster(assy:Transform, adjusterPrefab:Transform) { // Add adjusterPrefab as a child of assy.
 	if (AnyMoving) { return; } // Don't mess up an existing drag.
+	if (assy.GetComponent.<Obj>().frozen) { return; }
 	var gizmo:Transform;
 	//if (!!StickyInstance) RemoveAdjuster(); // for debugging
 	if (!StickyInstance) {
@@ -117,9 +118,15 @@ public static function RemoveAdjuster(immediate:boolean) {
 }
 public static function RemoveAdjuster() { RemoveAdjuster(false); }
 private static var TransparencyOn = false;
-function Update() {
+function Update() { // handle transparenc and delete. (Note that only one Sticky is present, so this isn't repeated.)
 	if (Input.GetKeyDown(KeyCode.T) && Input.GetKey(KeyCode.LeftControl)) { TransparencyOn = !TransparencyOn; }
 	transparency.enabled = TransparencyOn;
+	if ((Input.GetKeyDown(KeyCode.Delete)|| Input.GetKeyDown(KeyCode.Backspace))
+			 // this adjuster might have been left on an obj that is different than a frozen (no adjuster) selected object.
+			&& !!Obj.SelectedObj && !Obj.SelectedObj.frozen) {
+		Obj.SelectedObj.deleteObject(); // which does a save as well.
+		return;
+	}
 	super.Update();
 }
 
@@ -160,7 +167,7 @@ function startDragging(assembly:Transform, cameraRay:Ray, hit:RaycastHit):Laser 
 		// from it, but couldn't make them work.
 		draggedOriginalLayer = SetAssemblyLayer(originalCopied, 2);
 	} else if (!!Input.GetAxis('Fire3')) { // cmd key
-		var select = Avatar().GetComponent.<Select>();
+		var select = AvatarSelectComp();
 		if (!!select) {
 			obj.ExternalPropertyEdit('properties', false);
 			select.StartGizmo(assembly.gameObject);
@@ -230,7 +237,7 @@ function startDragging(assembly:Transform, cameraRay:Ray, hit:RaycastHit):Laser 
 	gameObject.layer = 8; // Get our StrikeTarget out of the way. Don't change children, nor make StrikeTarget stop getting OnMouseEnter/Exit at all.
 	// FIXME: animate laser movement from hit.point to surfaceHit.point.
 	hit.point = surfaceHit.point; // so that Laser.StartInteraction() can do the right thing.
-	return Avatar().Find('Shoulder').GetComponent.<Laser>();
+	return AvatarLaserComp();
 }
 function stopDragging(assembly:Transform) {	
 	// StrikeTarget must normally be on the same layer as other objects (Default). Otherwise large but covered StrikeTargets would
@@ -258,11 +265,7 @@ function stopDragging(assembly:Transform) {
 		Destroy(assembly.gameObject); // the copy. us.
 		original.GetComponent.<Obj>().deleteObject(); // which does a save as well.
 	} else {
-		var avatar = Avatar();
-		var goto = !avatar ? null : avatar.GetComponent(Goto);
-		if (!!goto) {
-			goto.Goto(assembly, true);
-		}
+		AvatarGoto(assembly, true);
 	}
 }
 // We cast only against the Default layer (0). E.g., we don't want this to catch the gizmo on the HUD layer (8), nor assembly on IgnoreRaycast(2).

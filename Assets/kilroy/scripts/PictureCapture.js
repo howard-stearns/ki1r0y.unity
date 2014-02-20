@@ -1,7 +1,7 @@
 // Capture the scene from the current camera, putting bytes in bytesHolder.
 function SceneCapture(callback:String, scale:float, bytesHolder:Object[]):IEnumerator {
 	// While we take the picture, make sure that there is no gizmo in the way, and restore it later.
-	var avatarSelect = Interactor.Avatar().GetComponent.<Select>();
+	var avatarSelect = Interactor.AvatarSelectComp();
 	var runningGizmo = avatarSelect.StopGizmo();
     // We should only read the screen after all rendering is complete
     yield WaitForEndOfFrame();

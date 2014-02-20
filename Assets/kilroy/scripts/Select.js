@@ -326,6 +326,7 @@ public function StopGizmo():GameObject { // Stop any running gizmo and return th
 public function StartGizmo(go:GameObject) { // start a gizmo on the given gameObject. Does nothing if arg is null.
 	if (go == null) { return; } 
 	if (go.tag == 'SceneRoot') { return; } // no gizmo for scene as a whole
+	if (go.GetComponent.<Obj>().frozen) { return; }
 	StopGizmo();
 	//UnSelection();
 	var trans = go.transform;
@@ -369,8 +370,6 @@ function Update () {
 		//UnSelection();
 		Obj.SceneSelect(false);
 		return;
-	} else if ((Input.GetKeyDown(KeyCode.Delete) || Input.GetKeyDown(KeyCode.Backspace)) && (Obj.SelectedObj != null)) {
-		Obj.SelectedObj.deleteObject(); // which does a save as well.
 	}
 	//if (gizmo) return;
     /*var hit:RaycastHit;

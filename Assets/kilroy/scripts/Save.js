@@ -352,6 +352,7 @@ function Persist(x:GameObject, isScene:boolean):Hashtable {
 			AddProperty(instance, 'rotation', x.transform.localRotation);
 		var size = obj.size();
 		if (size != Vector3.one) AddProperty(instance, 'size', size);
+		if (obj.frozen) AddProperty(instance, 'freeze', true);
 	}
 	return instance;
 }

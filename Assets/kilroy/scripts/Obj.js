@@ -13,6 +13,7 @@ public var hash = '';
 public var versions:Object; // Only used for groups
 public var timestamp:String;
 public var initialSize = Vector3.one; // Only for import from search, but crucial for maintaing  pict intended aspect ratio+depth.
+public var frozen = false;
 
 public static var InstanceCounter = 0; // Sometimes used for debugging.
 public var instanceCounter = 0;
@@ -275,7 +276,7 @@ function structureInfo(trans:Transform):Hashtable { // Not used yet. To appear b
 // Tell external property editor about this object's editable properties, and select the object.
 function ExternalPropertyEdit(tabName:String, addToHistory) {
 	// Update properties regardless of whether we 'select'. Must be before 'select' so that path is set if select needs to setProp of anything.
-	Interactor.Avatar().GetComponent.<Select>().StopGizmo(); 
+	Interactor.AvatarSelectComp().StopGizmo(); 
 	var path = GameObjectPath();
 	var pos = gameObject.transform.localPosition;
 	var rot = gameObject.transform.localEulerAngles; //Not what we persist, but easier for users.
@@ -283,7 +284,8 @@ function ExternalPropertyEdit(tabName:String, addToHistory) {
 	Application.ExternalCall('updatePosition', pos.x, pos.y, pos.z);
 	Application.ExternalCall('updateRotation', rot.x, rot.y, rot.z);
 	Application.ExternalCall('updateSize', size.x, size.y, size.z);
-	Application.ExternalCall('props', path, nametag, author, description, details, detailsLabel);
+	Application.ExternalCall('props', path, nametag, author, description, details, detailsLabel, '',
+		frozen ? 'checked' : ''); // ExternalCall converts bools to strings, so let's preserve truthiness.
 	/*var structure = {'children': new Array()};
 	Debug.Log('parent:' + transform.parent);
 	if (transform.parent != null) { structure['parent'] = structureInfo(transform.parent);}
@@ -370,6 +372,7 @@ function settag0(v:String) { nametag = v; saveScene('nametag'); }
 function setDesc(v:String) { description = v; saveScene('description'); }
 function setDetails(v:String) { details = v; saveScene('details'); }
 function setDetailsLabel(v:String) { detailsLabel = v; saveScene('detailsLabel'); }
+function setFreeze(v:String) { frozen = !!v; saveScene('freeze'); }
 /***************************************************************************************/
 public var deleteMe = false; // To delete in editor
 function Update() {

@@ -5,9 +5,13 @@
 
 public var adjusterPrefab:Transform; // Prototype Adjuster, which uses the Sticky script.
 
-function OnMouseEnter () {
+function OnMouseEnter() {
 //	Debug.Log('enter ' + gameObject);
 	Sticky.AddAdjuster(transform.parent, adjusterPrefab); // Removes an previous.
 }
-
 //function OnMouseExit () { Debug.Log('exit ' + gameObject); }
+function OnMouseDown() { // Handle goto UNLESS we have an adjuster to handle that for us.
+	if (!Sticky.StickyInstance || (Sticky.StickyInstance.assembly != transform.parent)) {
+		Interactor.AvatarGoto(transform.parent, true);
+	}
+}

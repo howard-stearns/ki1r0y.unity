@@ -137,6 +137,8 @@ function setupCameraAnimation(obj:Obj) {
 	// makes it a challenge for most people to figure out how to get back into the room.
 	// So add a little bit less.
 	dist += 0.3 * horizontalMax;
+	dist = Mathf.Max(dist, (1.1 * Camera.main.nearClipPlane));
+	//Debug.LogWarning('dist ' + distByWidth + 'x' + distByHeight + ' horizontalMax=' + horizontalMax + ' dist=' + dist);
 	cameraEndPos += (facing * dist);
 	cameraEndRot = Quaternion.LookRotation(trans.position - cameraEndPos);
 }
@@ -187,7 +189,7 @@ function Goto(trans:Transform, addToHistory) {
 		Debug.LogWarning('BlockActionFrames ' + OverlayControls.BlockActionFrames);
 		if (OverlayControls.BlockActionFrames) {
 			Application.ExternalCall('notifyUser', 'Ignoring goto on first return click');
-		} else if (!!trans.parent) {
+		} else if (!!trans.parent && !trans.parent.GetComponent.<Obj>().frozen) {
 			trans.parent.gameObject.SendMessage("Wrap", trans.gameObject, SendMessageOptions.DontRequireReceiver);
 		}
 		return;

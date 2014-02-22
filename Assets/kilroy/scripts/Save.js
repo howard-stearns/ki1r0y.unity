@@ -178,6 +178,8 @@ public static function RemoveTabItem(t:Transform) { // It is safe to give a tran
 		index++;
 	}
 }
+// Answer a serialization of the current ordered tab stops.
+// If includeRichData, the serialization is json that includes browser-display information. Otherwise, it's just an array of scene graph paths.
 public static function GetTabItems(includeRichData:boolean) {
 	if (includeRichData || (TabOrderPaths == null)) {  // Recompute if the cache is no good
 		TabOrderPaths = [];
@@ -198,14 +200,14 @@ public static function GetTabItems(includeRichData:boolean) {
 	}
 	return includeRichData ? JSON.Stringify(data) : TabOrderPaths;
 }
+// message (e.g., from browser) to use pathsArray to specify the new complete ordered set of tab stops.
 public static function SetTabItems(pathsArray:Array) {
 	Save.TabOrderPaths = pathsArray;
 	Save.TabOrderTransforms = [];
 	for (var path in Save.TabOrderPaths) {
 		var go = Obj.FindByPath(path);
 		if (go == null) { // Is this just in our bootstrapping, or does this really happen?
-			Debug.LogError('cannot find tab item ' + path); 
-			Save.TabOrderPaths = null; 
+			Application.ExternalCall('errorMessage', "Kilroy cannot find tab item " + path + ".");  
 		} else {
 			Save.TabOrderTransforms.Push(go.transform);
 		}

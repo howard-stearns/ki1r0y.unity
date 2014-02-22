@@ -8,8 +8,8 @@ public static function splitPath(path:String, sep:String) {
 public static function splitPath(path:String) { return splitPath(path, ':'); }
 
 // This is about the active user, not necessarilly the owner of the scene.
-public static var userId = '100004567501627'; //'100000015148499'; 
-public static var userNametag = 'Trevor Unity';
+public static var userId = '100004567501627'; //'100000015148499'; '100007663687854';
+public static var userNametag = 'Trevor Unity'; //'Kilroy'; 
 public static var host = 'localhost:3000';
 function ContactInfo(combo:String) {
 	var pair = splitPath(combo, '/'); // can't use : as separator, because host might contain :port.
@@ -81,6 +81,8 @@ function AddComponent(p:Hashtable, component:Obj) {
 	AddProperty(p, 'type', component.kind);
 	AddProperty(p, 'nametag', component.nametag);
 	AddProperty(p, 'desc', component.description);
+	AddProperty(p, 'details', component.details);
+	AddProperty(p, 'detailsLabel', component.detailsLabel);
 	if (component.initialSize != Vector3.one) { AddProperty(p, 'iSize', component.initialSize); }
 	AddProperty(p, 'author', component.author);
 	// Save obj.sharedMaterials() here, rather than letting Renderer component do it on its own, 
@@ -311,7 +313,7 @@ function onHashChange(obj:Obj) {
 	
 	if (obj.author == userId) { return sizeChanged; }
 	Debug.LogWarning('reset author ' + obj.author + ' of ' + obj.id + ' hash ' + obj.hash);
-	if (!obj.renamePlace()) { 
+	if (!obj.renamePlace(false)) { 
 		obj.author = '';  // effect when not a place
 	};
 	return true;
@@ -350,6 +352,7 @@ function Persist(x:GameObject, isScene:boolean):Hashtable {
 			AddProperty(instance, 'rotation', x.transform.localRotation);
 		var size = obj.size();
 		if (size != Vector3.one) AddProperty(instance, 'size', size);
+		if (obj.frozen) AddProperty(instance, 'freeze', true);
 	}
 	return instance;
 }

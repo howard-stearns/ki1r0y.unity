@@ -17,6 +17,20 @@ static function projectPointOnPlane(point, planeNormal, planePoint) {
 static function noFlip(scale:Vector3) { // Make sure that scale doesn't flip
 	return Vector3(Mathf.Abs(scale.x), Mathf.Abs(scale.y), Mathf.Abs(scale.z));
 }
+
+// Get bigger on mouse over.
+var initialSize:Vector3;
+var bigSize:Vector3;
+function OnMouseEnter() {	
+	if (!AnyActive) { transform.localScale = bigSize; } 
+	super.OnMouseEnter();
+}
+function OnMouseExit() {
+	super.OnMouseExit();  
+	transform.localScale = initialSize;
+}
+
+
 // As we drag, we will broadcast 'updateAffordance' to everyone in the gizmo.
 var assemblyObj:Obj;
 public var cornerUnitPositionFromAxis:Vector3;  // in our coordinate system
@@ -37,6 +51,8 @@ function Awake() {
 	else if (axis.name == 'Zneg') { cornerUnitPositionFromAxis.z *= -1; }
 	else if ((axis.name == 'Y') || (axis.name == 'Z')) { cornerUnitPositionFromAxis.x *= -1; }
 	else if (axis.name == 'Xneg') { cornerUnitPositionFromAxis.x *= -1; cornerUnitPositionFromAxis.z *= -1; }
+	initialSize = transform.localScale;
+	bigSize = initialSize * 2;
 }
 
 public var doRotate = false;
@@ -67,7 +83,7 @@ function resetParameters(p:Vector3, force:boolean) {
 }
 function startDragging(assembly:Transform, cameraRay:Ray, hit:RaycastHit):Laser {
 	super.startDragging(assembly, cameraRay, hit); 
-	return Avatar().Find('Shoulder').GetComponent.<Laser>();
+	return AvatarLaserComp();
 }
 function startDragging(assembly:Transform, axis:Transform, plane:Transform, cameraRay:Ray, hit:RaycastHit) {
 	plane.rotation = affordanceCollider.transform.rotation;
@@ -87,6 +103,9 @@ function doDragging(assembly:Transform, axis:Transform, plane:Transform, hit:Ray
 		lastRotationV = v;
 	} else {
 		var pointerDelta = hit.point - firstPoint;
+		if (Input.GetKey(KeyCode.LeftControl)) {
+			pointerDelta = Vector3.Project(pointerDelta, startCorner - oppositeCorner);
+		}
 		var newCorner = startCorner + pointerDelta;
 		var span = newCorner - oppositeCorner;
 		if (!doShift) { 

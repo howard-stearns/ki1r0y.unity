@@ -64,9 +64,9 @@ public var isMoving = false; // In the processing of being dragged around.
 public static var AnyMoving = false;
 public var laser:Laser;
 function startDragging1(cameraRay:Ray, hit:RaycastHit) {
+	if (laser != null) { laser.EndInteraction(); } // If a bug allows this to happen, kill it now.
 	isMoving = true;
 	AnyMoving = true;
-	if (laser != null) { laser.EndInteraction(); } // If a bug allows this to happen, kill it now.
 	laser = startDragging(assembly, cameraRay, hit);
 	if (laser != null) { laser.StartInteraction(hit.point, assembly); }
 }
@@ -97,7 +97,21 @@ function Update() {
 }
 
 
-public static function Avatar():Transform { // answer our standard avatar or null
+public static function Avatar() { // answer our standard avatar or null
 	return Camera.main.transform.parent;
+}
+public static function AvatarLaserComp() { // answer the Laser component
+	return Avatar().Find('Shoulder').GetComponent.<Laser>();
+}
+public static function AvatarSelectComp() { // answer the Select component
+	return Avatar().GetComponent.<Select>();
+}
+public static function AvatarGotoComp() { // answer the Goto component
+	return Avatar().GetComponent.<Goto>();
+}
+public static function AvatarGoto(assy:Transform, addToHistory) {
+	var avatar = Avatar();
+	if (!avatar) { return; }
+	avatar.GetComponent.<Goto>().Goto(assy, true);
 }
 }

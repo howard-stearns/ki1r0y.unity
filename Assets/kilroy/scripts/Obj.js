@@ -4,6 +4,8 @@ public var localMounting = Vector3(0, -1, 0);
 public var localFacing = Vector3(0, 0, -1);
 public var nametag = '';
 public var description = '';
+public var details = '';
+public var detailsLabel = '';
 public var author = '';
 // Usually the same as id, but cand be different for groups (such as scenes).
 // Used to determine if there's been a change.
@@ -11,6 +13,7 @@ public var hash = '';
 public var versions:Object; // Only used for groups
 public var timestamp:String;
 public var initialSize = Vector3.one; // Only for import from search, but crucial for maintaing  pict intended aspect ratio+depth.
+public var frozen = false;
 
 public static var InstanceCounter = 0; // Sometimes used for debugging.
 public var instanceCounter = 0;
@@ -25,12 +28,17 @@ function isGroup() {
 	if (id == '') return false;
 	return id.length != hash.length; 
 }
-function renamePlace():boolean { // every place must have a unique name. Use after import or copy.
+function renamePlace(isCopy:boolean):boolean { // every place must have a unique name. Use after import or copy.
 	if (!isGroup()) { return false; }
 	author = ''; // not to userId, becuase '' is a flag for groups to reset their id during save. 
+	// Set new basis id for copies. This isn't actually used directly for the new id, as the above line
+	// causes a new id to be generated from the old basis and the user id. The purpose of that is to get
+	// repeatability for changes by a new author. For a real copy by the same author, though, we really
+	// do want a new independent basis.
+	if (isCopy) { id = System.Guid.NewGuid().ToString(); }
 	for (var child:Transform in transform) {
 		var childObj = child.GetComponent.<Obj>();
-		if (childObj) { childObj.renamePlace(); }
+		if (childObj) { childObj.renamePlace(isCopy); }
 	}
 	return true;
 }
@@ -228,9 +236,12 @@ public function deleteObject() {
 //	Application.ExternalCall('notifyUser', 'deleted:' + nametag);
 	saveScene('delete'); // will do the destroying on the callback.
 	if (!saveEnabled()) Destroy(gameObject); // we won't get a callback, so scheduled Destroy now.
+	SelectedObj = null;
+	SelectedId = null;
 }
 
 public static var SelectedId = null; // global state for this user.
+public static var SelectedObj:Obj = null;
 
 // SceneSelect and ExternalPropertyEdit may both send browser 'select' with an optional idvtag to add to history.
 // However, the functions here can also take a true/false/null addToHistory argument:
@@ -243,12 +254,15 @@ public static function SceneSelect(addToHistory) { // Tell browser to select who
 	var root = GameObject.FindWithTag('SceneRoot');
 	var rootComponent = root.GetComponent.<Obj>();
 	var tag = rootComponent.nametag;
-	Application.ExternalCall('props', rootComponent.GameObjectPath(), tag, rootComponent.author, rootComponent.description, Save.GetTabItems(true)); // regardless of addToHistory, etc.
+	Application.ExternalCall('props', rootComponent.GameObjectPath(), tag, rootComponent.author, 
+		rootComponent.description, rootComponent.details, rootComponent.detailsLabel,
+		Save.GetTabItems(true)); // regardless of addToHistory, etc.
 	if (addToHistory == null) {
 		if (!SelectedId) return;
 		else addToHistory = (SelectedId != NoShortCircuit);
 	}
 	SelectedId = null;
+	SelectedObj = null;
 	Application.ExternalCall('select', rootComponent.id, tag, addToHistory ? rootComponent.hash : '', rootComponent.author, rootComponent.description);
 }
 function structureInfo(trans:Transform):Hashtable { // Not used yet. To appear below.
@@ -262,7 +276,7 @@ function structureInfo(trans:Transform):Hashtable { // Not used yet. To appear b
 // Tell external property editor about this object's editable properties, and select the object.
 function ExternalPropertyEdit(tabName:String, addToHistory) {
 	// Update properties regardless of whether we 'select'. Must be before 'select' so that path is set if select needs to setProp of anything.
-	Interactor.Avatar().GetComponent.<Select>().StopGizmo(); 
+	Interactor.AvatarSelectComp().StopGizmo(); 
 	var path = GameObjectPath();
 	var pos = gameObject.transform.localPosition;
 	var rot = gameObject.transform.localEulerAngles; //Not what we persist, but easier for users.
@@ -270,7 +284,8 @@ function ExternalPropertyEdit(tabName:String, addToHistory) {
 	Application.ExternalCall('updatePosition', pos.x, pos.y, pos.z);
 	Application.ExternalCall('updateRotation', rot.x, rot.y, rot.z);
 	Application.ExternalCall('updateSize', size.x, size.y, size.z);
-	Application.ExternalCall('props', path, nametag, author, description);
+	Application.ExternalCall('props', path, nametag, author, description, details, detailsLabel, '',
+		frozen ? 'checked' : ''); // ExternalCall converts bools to strings, so let's preserve truthiness.
 	/*var structure = {'children': new Array()};
 	Debug.Log('parent:' + transform.parent);
 	if (transform.parent != null) { structure['parent'] = structureInfo(transform.parent);}
@@ -284,6 +299,7 @@ function ExternalPropertyEdit(tabName:String, addToHistory) {
 		else addToHistory = (SelectedId != NoShortCircuit);
 	}
 	SelectedId = id;
+	SelectedObj = this;
 	Application.ExternalCall('tabSelect', tabName);
 	Application.ExternalCall('select', id, nametag, addToHistory ? hash : '', author, description);
 }
@@ -323,7 +339,11 @@ function savedScene(action:String, changes:Array):IEnumerator { // Callback from
 	case 'length':
 	case 'nametag':
 	case 'description':
-		Application.ExternalCall('props', GameObjectPath(), nametag, author, description, !transform.parent ? Save.GetTabItems(true) : null);
+	case 'details':
+	case 'detailsLabel':
+		Application.ExternalCall('props', GameObjectPath(), nametag, author, 
+			description, details, detailsLabel,
+			!transform.parent ? Save.GetTabItems(true) : null);
 		break;
 	}
 	if (!enabled) { Destroy(gameObject); } // if deleted, can only safely be destroyed now.
@@ -350,6 +370,9 @@ function setSizeZ(v:String) {var vec = transform.localScale; transform.localScal
 
 function settag0(v:String) { nametag = v; saveScene('nametag'); }
 function setDesc(v:String) { description = v; saveScene('description'); }
+function setDetails(v:String) { details = v; saveScene('details'); }
+function setDetailsLabel(v:String) { detailsLabel = v; saveScene('detailsLabel'); }
+function setFreeze(v:String) { frozen = !!v; saveScene('freeze'); }
 /***************************************************************************************/
 public var deleteMe = false; // To delete in editor
 function Update() {

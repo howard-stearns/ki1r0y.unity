@@ -118,7 +118,9 @@ function CoInflate(existing:GameObject, id:String, hash:String, newChild:boolean
 		go.transform.parent = existing.transform.parent; // First, before setting the following.
 		go.transform.position = existing.transform.position;
 		go.transform.rotation = existing.transform.rotation;
-		obj.size(existing.GetComponent.<Obj>().size());
+		var existingObj = existing.GetComponent.<Obj>();
+		obj.size(existingObj.size());
+		obj.frozen = existingObj.frozen;
 		existing.transform.parent = null;
 		Destroy(existing);
 		existing = go;
@@ -221,6 +223,8 @@ function CoFill(go:GameObject, id:String, data:Hashtable):IEnumerator {
 	obj.hash = data['idvtag'];
 	obj.nametag = data['nametag'];
 	obj.description = data['desc'] || '';
+	obj.details = data['details'] || '';
+	obj.detailsLabel = data['detailsLabel'] || '';
 	var iSize = data['iSize'];
 	if (iSize) { obj.initialSize = makeVector3(iSize); }
 	obj.author = data['author'] || ''; 
@@ -280,6 +284,8 @@ function CoFill(go:GameObject, id:String, data:Hashtable):IEnumerator {
 		//if (scale != null) child.transform.localScale = makeVector3(scale);
 		var size = childData['size'];
 		if (size != null) childObj.size(makeVector3(size));
+		var frozen = childData['freeze'];
+		if (frozen != null) childObj.frozen = true;
 	}
 	// Destroy any children with Obj components that are obsolete (not legitimate).
 	for (var index = go.transform.childCount; index > 0;) { // backwards as we remove
@@ -319,7 +325,7 @@ function SceneReady() {
 	if (savePath) { // after importing a kilroy object
 		var go = (savePath == '/') ? gameObject : GameObject.Find(savePath);
 		var obj = go.GetComponent.<Obj>();
-		obj.renamePlace();
+		obj.renamePlace(true);
 		if (savePath != '/') {
 			// Restore does not normally set size, as that's the parent's job.
 			// The import itself cannot do this, because it deals only with the placeholder and doesn't have the obj data available yet.
@@ -342,13 +348,13 @@ function SceneReady() {
 		sceneComp.timestamp,
 		sceneComp.hash,
 		sceneComp.author);
-	var goto = Interactor.Avatar().GetComponent.<Goto>();
-	goto.GoToObj(targetObj, null);
+	var goto = Interactor.AvatarGotoComp();
 	if (Save.TabOrderPaths) {
 		Save.SetTabItems(Save.TabOrderPaths);
 	} else { // compatability with old scenes
-		Save.TabOrderTransforms = Interactor.Avatar().GetComponent.<Goto>().GetAssemblies(transform); 
+		Save.TabOrderTransforms = goto.GetAssemblies(transform); 
 	}
+	goto.GoToObj(targetObj, null);
 }
 function RestoreScene(combo:String, checkHistory:boolean) {
 	var trio = Save.splitPath(combo);
@@ -403,7 +409,7 @@ function Update() {
 	if (!undoId) return;
 	var id = undoId;
 	undoId = ''; 
-	Interactor.Avatar().GetComponent.<Goto>().RestoreSceneBack(id);
+	Interactor.AvatarGotoComp().RestoreSceneBack(id);
 	/*Obj.SelectedId = Obj.NoShortCircuit;
 	RestoreScene(id, false);*/
 }

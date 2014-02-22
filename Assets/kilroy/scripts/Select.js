@@ -328,12 +328,19 @@ public function StartGizmo(go:GameObject) { // start a gizmo on the given gameOb
 	if (go.tag == 'SceneRoot') { return; } // no gizmo for scene as a whole
 	if (go.GetComponent.<Obj>().frozen) { return; }
 	StopGizmo();
+	Sticky.RemoveAdjuster();
 	//UnSelection();
 	var trans = go.transform;
 	gizmo = Instantiate(gizmoPrefab, trans.position, trans.rotation).transform;
 	gizmo.parent = trans;
+	var goSize = go.GetComponent.<Obj>().size();
+	var max = Mathf.Max(goSize.x, goSize.y, goSize.z);
+	var mid = Mathf.Max((goSize.x == max) ? double.NegativeInfinity : goSize.x,
+						(goSize.y == max) ? double.NegativeInfinity : goSize.y,
+						(goSize.z == max) ? double.NegativeInfinity : goSize.z);
+	var best = Mathf.Max(0.6 * mid, 0.1 * max, 0.2);
+	gizmo.localScale *= best;
 	gizmo.gameObject.BroadcastMessage('updateAssembly', trans, SendMessageOptions.DontRequireReceiver);
-	Sticky.RemoveAdjuster();
 	// trans.parent.localScale will mess us up:
 	//gizmoOldParent = trans.parent;
 	//trans.parent = transform; // e.g. avatar

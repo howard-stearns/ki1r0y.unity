@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Basic FileDrop example</title>
+
+    <script type="text/javascript" src="http://proger.i-forge.net/filedrop-min.js"></script>
+
+    <style type="text/css">
+    /* Essential FileDrop element configuration: */
+    .fd-zone {
+      position: relative;
+      overflow: hidden;
+      width: 15em;
+      text-align: center;
+    }
+
+    /* Hides <input type="file" /> while simulating "Browse" button: */
+    .fd-file {
+      opacity: 0;
+      font-size: 118px;
+      position: absolute;
+      right: 0;
+      top: 0;
+      z-index: 1;
+      padding: 0;
+      margin: 0;
+      cursor: pointer;
+      filter: alpha(opacity=0);
+      font-family: sans-serif;
+    }
+
+    /* Provides visible feedback when use drags a file over the drop zone: */
+    .fd-zone.over { border-color: maroon; }
+    </style>
+  </head>
+  <body>
+    <!-- A FileDrop area. Can contain any text or elements, or be empty.
+         Can be of any HTML tag too, not necessary fieldset. -->
+    <fieldset id="zone">
+      <legend>Drop a file inside&hellip;</legend>
+      <p>Or click here to <em>Browse</em>..</p>
+    </fieldset>
+
+    <script type="text/javascript">
+      // Tell FileDrop we can deal with iframe uploads using this URL:
+      var options = {iframe: {url: 'your-upload-script.php'}};
+      // Attach FileDrop to an area:
+      var zone = new FileDrop('zone', options);
+
+      // Do something when a user chooses or drops a file:
+      zone.on.send.push(function (files) {
+        // if browser supports files[] will contain multiple items.
+        for (var i = 0; i < files.length; i++) {
+          files[i].SendTo('your-upload-script.php');
+        }
+      });
+    </script>
+  </body>
+</html>

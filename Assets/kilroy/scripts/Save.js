@@ -8,8 +8,8 @@ public static function splitPath(path:String, sep:String) {
 public static function splitPath(path:String) { return splitPath(path, ':'); }
 
 // This is about the active user, not necessarilly the owner of the scene.
-public static var userId = '100004567501627'; //'100000015148499'; '100007663687854';
-public static var userNametag = 'Trevor Unity'; //'Kilroy'; 
+//public static var userId = '100004567501627'; public static var userNametag = 'Trevor Unity';
+public static var userId = '100007663687854'; public static var userNametag = 'Kilroy'; 
 public static var host = 'localhost:3000';
 function ContactInfo(combo:String) {
 	var pair = splitPath(combo, '/'); // can't use : as separator, because host might contain :port.
@@ -83,6 +83,7 @@ function AddComponent(p:Hashtable, component:Obj) {
 	AddProperty(p, 'desc', component.description);
 	AddProperty(p, 'details', component.details);
 	AddProperty(p, 'detailsLabel', component.detailsLabel);
+	AddProperty(p, 'sharedPlaceId', component.sharedPlaceId);
 	if (component.initialSize != Vector3.one) { AddProperty(p, 'iSize', component.initialSize); }
 	AddProperty(p, 'author', component.author);
 	// Save obj.sharedMaterials() here, rather than letting Renderer component do it on its own, 
@@ -223,35 +224,29 @@ public var forceUpload = false; // forces upload even if not changed. Used for r
 //   Uploads data to id IFF needed.
 //   Updates Obj.hash (so we can tell later if a new upload is needed).
 //   Updates Obj.id IFF it was empty.
-function PersistGroup(x:GameObject):String {
+function PersistGroup(x:GameObject, isScene:boolean, sawChange:boolean):String {
 	var obj = x.GetComponent.<Obj>();
-	var oldId = '';
 	if (obj.author == '') { 
 		Debug.LogWarning('reset id ' + obj + ' was ' + obj.id + ' hash ' + obj.hash);
-		oldId = obj.id;
 		obj.id = 'G'; // generate new id, before asString.
 	}
-	var serialized = asString(x);
-	var hash = Utils.sha1(serialized);
 	var uploadPlace = false;  // but this may change below.
 	if (obj.id == 'G') {      // New object => new id.
-		if (oldId) {
-			// Unique, but same every time this user modifies the same source object, and not the same length as a sha.
-			obj.id = 'G' + Utils.sha1(oldId + userId);
-		} else {
-			obj.id = 'G' + System.Guid.NewGuid().ToString();
-		}
-		Debug.LogWarning('changing name ' + x + ' to ' + obj.id);
+		// Unique, but same every time this user modifies the same source object, and not the same length as a sha.
+		obj.id = 'G' + Utils.sha1(obj.sharedPlaceId + userId);
+		Debug.LogWarning('changing name ' + x + ' to ' + obj.id + ' in ' + (isScene ? "scene." : "place."));
 		TabOrderPaths = null; // clear cache
 		x.name = obj.id;
 		uploadPlace = true;
-	}  
+	}
+	var serialized = asString(x); // after, e.g. clearing TabOrderPaths, above.
+	var hash = Utils.sha1(serialized);
 	if (forceUpload || (hash != obj.hash)) {  // Upload the data needed to rebuild this version of the object.
 		StartCoroutine( uploadData(hash, hash, serialized, 'thing', 'fromPlace') );
 		uploadPlace = true;
 	}
 	if (!uploadPlace) { return obj.hash; } // No need to upload.
-	if (onHashChange(obj)) { return PersistGroup(x); }
+	if (onHashChange(obj)) { return PersistGroup(x, isScene, true); }
 	
 	changes.Push(hash); // the versioned (hash) id gets noted for a thumbnail upload.
 	// Update the local and persisted group info.
@@ -259,6 +254,11 @@ function PersistGroup(x:GameObject):String {
 	obj.timestamp = thisTimestamp;
 	obj.hash = hash;
 	obj.versions[obj.timestamp] = hash;  // adds current version
+	if (isScene && sawChange) {
+		Application.ExternalCall('sceneReady',  // Now, before the save object information comes through at end.
+			obj.nametag, '', obj.timestamp, obj.hash, obj.author);
+		Application.ExternalCall('advice', "Having made a change to someone else's scene, you are now in your own copy of that scene. To change the name of your copy, use the scene's 'properties' tab.");
+	}
 	UpdatePlace(obj);
 	return obj.hash;
 }
@@ -326,7 +326,7 @@ function Persist(x:GameObject, isScene:boolean):Hashtable {
 	var obj:Obj = x.GetComponent.<Obj>();
 	if (!enabled || obj == null || !obj.enabled) return new Hashtable();  // for debugging, experiments, and deleted objects
 	if (obj.isGroup()) {
-		var hash = PersistGroup(x);
+		var hash = PersistGroup(x, isScene, false);
 		AddProperty(instance, 'idvtag', hash); // Restore must grab the hash data, not the latest.
 		// Individual version data does not (currently) have general group nametag, so include it here.
 		AddProperty(instance, 'idtag', obj.id); 

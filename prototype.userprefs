@@ -1,19 +1,21 @@
 ﻿<Properties>
-  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
-  <MonoDevelop.Ide.Workbench ActiveDocument="Assets/kilroy/scripts/OverlayControls.js">
+  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" PreferredExecutionTarget="MonoDevelop.Default" />
+  <MonoDevelop.Ide.Workbench ActiveDocument="Assets/kilroy/scripts/Save.js">
     <Files>
-      <File FileName="Assets/kilroy/scripts/Obj.js" Line="343" Column="2" />
-      <File FileName="Assets/kilroy/scripts/Restore.js" Line="32" Column="27" />
-      <File FileName="Assets/kilroy/scripts/Save.js" Line="309" Column="46" />
+      <File FileName="Assets/kilroy/scripts/Obj.js" Line="366" Column="82" />
+      <File FileName="Assets/kilroy/scripts/Restore.js" Line="355" Column="8" />
+      <File FileName="Assets/kilroy/scripts/Save.js" Line="165" Column="7" />
       <File FileName="Assets/Plugins/Utils.js" Line="3" Column="42" />
-      <File FileName="Assets/kilroy/scripts/Goto.js" Line="183" Column="66" />
-      <File FileName="Assets/kilroy/scripts/Select.js" Line="170" Column="36" />
-      <File FileName="Assets/kilroy/adjuster/Sticky.js" Line="121" Column="11" />
-      <File FileName="Assets/kilroy/Gizmo/Directional.js" Line="51" Column="64" />
-      <File FileName="Assets/kilroy/scripts/PictureDrawing.js" Line="1" Column="1" />
-      <File FileName="Assets/kilroy/scripts/PictureCapture.js" Line="29" Column="35" />
-      <File FileName="Assets/kilroy/adjuster/Interactor.js" Line="1" Column="1" />
-      <File FileName="Assets/kilroy/scripts/OverlayControls.js" Line="34" Column="59" />
+      <File FileName="Assets/kilroy/scripts/Goto.js" Line="245" Column="100" />
+      <File FileName="Assets/kilroy/scripts/Select.js" Line="342" Column="2" />
+      <File FileName="Assets/kilroy/adjuster/Adjust.js" Line="86" Column="24" />
+      <File FileName="Assets/kilroy/adjuster/Sticky.js" Line="173" Column="11" />
+      <File FileName="Assets/kilroy/adjuster/Interactor.js" Line="101" Column="20" />
+      <File FileName="Assets/kilroy/adjuster/ColorInteractor.js" Line="23" Column="26" />
+      <File FileName="Assets/kilroy/Gizmo/Directional.js" Line="31" Column="1" />
+      <File FileName="Assets/kilroy/adjuster/DoAdjuster.js" Line="13" Column="42" />
+      <File FileName="Assets/kilroy/scripts/OverlayControls.js" Line="1" Column="1" />
+      <File FileName="Assets/kilroy/scripts/PictureCapture.js" Line="20" Column="46" />
     </Files>
     <Pads>
       <Pad Id="ClassPad">

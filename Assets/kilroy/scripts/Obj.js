@@ -1,5 +1,9 @@
 // (Attach to each such object. id and hash are set by Save/Restore scripts.)
 public var id = ''; // The Kilroy persistence id.
+// Places have an id that is the sha(sharedPlaceId + userId). The sharedPlacedId is changed when
+// the scene is explicitly copied, but not when just making normal changes. This allows you to 
+// repeatedly make changes to someone else's scene, but keep only one cop per sharedPlaceId.
+public var sharedPlaceId = '';  
 public var localMounting = Vector3(0, -1, 0);
 public var localFacing = Vector3(0, 0, -1);
 public var nametag = '';
@@ -30,12 +34,8 @@ function isGroup() {
 }
 function renamePlace(isCopy:boolean):boolean { // every place must have a unique name. Use after import or copy.
 	if (!isGroup()) { return false; }
-	author = ''; // not to userId, becuase '' is a flag for groups to reset their id during save. 
-	// Set new basis id for copies. This isn't actually used directly for the new id, as the above line
-	// causes a new id to be generated from the old basis and the user id. The purpose of that is to get
-	// repeatability for changes by a new author. For a real copy by the same author, though, we really
-	// do want a new independent basis.
-	if (isCopy) { id = System.Guid.NewGuid().ToString(); }
+	author = ''; // not to userId, because '' is a flag for groups to reset their id during save. 
+	if (isCopy) { sharedPlaceId = System.Guid.NewGuid().ToString(); } // Set new basis id for copies. 
 	for (var child:Transform in transform) {
 		var childObj = child.GetComponent.<Obj>();
 		if (childObj) { childObj.renamePlace(isCopy); }

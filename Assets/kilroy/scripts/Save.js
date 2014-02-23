@@ -254,11 +254,12 @@ function PersistGroup(x:GameObject, isScene:boolean, sawChange:boolean):String {
 	obj.timestamp = thisTimestamp;
 	obj.hash = hash;
 	obj.versions[obj.timestamp] = hash;  // adds current version
+	/* NO: saved will invoke sceneReady when the scene_idtag is different, and that's the place that actually has the tag, not here.
 	if (isScene && sawChange) {
 		Application.ExternalCall('sceneReady',  // Now, before the save object information comes through at end.
 			obj.nametag, '', obj.timestamp, obj.hash, obj.author);
 		Application.ExternalCall('advice', "Having made a change to someone else's scene, you are now in your own copy of that scene. To change the name of your copy, use the scene's 'properties' tab.");
-	}
+	}*/
 	UpdatePlace(obj);
 	return obj.hash;
 }

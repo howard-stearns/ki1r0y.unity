@@ -182,6 +182,16 @@ public function size(v:Vector3) {
 	dims = v;
 	return v;
 }
+public function scalar(minLimit:double) { // Answer an indication of "the size" of the object, as a single dimension.
+	var v = size();
+	var a = new System.Collections.Generic.List.<double>();
+	a.Add(v.x); a.Add(v.y); a.Add(v.z);
+	a.Sort();
+	var max = a[2];
+	// The smallest dim is often 0.  The mid is neither the largest nor smallest.
+	var mid = a[1];
+	return Mathf.Max(mid, max/6.0, minLimit);
+}
 public function isTargetable():boolean {
 	return !!objectCollider();
 }

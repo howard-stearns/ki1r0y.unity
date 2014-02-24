@@ -44,8 +44,8 @@ function doDragging(assembly:Transform, axis:Transform, plane:Transform, hit:Ray
 	// There are two ways that a person can drag things such that the results are not
 	// stable, depending on whether we're onEdge. If so, make the disk invisible to cue the user.
 	if (onEdge 
-		? (Mathf.Abs(Vector3.Dot(hit.normal, norm)) > 0.9) // shifted onto disk face
-		: (v.sqrMagnitude < 0.005)) {// too close to rotation point
+		? (Mathf.Abs(Vector3.Dot(hit.normal, norm)) > 0.9999) // shifted onto disk face
+		: (v.sqrMagnitude < 0.00025)) {// too close to rotation point
 		renderer.enabled = false;  
 		return;
 	}

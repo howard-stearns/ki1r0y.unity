@@ -8,8 +8,9 @@ public static function splitPath(path:String, sep:String) {
 public static function splitPath(path:String) { return splitPath(path, ':'); }
 
 // This is about the active user, not necessarilly the owner of the scene.
-//public static var userId = '100004567501627'; public static var userNametag = 'Trevor Unity';
-public static var userId = '100007663687854'; public static var userNametag = 'Kilroy'; 
+public static var userId = '100004567501627'; public static var userNametag = 'Trevor Unity';
+//public static var userId = '100007663687854'; public static var userNametag = 'Kilroy'; 
+//public static var userId = '1220832210'; public static var userNametag = 'Robin'; 
 public static var host = 'localhost:3000';
 function ContactInfo(combo:String) {
 	var pair = splitPath(combo, '/'); // can't use : as separator, because host might contain :port.

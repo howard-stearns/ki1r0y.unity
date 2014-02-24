@@ -137,8 +137,9 @@ function setupCameraAnimation(obj:Obj) {
 	// makes it a challenge for most people to figure out how to get back into the room.
 	// So add a little bit less.
 	dist += 0.3 * horizontalMax;
-	dist = Mathf.Max(dist, (1.1 * Camera.main.nearClipPlane));
-	//Debug.LogWarning('dist ' + distByWidth + 'x' + distByHeight + ' horizontalMax=' + horizontalMax + ' dist=' + dist);
+	var gizmoAllowance = 1.5 * obj.scalar(0.0);
+	dist = Mathf.Max(dist, (Camera.main.nearClipPlane + gizmoAllowance));
+	//Debug.LogWarning('dist ' + distByWidth + 'x' + distByHeight + ' horizontalMax=' + horizontalMax + ' dist=' + dist + ' clip=' + Camera.main.nearClipPlane + ' gizmoAllowance=' + gizmoAllowance);
 	cameraEndPos += (facing * dist);
 	cameraEndRot = Quaternion.LookRotation(trans.position - cameraEndPos);
 }

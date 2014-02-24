@@ -1,0 +1,18 @@
+﻿<Properties>
+  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" PreferredExecutionTarget="MonoDevelop.Default" />
+  <MonoDevelop.Ide.Workbench ActiveDocument="Assets/kilroy/scripts/Obj.js">
+    <Files>
+      <File FileName="Assets/kilroy/scripts/Save.js" Line="261" Column="196" />
+      <File FileName="Assets/kilroy/scripts/Obj.js" Line="193" Column="104" />
+      <File FileName="Assets/kilroy/scripts/Select.js" Line="326" Column="17" />
+      <File FileName="Assets/kilroy/adjuster/DoAdjuster.js" Line="1" Column="1" />
+      <File FileName="Assets/kilroy/adjuster/Sticky.js" Line="107" Column="2" />
+      <File FileName="Assets/kilroy/adjuster/Adjust.js" Line="35" Column="31" />
+      <File FileName="Assets/kilroy/scripts/OverlayControls.js" Line="67" Column="2" />
+    </Files>
+  </MonoDevelop.Ide.Workbench>
+  <MonoDevelop.Ide.DebuggingService.Breakpoints>
+    <BreakpointStore />
+  </MonoDevelop.Ide.DebuggingService.Breakpoints>
+  <MonoDevelop.Ide.DebuggingService.PinnedWatches />
+</Properties>

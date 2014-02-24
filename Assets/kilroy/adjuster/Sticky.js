@@ -80,7 +80,8 @@ function unparentGizmo(assy:Transform):Transform {
 }
 public static function AddAdjuster(assy:Transform, adjusterPrefab:Transform) { // Add adjusterPrefab as a child of assy.
 	if (AnyMoving) { return; } // Don't mess up an existing drag.
-	if (assy.GetComponent.<Obj>().frozen) { return; }
+	var obj = assy.GetComponent.<Obj>();
+	if (obj.frozen) { return; }
 	var gizmo:Transform;
 	//if (!!StickyInstance) RemoveAdjuster(); // for debugging
 	if (!StickyInstance) {
@@ -103,6 +104,7 @@ public static function AddAdjuster(assy:Transform, adjusterPrefab:Transform) { /
 	var go = gizmo.gameObject;
 	go.BroadcastMessage('updateAssembly', assy, SendMessageOptions.DontRequireReceiver);	
 	go.BroadcastMessage('updateAffordance', null, SendMessageOptions.DontRequireReceiver); // get the size right
+	go.BroadcastMessage('sizeAffordances', obj.scalar(0.0));
 }
 
 public static function RemoveAdjuster(immediate:boolean) {

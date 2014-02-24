@@ -21,13 +21,20 @@ static function noFlip(scale:Vector3) { // Make sure that scale doesn't flip
 // Get bigger on mouse over.
 var initialSize:Vector3;
 var bigSize:Vector3;
+var sizedSmall:Vector3;
+var sizedBig:Vector3;
 function OnMouseEnter() {	
-	if (!AnyActive) { transform.localScale = bigSize; } 
+	if (!AnyActive) { transform.localScale = sizedBig; } 
 	super.OnMouseEnter();
 }
 function OnMouseExit() {
 	super.OnMouseExit();  
-	transform.localScale = initialSize;
+	transform.localScale = sizedSmall;
+}
+function sizeAffordances(objectSize:double) {
+	sizedSmall = objectSize * 1.5 * initialSize;
+	sizedBig = sizedSmall * 2;
+	transform.localScale = sizedSmall;
 }
 
 
@@ -51,8 +58,8 @@ function Awake() {
 	else if (axis.name == 'Zneg') { cornerUnitPositionFromAxis.z *= -1; }
 	else if ((axis.name == 'Y') || (axis.name == 'Z')) { cornerUnitPositionFromAxis.x *= -1; }
 	else if (axis.name == 'Xneg') { cornerUnitPositionFromAxis.x *= -1; cornerUnitPositionFromAxis.z *= -1; }
-	initialSize = transform.localScale;
-	bigSize = initialSize * 2;
+	sizedSmall = initialSize = transform.localScale;
+	sizedBig = bigSize = initialSize * 2;
 }
 
 public var doRotate = false;

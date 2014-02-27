@@ -31,8 +31,8 @@ function OnMouseExit() {
 	super.OnMouseExit();  
 	transform.localScale = sizedSmall;
 }
-function sizeAffordances(objectSize:double) {
-	sizedSmall = objectSize * 1.5 * initialSize;
+function sizeAffordances(objectSize:double) { // size per object, but not TOO big.
+	sizedSmall = Mathf.Min(objectSize * 1.5, 3.0) * initialSize; 
 	sizedBig = sizedSmall * 2;
 	transform.localScale = sizedSmall;
 }

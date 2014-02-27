@@ -113,35 +113,29 @@ var avatarEndRot:Quaternion;
 // Setup camera's start/end position/rotation so that the camera will be centered
 // on the object, at a distance so that the object fills the camera frustrum.
 function setupCameraAnimation(obj:Obj) {
+	var trans = obj.transform;
+	var facing = trans.TransformDirection(obj.localFacing);
 	cameraStartPos = Camera.main.transform.position;
 	cameraStartRot = Camera.main.transform.rotation;
-	
-	//cameraEndPos = trans.position - (trans.forward * 2); // simplifed version of the following
-	var trans = obj.transform;
-	cameraEndPos = trans.position;
-	var bounds = obj.bounds();
-	var size = bounds.size; // BoundingBox in world space alignment
-	var vertical = size.y;  // Global y is right, but add a margin.
-	var horizontalMax = Vector3(size.x, size.z, 0).magnitude; // regardless of orientation 
-	var distByHeight = vertical / 
+	cameraEndPos = trans.position; // which we will add to along the facing direction.
+	cameraEndRot = Quaternion.LookRotation(-facing);
+	// Find the vertical, breadth, and depth of the object for the cameraEndRot.
+	// Even though we will try to be square to the object, the object might not be quite upright,
+	// so get the dimension in global space and then project those onto the cameraEndRot axes.
+	var size = obj.size(); // In local coordinates
+	var sizeGlobal = trans.TransformDirection(size);
+	var vertical = Vector3.Project(sizeGlobal, cameraEndRot * Vector3.up);
+	var breadth = Vector3.Project(sizeGlobal, cameraEndRot * Vector3.right);
+	var depth = Vector3.Project(sizeGlobal, cameraEndRot * Vector3.forward);
+	var withMargin = 1.1; // show a 10% margin
+	var distByHeight = vertical.magnitude * withMargin / 
 		(2 * Mathf.Tan(Mathf.Deg2Rad * Camera.main.fieldOfView/2));
-	var distByWidth = horizontalMax /
+	var distByWidth = breadth.magnitude * withMargin /
 		(2 * Mathf.Tan(Mathf.Deg2Rad * Camera.main.fieldOfView*Camera.main.aspect/2));
-	var facing = trans.TransformDirection(obj.localFacing);
-	// This is the smallest distance that would show everything (except that we only 
-	// approximated the horizontal width using horizontalMax, above...
-	var dist = Mathf.Max(distByHeight, distByWidth);
-	// ...and because we didn't allow for the depth or thickness of the object itself.
-	// Ideally that would be 0.5 * horizontalMax, but that result in a bit too much margin
-	// in practice. It also tends to push us past the opposite wall in square rooms, which
-	// makes it a challenge for most people to figure out how to get back into the room.
-	// So add a little bit less.
-	dist += 0.3 * horizontalMax;
-	var gizmoAllowance = 1.5 * obj.scalar(0.0);
+	var dist = Mathf.Max(distByHeight, distByWidth) + (depth.magnitude / 2);
+	var gizmoAllowance = 0.4 * obj.scalar(0.0);
 	dist = Mathf.Max(dist, (Camera.main.nearClipPlane + gizmoAllowance));
-	//Debug.LogWarning('dist ' + distByWidth + 'x' + distByHeight + ' horizontalMax=' + horizontalMax + ' dist=' + dist + ' clip=' + Camera.main.nearClipPlane + ' gizmoAllowance=' + gizmoAllowance);
 	cameraEndPos += (facing * dist);
-	cameraEndRot = Quaternion.LookRotation(trans.position - cameraEndPos);
 }
 
 // Setup avatar's start/end position/rotation so that after animation, the avatar

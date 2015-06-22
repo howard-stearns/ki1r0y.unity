@@ -93,7 +93,7 @@ public class ResourceLoader : MonoBehaviour {
 			}
 			mats[ii] = existing; 
 		}
-		go.renderer.materials = mats; // FIXME: go through Obj.sharedMaterials();
+		go.GetComponent<Renderer>().materials = mats; // FIXME: go through Obj.sharedMaterials();
 	}
 	
 	/* ############## MATERIALS Internal 

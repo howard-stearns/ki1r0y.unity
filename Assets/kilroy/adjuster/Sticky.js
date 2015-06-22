@@ -34,7 +34,7 @@ private var transparency:Renderer; // the display of the transparent box is togg
 function Awake() {
 	highlightColor = makeAlpha(Vector3(0.902, 0.91, 0.847)); // a shade of Facebook split-complement-1
 	super.Awake();
-	transparency = transform.Find('display').renderer;
+	transparency = transform.Find('display').GetComponent.<Renderer>();
 }
 function OnDestroy() {
 	if (!!assemblyObj) { 
@@ -54,7 +54,7 @@ function makeMaximal(max:boolean) {
 			var adj = aff.gameObject.GetComponent.<Adjust>();
 			var col = adj.affordanceCollider;
 			col.enabled = max;
-			col.renderer.enabled = max;
+			col.GetComponent.<Renderer>().enabled = max;
 		}
 	}
 	isMaximal = max;

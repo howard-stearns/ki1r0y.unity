@@ -25,7 +25,7 @@ public var normalColor:Color;  		// defaults to a muted version of highlighColor
 public var targetAlpha:float = 0.9;
 
 // This is broadcast to gameObject and children. Thus children of affordances can change color if they define this message.
-public function setColor(color:Color) { if (renderer) { renderer.material.color = color; } }
+public function setColor(color:Color) { if (GetComponent.<Renderer>()) { GetComponent.<Renderer>().material.color = color; } }
 public function setAffordanceColor(color:Color) { BroadcastMessage('setColor', color, SendMessageOptions.DontRequireReceiver); }
 
 public function makeAlpha(rgb:Vector3):Color {

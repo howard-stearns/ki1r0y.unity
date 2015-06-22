@@ -7,4 +7,4 @@ function OnMouseEnter () {
 function OnMouseExit () {
 	transform.parent.gameObject.GetComponent.<Adjust>().OnMouseExit();
 }
-function setColor(color:Color) { renderer.material.color = color; renderer.material.SetColor("_Emission", color); }
+function setColor(color:Color) { GetComponent.<Renderer>().material.color = color; GetComponent.<Renderer>().material.SetColor("_Emission", color); }

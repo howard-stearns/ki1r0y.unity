@@ -51,7 +51,7 @@ function updateAssembly(assy:Transform) {
 }
 function Awake() {
 	super.Awake();  // sets axis
-	affordanceCollider = transform.Find('affordance').collider;  // redefines from super
+	affordanceCollider = transform.Find('affordance').GetComponent.<Collider>();  // redefines from super
 
 	// I don't know why this needs adjusting, but it does.
 	if (axis.name == 'Yneg') { cornerUnitPositionFromAxis.y *= -1; }
@@ -96,7 +96,7 @@ function startDragging(assembly:Transform, axis:Transform, plane:Transform, came
 	plane.rotation = affordanceCollider.transform.rotation;
 	plane.position = transform.position;
 	resetParameters(hit.point, true);
-	return plane.collider;
+	return plane.GetComponent.<Collider>();
 }
 function doDragging(assembly:Transform, axis:Transform, plane:Transform, hit:RaycastHit) {
 	resetParameters(hit.point, false);

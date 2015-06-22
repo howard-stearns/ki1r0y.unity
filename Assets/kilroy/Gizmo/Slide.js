@@ -11,7 +11,7 @@ function constrain(axis:Transform, p:Vector3):Vector3 {
 function startDragging(assembly:Transform, axis:Transform, plane:Transform, cameraRay:Ray, hit:RaycastHit) {
 	plane.rotation = Quaternion.LookRotation(axis.right, -Camera.main.transform.forward);
 	plane.position = firstPoint = lastPoint = hit.point;
-	return plane.collider;
+	return plane.GetComponent.<Collider>();
 }
 
 function doDragging(assembly:Transform, axis:Transform, plane:Transform, hit:RaycastHit) {

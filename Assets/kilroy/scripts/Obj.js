@@ -197,17 +197,17 @@ public function isTargetable():boolean {
 }
 public function bounds():Bounds { // Answer world space Bounds. (Do we want just our collider, or all children (i.e., renderer.bounds)?)
 	var go = !!mesh ? mesh : gameObject;
-	if (!go.collider) { return Bounds(go.transform.position, Vector3.zero); }
-	return go.collider.bounds;
+	if (!go.GetComponent.<Collider>()) { return Bounds(go.transform.position, Vector3.zero); }
+	return go.GetComponent.<Collider>().bounds;
 }
 public function objectCollider():Collider { // Answer our Collider
 	var go = !!mesh ? mesh : gameObject;
-	return go.collider;
+	return go.GetComponent.<Collider>();
 }
 // Answer our shared Materials array (even if just an array of one). Side-effecting any resulting element (but not the whole Array) changes for all.
 public function sharedMaterials():Material[] { 
 	var go = !!mesh ? mesh : gameObject;
-	var r = go.renderer;
+	var r = go.GetComponent.<Renderer>();
 	var m:Material[];
 	var block = gameObject.GetComponent.<BlockDrawing>();
 	if (!r && !block) m = new Material[0];
@@ -221,7 +221,7 @@ public var materialData:Object = null; // We use null as way to clear the value,
 // Assign new sharedMaterials and answer the new value.
 public function sharedMaterials(mats:Material[]):Material[] {
 	var go = !!mesh ? mesh : gameObject;
-	var r = go.renderer;
+	var r = go.GetComponent.<Renderer>();
 	var block = gameObject.GetComponent.<BlockDrawing>();
 	materialData = null; // clear cache so that it gets regenerated on save.
 	if (!r && !block && !mats.Length) return mats;

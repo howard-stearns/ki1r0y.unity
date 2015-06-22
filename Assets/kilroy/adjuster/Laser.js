@@ -17,10 +17,10 @@ function StartInteraction(point:Vector3, object:Transform) {
 	laser = Instantiate(laserPrefab.gameObject);
 	UpdateInteraction(point);
 	laser.transform.parent = transform.parent;
-	Screen.showCursor = false;
+	Cursor.visible = false;
 }
 function EndInteraction() {
-	Screen.showCursor = true;
+	Cursor.visible = true;
 	if (!!laser) {
 		//laser.transform.parent = null; 
 		Destroy(laser);

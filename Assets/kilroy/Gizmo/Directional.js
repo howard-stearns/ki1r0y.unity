@@ -42,7 +42,7 @@ private var plane:GameObject;
 private var dragCollider:Collider;  // Returned by startDragging. Usually the plane.collider, but OnEdge Spinners answer the collider we're attached to.
 function startDragging(assembly:Transform, cameraRay:Ray, hit:RaycastHit):Laser {
 	plane = GameObject.CreatePrimitive(PrimitiveType.Plane);
-	plane.renderer.enabled = showPlane;
+	plane.GetComponent.<Renderer>().enabled = showPlane;
 	dragCollider = startDragging(assembly, axis, plane.transform, cameraRay, hit);
 	plane.transform.parent = assembly.parent;
 	return null;

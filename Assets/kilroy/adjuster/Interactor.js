@@ -52,7 +52,7 @@ public var affordanceCollider:Collider; // We raycast against this to start thin
 // We do the initialization in Awake rather than Start, because clients may rely on such initialization immediately
 // after instantiation, and this is not true for Start.
 function Awake() {
-	affordanceCollider = transform.collider;
+	affordanceCollider = transform.GetComponent.<Collider>();
 	updateAssembly(transform.parent.parent);
 }
 function OnDestroy() {

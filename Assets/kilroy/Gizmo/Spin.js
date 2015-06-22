@@ -31,12 +31,12 @@ function startDragging(assembly:Transform, axis:Transform, plane:Transform, came
 	if (!isOutside)  norm = -norm;
 	plane.rotation = Quaternion.LookRotation(axis.up, norm); 
 	var originRay = Ray(transform.position + norm, -norm); // Adjust for our orientation.
-	if (!plane.collider.Raycast(originRay, hit, Mathf.Infinity))
+	if (!plane.GetComponent.<Collider>().Raycast(originRay, hit, Mathf.Infinity))
 		Debug.Log('WTF?');
 	centerPoint = plane.position = hit.point;  // We want to rotate around the shaft, not the firstPoint.
 	startV = firstPoint - plane.position;
 	lastAngle = initAngle = isOutside ? outsideAngle : insideAngle;
-	return onEdge ? collider : plane.collider;
+	return onEdge ? GetComponent.<Collider>() : plane.GetComponent.<Collider>();
 }
 
 function doDragging(assembly:Transform, axis:Transform, plane:Transform, hit:RaycastHit) {
@@ -46,10 +46,10 @@ function doDragging(assembly:Transform, axis:Transform, plane:Transform, hit:Ray
 	if (onEdge 
 		? (Mathf.Abs(Vector3.Dot(hit.normal, norm)) > 0.9999) // shifted onto disk face
 		: (v.sqrMagnitude < 0.00025)) {// too close to rotation point
-		renderer.enabled = false;  
+		GetComponent.<Renderer>().enabled = false;  
 		return;
 	}
-	renderer.enabled = true;
+	GetComponent.<Renderer>().enabled = true;
 	var cross = Vector3.Cross(startV, v);
 	var dot = Vector3.Dot(cross, norm); 
 	var angle = Vector3.Angle(startV, v); 
@@ -64,7 +64,7 @@ function doDragging(assembly:Transform, axis:Transform, plane:Transform, hit:Ray
 	Application.ExternalCall('updateRotation', v.x, v.y, v.z);
 }
 function stopDragging(assy:Transform) {
-	renderer.enabled = true; // In case of mouse up when the last doDragging() turned it off.
+	GetComponent.<Renderer>().enabled = true; // In case of mouse up when the last doDragging() turned it off.
 	super.stopDragging(assy);
 }
 }

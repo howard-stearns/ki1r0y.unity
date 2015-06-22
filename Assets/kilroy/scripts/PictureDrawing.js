@@ -106,7 +106,7 @@ function Wrap(picture:GameObject) {
 	var face = gameObject;
 	var pictureObj = picture.GetComponent.<Obj>();
 	var pNNormal =  -picture.transform.up;
-	var fCollider = face.collider;
+	var fCollider = face.GetComponent.<Collider>();
 	var faceEnabled = fCollider.enabled;
 	fCollider.enabled = true;
 	var gotPoints = false;
@@ -195,7 +195,7 @@ function Wrap(picture:GameObject) {
 		//Log(face + ' scale: ' + scale + ' offset:' + offset + ' rotation:' + rotation);		
 
 		var parentMats:Material[] = obj.sharedMaterials();
-		var targetMat:Material = face.renderer.sharedMaterial;
+		var targetMat:Material = face.GetComponent.<Renderer>().sharedMaterial;
 		var parentIndex = parentMats.IndexOf(parentMats, targetMat);
 		if (parentIndex >= 0) {
 			targetMat = Material(targetMat);

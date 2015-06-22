@@ -5,6 +5,20 @@
 	// Set of MouseLook scripts to be (dis-)enabled. FIXME: just OUR avatar's MouseLooks!
 public var looks:MouseLook[];  
 private var crosshair:GUITexture;
+
+private static function setScreenLock(enabled:boolean):void {
+	if (enabled) { 
+		Cursor.lockState = CursorLockMode.Locked; 
+		Cursor.visible = false; 
+	} else {
+		Cursor.lockState = CursorLockMode.None; 
+		Cursor.visible = true; 
+	}
+}
+private static function getScreenLock():boolean {
+	return Cursor.lockState == CursorLockMode.Locked;
+}
+
 // IFF enabled, we use cursor locking with MouseLook, and display our own crosshairs.
 // UI requirement: any gesture that does this must (in itself or some path to get to it) require a click within the window. 
 // Otherwise programmatic trackMouseMotion(true) (e.g., on driving) will not work in browser.
@@ -12,7 +26,7 @@ private function trackMouseMotion(enabled:boolean) {
 	//if (enabled) lock = false;
 	for (var script:MouseLook in looks) script.enabled = enabled;
 	// When (and only when) we allow head/camera movement to follow the mouse, use Minecraft-style cursor lock and show a crosshair.
-	Screen.lockCursor = enabled;
+	setScreenLock(enabled);
 	crosshair.enabled = enabled;
 	
 	//var s = 'mouse look:' + enabled + ' lockCursor:' + Screen.lockCursor + ' crosshair:' + crosshair.enabled + ' @' + Time.time + ' fixed:' + Time.fixedTime;
@@ -35,11 +49,11 @@ function Update () {
 		Screen.fullScreen = !Screen.fullScreen;
 	}
 	// In standalone player we have to provide our own key input for unlocking the cursor
-	if (Input.GetKeyDown(KeyCode.Escape)) Screen.lockCursor = false;
-	if (!Screen.lockCursor && wasLocked) {
+	if (Input.GetKeyDown(KeyCode.Escape)) setScreenLock(false);
+	if (!getScreenLock() && wasLocked) {
 		wasLocked = false;
 		trackMouseMotion(false);
-	} else if (Screen.lockCursor && !wasLocked) {
+	} else if (getScreenLock() && !wasLocked) {
 		wasLocked = true;
 		trackMouseMotion(true);
 	}
@@ -51,10 +65,10 @@ public static var BlockActionFrames = 0; // If truthy, the mouse has exited the 
 // Public interface to request that we track mouse motion or not.
 public static function TrackMouseMotion(enabled:boolean) { 
 	// We do not trackMouseMotion directly, but rather attempt to set this flag and let Update keep things consistent.
-	Screen.lockCursor = enabled; // and then let the Update do the rest.
+	setScreenLock(enabled); // and then let the Update do the rest.
 	// If we fail to set the flag (e.g., because the user has left the application and not yet clicked back in),
 	// then we notify the user -- once -- until we're once again consistent.
-	if (Screen.lockCursor == enabled) { // Everything in sync...
+	if (getScreenLock() == enabled) { // Everything in sync...
 		NeedsNotice = true; // ...reset for next discrepency
 	} else {
 		if (NeedsNotice) { // don't flood messages

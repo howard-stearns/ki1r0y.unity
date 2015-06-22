@@ -20,7 +20,7 @@ function startDragging(assembly:Transform, axis:Transform, plane:Transform, came
 	plane.position = firstPoint = hit.point;
 	setAssemblyIndex(assembly, axis);
 	firstScale = assembly.localScale[assemblyIndex];
-	return plane.collider;
+	return plane.GetComponent.<Collider>();
 }
 
 
